@@ -102,8 +102,7 @@ function render() {
   var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
   $('#main').innerHTML = '<div class="arena hero">' + langBtn + '<div class="wrap hub-hero">' +
     (H.logos && H.logos.hero ? '<img class="hero-logo" src="' + H.logos.hero + '" alt="" width="693" height="747">' : '') +
-    '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><p class="sub">' + t('lead', { s: esc(season()) }) + '</p>' +
-    '<ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
+    '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
     '<div class="wrap hub-body">' + nightHtml() + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + H.leagues.map(cardHtml).join('') + '</div></div>';
   var stamp = H.leagues.reduce(function (m, l) { return l.fetchedAt > m ? l.fetchedAt : m; }, '');
   $('#foot').innerHTML = '<p>' + t('footSource') + '</p>';
