@@ -73,11 +73,11 @@ main#main { padding-block: 0; }
 @media (min-width: 900px) {
   .arena.hero { min-height: 340px; align-items: center; }
   .arena.hero > .wrap { padding-block: 44px; }
-  .hero-logo { left: 47%; top: 50%; right: auto; width: clamp(462px, 52.8vw, 693px); max-width: none; transform: translateY(-40%) rotate(8deg); }
+  .hero-logo { left: 47%; top: 50%; right: auto; width: clamp(462px, 52.8vw, 693px); max-width: none; transform: translateY(-45%) rotate(8deg); }
   .hub-hero .sub { font-size: 24px; max-width: 26ch; }
   .hub-stats { margin-top: 0; }
   .hub-stats b { font-size: 64px; }
-  @keyframes shield-in { from { opacity: 0; transform: translateY(-40%) rotate(16deg) scale(.88); } }
+  @keyframes shield-in { from { opacity: 0; transform: translateY(-45%) rotate(16deg) scale(.88); } }
   .hub-stats { gap: 8px 36px; }
 }
 
