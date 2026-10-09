@@ -112,20 +112,22 @@ button, input, select { font: inherit; color: inherit; }
 .lang:hover { color: var(--panel-ink); }
 @media (min-width: 900px) {
   .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; }
-  /* Narrow desktop: brand and tools on the first row, the full-size menu on its own row below. */
-  .top-in { flex-wrap: wrap; padding-top: 0; gap: 0 20px; }
-  .brand { padding: 9px 0 8px; }
-  .tools { margin-left: auto; padding: 0; order: 1; }
-  .nav { order: 2; flex-basis: 100%; padding: 0; overflow: visible; align-items: stretch; border-top: 1px solid var(--panel-line); }
-  .nav a { display: flex; align-items: center; padding: 0 8px; min-height: 46px; }
-  .nav a::before { inset: 0 -5px; }
+  /* Default on desktop: everything on one row. The highlighted item fills the whole height of the bar. */
+  .top-in { flex-wrap: nowrap; padding-top: 0; gap: 0 14px; }
+  .brand { padding: 9px 0 8px; gap: 8px; }
+  .brand b { font-size: 26px; }
+  .tools { margin-left: 0; padding: 0; order: 4; }
+  .nav { order: 0; flex: 1 1 0; min-width: 0; padding: 0; overflow: hidden; align-items: stretch; align-self: stretch; }
+  .nav a { display: flex; align-items: center; padding: 0 8px; letter-spacing: .05em; }
+  .nav a::before { inset: 0 -3px; }
 }
-/* Wide enough for everything on one row. The highlighted item fills the whole height of the bar. */
-@media (min-width: 1200px) {
-  .top-in { flex-wrap: nowrap; }
-  .tools { margin-left: 0; order: 4; }
-  .nav { order: 0; flex: 1; flex-basis: auto; border-top: 0; align-self: stretch; }
-  .nav a { padding: 0 5px; min-height: 0; letter-spacing: .05em; }
+@media (min-width: 1200px) { .brand b { font-size: 34px; } .brand { gap: 10px; } .top-in { gap: 0 20px; } }
+/* Last resort: JS adds .two only when the menu does not fit (measured with the real font). */
+@media (min-width: 900px) {
+  .top.two .top-in { flex-wrap: wrap; gap: 0 20px; }
+  .top.two .tools { margin-left: auto; order: 1; }
+  .top.two .nav { order: 2; flex: 0 0 100%; overflow: visible; border-top: 1px solid var(--panel-line); }
+  .top.two .nav a { min-height: 46px; }
 }
 
 /* ---------- arena band (home hero) ---------- */
@@ -547,4 +549,3 @@ a.chip:hover { filter: brightness(1.12); }
   .dgrp .gm-teams { grid-area: teams; }
   .dgrp .gm-end { grid-area: end; flex-direction: row; align-items: center; gap: 10px; }
 }
-@media (min-width: 1200px) and (max-width: 1459px) { .brand b { font-size: 26px; } .brand { gap: 8px; } .top-in { gap: 0 14px; } }

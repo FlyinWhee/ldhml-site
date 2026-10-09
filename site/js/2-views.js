@@ -588,8 +588,17 @@
     document.documentElement.setAttribute('data-league', THEME_ON ? LG.theme : 'default');
     renderPicker();
     updateFresh();
+    fitNav();
   }
 
+  /* Desktop: keep the menu on one row. Add .two (second row) only when the links do not fit. */
+  function fitNav() {
+    var top = document.querySelector('.top'), nav = document.querySelector('.nav'); if (!top || !nav) return;
+    top.classList.remove('two');
+    if (window.innerWidth >= 900 && nav.scrollWidth > nav.clientWidth + 1) top.classList.add('two');
+  }
+  window.addEventListener('resize', fitNav);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNav);
   var VIEWS = { home: viewHome, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, teams: viewTeams, team: viewTeam, player: viewPlayer, game: viewGame };
   function parseRoute() {
     var h = String(location.hash || '').replace(/^#/, '');
@@ -706,7 +715,7 @@
       } else if (el.hasAttribute('data-lang')) {
         lang = el.getAttribute('data-lang');
         try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ }
-        renderChrome(); render(true);
+        renderChrome(); fitNav(); render(true);
       }
       return;
     }
