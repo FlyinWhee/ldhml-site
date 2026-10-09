@@ -52,15 +52,30 @@ main#main { padding-block: 0; }
 
 .lcard-head .mk-logo { display: block; height: 60px; max-width: 76px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
 
-/* ---------- home hero: the four league logos ---------- */
-.hub-hero { display: grid; gap: 22px 40px; align-items: center; }
-.logo-fan { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; gap: 8px; position: relative; z-index: 1; max-width: 420px; }
-.logo-fan li { display: block; }
-.logo-fan img { display: block; height: 64px; width: auto; max-width: 100%; margin-inline: auto; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+/* ---------- home hero: the LDHML shield, big, behind the text ---------- */
+.arena.hero { padding-block: 0; min-height: 400px; display: flex; align-items: flex-end;
+  background:
+    radial-gradient(60% 90% at 8% 0%, rgba(232, 69, 126, .32), transparent 70%),
+    radial-gradient(60% 90% at 96% 100%, rgba(30, 167, 225, .36), transparent 70%),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 46px),
+    var(--panel); }
+.arena.hero > .wrap { position: relative; z-index: 2; width: 100%; padding-block: 372px 26px; }
+.hub-hero { display: block; }
+.hero-logo { position: absolute; z-index: 1; left: 50%; top: 22px; width: 300px; max-width: 92vw; height: auto; margin: 0; pointer-events: none;
+  transform: translateX(-50%) rotate(-7deg); opacity: 1; filter: drop-shadow(0 18px 40px rgba(0,0,0,.6));
+  animation: shield-in .9s cubic-bezier(.2, .8, .2, 1) both; }
+.hub-hero .sub { margin-top: 0; color: var(--panel-ink); text-shadow: 0 2px 12px rgba(0,0,0,.8); font-size: 18px; max-width: 30ch; }
+.hub-stats b { text-shadow: 0 2px 12px rgba(0,0,0,.7); }
+@keyframes shield-in { from { opacity: 0; transform: translateX(-50%) rotate(-15deg) scale(.86); } }
+.hub-stats { gap: 8px 24px; }
+.hub-stats b { font-size: 40px; }
+@media (prefers-reduced-motion: reduce) { .hero-logo { animation: none; } }
 @media (min-width: 900px) {
-  .hub-hero { grid-template-columns: 1fr auto; }
-  .logo-fan { grid-template-columns: repeat(2, auto); gap: 6px 4px; justify-items: center; max-width: none; }
-  .logo-fan img { height: 130px; max-width: 170px; margin: 0; }
-  .logo-fan li:nth-child(odd) { transform: rotate(-4deg); }
-  .logo-fan li:nth-child(even) { transform: rotate(3deg) translateY(10px); }
+  .arena.hero { min-height: 540px; align-items: center; }
+  .arena.hero > .wrap { padding-block: 56px; }
+  .hero-logo { left: auto; top: 50%; right: 3%; width: 500px; max-width: none; transform: translateY(-50%) rotate(8deg); }
+  .hub-hero .sub { font-size: 24px; max-width: 26ch; }
+  .hub-stats b { font-size: 64px; }
+  @keyframes shield-in { from { opacity: 0; transform: translateY(-50%) rotate(16deg) scale(.88); } }
+  .hub-stats { gap: 8px 36px; }
 }

@@ -73,6 +73,7 @@ for (const k of logoKeys) {
   icons[k] = 'data:image/png;base64,' + (await readFile(path.join(root, `assets/logos/${k}-icon.png`))).toString('base64');
 }
 const hubIcon = 'data:image/png;base64,' + (await readFile(path.join(root, 'assets/logos/hub-icon.png'))).toString('base64');
+logos.hero = 'data:image/webp;base64,' + (await readFile(path.join(root, 'assets/logos/dek-hero.webp'))).toString('base64');
 const registry = leagues.map(({ lg }) => ({ slug: lg.slug, name: lg.name, short: lg.short, theme: lg.theme }));
 
 // ---- home page data: a small summary of each league ----

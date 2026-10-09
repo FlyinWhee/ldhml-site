@@ -100,13 +100,10 @@ function render() {
   $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="./">' + BALL + '<span><b>LDHML</b><small>' + esc(season()) + '</small></span></a>' +
     '<div class="tools hub-tools"><button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
   var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
-  var fan = ['retro', 'vintage', 'draft', 'dek'].filter(function (k) { return H.logos && H.logos[k]; }).map(function (k) {
-    var lg = H.leagues.filter(function (l) { return l.logo === k; })[0];
-    return '<li><img src="' + H.logos[k] + '" alt="' + esc(k === 'dek' ? 'LDHML Dek Mixte' : lg ? lg.name : k) + '" width="170" height="150"></li>';
-  }).join('');
-  $('#main').innerHTML = '<div class="arena"><div class="wrap hub-hero"><div><h1>LDHML</h1><p class="sub">' + t('lead', { s: esc(season()) }) + '</p>' +
-    '<ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div>' +
-    (fan ? '<ul class="logo-fan">' + fan + '</ul>' : '') + '</div></div>' +
+  $('#main').innerHTML = '<div class="arena hero"><div class="wrap hub-hero">' +
+    (H.logos && H.logos.hero ? '<img class="hero-logo" src="' + H.logos.hero + '" alt="" width="520" height="554">' : '') +
+    '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><p class="sub">' + t('lead', { s: esc(season()) }) + '</p>' +
+    '<ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
     '<div class="wrap hub-body">' + nightHtml() + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + H.leagues.map(cardHtml).join('') + '</div></div>';
   var stamp = H.leagues.reduce(function (m, l) { return l.fetchedAt > m ? l.fetchedAt : m; }, '');
   $('#foot').innerHTML = '<p>' + t('footSource') + '</p>';
