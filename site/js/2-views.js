@@ -204,6 +204,18 @@
     }).join('') + '</dl>';
   }
 
+  /* Teams: one card per team, in standings order. */
+  function viewTeams() {
+    var cards = teams.map(function (tm) {
+      var top = skaters.filter(function (p) { return p.teams[0] === tm.abb && p.p > 0; }).sort(function (a, b) { return b.p - a.p || b.g - a.g; })[0];
+      return '<div class="tcard" style="--tc:' + colorOf(tm.abb) + '"><span class="tab"></span>' +
+        '<span class="tcard-top">' + crest(tm.abb, 'lg') + '<span class="tcard-name"><a class="tcard-link" href="#team-' + tm.id + '"><b>' + esc(tm.name) + '</b></a><small>' + ord(tm.pos) + ' · ' + tm.w + '-' + tm.l + '-' + tm.t + ' · ' + tm.pts + ' ' + L('pts')[0] + '</small></span></span>' +
+        '<span class="tcard-stats"><span><small>' + L('gf')[0] + '</small><b>' + tm.gf + '</b></span><span><small>' + L('ga')[0] + '</small><b>' + tm.ga + '</b></span><span><small>' + L('diff')[0] + '</small><b>' + signed(tm.diff) + '</b></span><span class="tcard-form">' + formHtml(tm.id) + '</span></span>' +
+        (top ? '<span class="tcard-top1"><small>' + t('points') + '</small>' + esc(top.name) + ' <b>' + top.p + '</b></span>' : '') + '</div>';
+    }).join('');
+    return '<h1 class="ph">' + t('teams') + '</h1><p class="lede">' + t('teamsLede') + '</p><div class="tcards">' + cards + '</div>';
+  }
+
   function viewTeam(r) {
     var tm = T[r.id]; if (!tm) return viewNotFound();
     var inTeam = function (p) { return SCOPE === 'main' ? p.teams[0] === tm.abb : p.teams.indexOf(tm.abb) >= 0; };
@@ -510,7 +522,7 @@
   }
 
   /* ================= chrome ================= */
-  var NAV = [['home', 'home'], ['live', 'live'], ['standings', 'standings'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
+  var NAV = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
   function renderChrome() {
     $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + BALL + '<span><b>LDHML <i>Retro</i></b><small>' + esc(season()) + '</small></span></a>' +
       '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
@@ -522,12 +534,12 @@
     updateFresh();
   }
 
-  var VIEWS = { home: viewHome, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, team: viewTeam, player: viewPlayer, game: viewGame };
+  var VIEWS = { home: viewHome, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, teams: viewTeams, team: viewTeam, player: viewPlayer, game: viewGame };
   function parseRoute() {
     var h = String(location.hash || '').replace(/^#/, '');
     var m = h.match(/^(team|player|game)-(\d+)$/);
     if (m) return { name: m[1], id: m[2] };
-    if (['standings', 'schedule', 'players', 'goalies', 'leaders', 'live'].indexOf(h) >= 0) return { name: h };
+    if (['standings', 'schedule', 'players', 'goalies', 'leaders', 'live', 'teams'].indexOf(h) >= 0) return { name: h };
     return { name: 'home' };
   }
   function render(keepScroll) {
@@ -537,7 +549,7 @@
     if (out && typeof out === 'object') { band = out.band; out = out.html; }
     $('#band').innerHTML = band;
     $('#main').innerHTML = out;
-    var navKey = r.name === 'team' ? 'standings' : r.name === 'player' ? 'players' : r.name === 'game' ? 'schedule' : r.name;
+    var navKey = r.name === 'team' ? 'teams' : r.name === 'player' ? 'players' : r.name === 'game' ? 'schedule' : r.name;
     Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
       if (a.getAttribute('data-nav') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });

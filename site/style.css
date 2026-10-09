@@ -465,3 +465,24 @@ a.chip:hover { filter: brightness(1.12); }
 :root[data-league="retro"] .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 55%; pointer-events: none;
   background: repeating-linear-gradient(90deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 72px), repeating-linear-gradient(0deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 30px);
   -webkit-mask-image: linear-gradient(transparent, #000); mask-image: linear-gradient(transparent, #000); }
+
+/* ---------- teams page ---------- */
+.tcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; margin-top: 18px; }
+.tcard { position: relative; display: grid; gap: 12px; padding: 14px 16px 14px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 3px; text-decoration: none; min-width: 0; transition: border-color .15s, transform .15s; }
+.tcard:hover { border-color: var(--tc); transform: translateY(-2px); }
+.tcard .tab { position: absolute; inset: 0 auto 0 0; width: 7px; background: var(--tc); border-radius: 3px 0 0 3px; }
+.tcard-top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.tcard .crest-lg { width: 60px; height: 60px; font-size: 22px; }
+.tcard-name { display: grid; min-width: 0; }
+.tcard-link { color: inherit; text-decoration: none; min-width: 0; }
+.tcard-link::after { content: ''; position: absolute; inset: 0; }
+.tcard .form, .tcard-top1 { position: relative; z-index: 1; }
+.tcard-name b { font: 600 30px/1 var(--f-display); letter-spacing: .03em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcard-name small { color: var(--muted); font-size: 14px; }
+.tcard-stats { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; }
+.tcard-stats > span:not(.tcard-form) { display: grid; }
+.tcard-stats small, .tcard-top1 small { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tcard-stats b { font: 600 22px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tcard-form { margin-left: auto; display: inline-flex; }
+.tcard-top1 { display: flex; align-items: baseline; gap: 8px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.tcard-top1 b { margin-left: auto; font: 600 20px/1 var(--f-display); }

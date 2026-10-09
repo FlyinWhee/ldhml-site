@@ -25,7 +25,7 @@ const data = JSON.parse(w.document.getElementById('league-data').textContent);
 
 // 1. every top-level route renders something
 const seen = new Set();
-for (const h of ['#home', '#standings', '#schedule', '#players', '#goalies', '#leaders', '#live']) {
+for (const h of ['#home', '#standings', '#schedule', '#players', '#goalies', '#leaders', '#live', '#teams']) {
   await go(h);
   assert.ok(main().length > 200, `${h} rendered too little`);
   hrefs().forEach((x) => seen.add(x));
@@ -53,7 +53,7 @@ for (const g of data.games) {
 const known = new Set(data.teams.map((t) => 'team-' + t.id));
 data.games.forEach((g) => known.add('game-' + g.id));
 ids.forEach((i) => known.add('player-' + i));
-['home', 'standings', 'schedule', 'players', 'goalies', 'leaders', 'live'].forEach((r) => known.add(r));
+['home', 'standings', 'schedule', 'players', 'goalies', 'leaders', 'live', 'teams'].forEach((r) => known.add(r));
 const broken = [...seen].filter((h) => !known.has(h.slice(1)));
 assert.deepEqual(broken, [], 'broken internal links: ' + broken.join(', '));
 
