@@ -539,11 +539,40 @@
     $('#lgsel').addEventListener('change', function (e) { location.href = (D.base || './') + e.target.value + (e.target.value ? '/' : ''); });
   }
   var NAV = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
+  var TAB_ICONS = {
+    live: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M8.1 15.9a5.5 5.5 0 0 1 0-7.8M15.9 8.1a5.5 5.5 0 0 1 0 7.8"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
+    standings: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    teams: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>',
+    schedule: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    players: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
+    goalies: '<path d="M5 20V8a7 7 0 0 1 14 0v12M5 13h14M9 8v5M15 8v5"/>',
+    leaders: '<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/>',
+    more: '<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>'
+  };
+  var TAB_MAIN = ['live', 'standings', 'teams', 'schedule', 'players'], TAB_MORE = ['goalies', 'leaders'];
+  function tabIcon(k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; }
+  function renderTabbar() {
+    var bar = $('#tabbar'), more = $('#more');
+    if (!bar) return;
+    bar.innerHTML = TAB_MAIN.map(function (k) {
+      return '<a href="#' + k + '" data-nav="' + k + '">' + tabIcon(k) + '<span>' + t(k) + '</span>' + (k === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>';
+    }).join('') + '<button type="button" data-more aria-expanded="false" aria-controls="more">' + tabIcon('more') + '<span>' + t('more') + '</span></button>';
+    more.innerHTML = TAB_MORE.map(function (k) { return '<a href="#' + k + '" data-nav="' + k + '">' + tabIcon(k) + '<span>' + t(k) + '</span></a>'; }).join('');
+    more.hidden = true;
+  }
+  function setMore(open) {
+    var more = $('#more'), btn = document.querySelector('[data-more]');
+    if (!more || !btn) return;
+    more.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   function renderChrome() {
     $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + BALL + '<span><b>LDHML <i>' + esc(LG.short) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
       '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('searchPh') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
       '<button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
+    renderTabbar();
     $('#foot').innerHTML = '<p id="fresh" class="fresh" hidden></p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-league', THEME_ON ? LG.theme : 'default');
@@ -570,6 +599,9 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
       if (a.getAttribute('data-nav') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+    var mb = document.querySelector('[data-more]');
+    if (mb) { if (TAB_MORE.indexOf(navKey) >= 0) mb.setAttribute('aria-current', 'page'); else mb.removeAttribute('aria-current'); }
+    setMore(false);
     var title = LG.name;
     if (r.name === 'team' && T[r.id]) title = T[r.id].name + ' | ' + LG.name;
     if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | ' + LG.name;
@@ -642,6 +674,9 @@
   /* ================= events ================= */
   function setPath(p, v) { var a = p.split('.'); ui[a[0]][a[1]] = v; }
   document.addEventListener('click', function (e) {
+    var mt = e.target.closest ? e.target.closest('[data-more]') : null;
+    if (mt) { setMore(mt.getAttribute('aria-expanded') !== 'true'); return; }
+    if (!e.target.closest || !e.target.closest('#more')) setMore(false);
     var el = e.target.closest ? e.target.closest('[data-set],[data-sort],[data-lang],[data-scope],[data-theme-toggle]') : null;
     if (el) {
       if (el.hasAttribute('data-theme-toggle')) {
@@ -689,6 +724,7 @@
       else if (e.key === 'Enter') { var items = document.querySelectorAll('.gs-item'); var pick = items[activeIdx >= 0 ? activeIdx : 0]; if (pick) { e.preventDefault(); location.hash = pick.getAttribute('href'); } }
       else if (e.key === 'Escape') { e.target.value = ''; closeSearch(); }
     }
+    if (e.key === 'Escape') setMore(false);
   });
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);

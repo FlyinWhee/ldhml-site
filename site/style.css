@@ -509,3 +509,20 @@ a.chip:hover { filter: brightness(1.12); }
   .gs input:focus { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .gs input { transition: none; } }
+
+/* ---------- bottom tab bar (below 900px) ---------- */
+.tabbar, .more { display: none; }
+@media (max-width: 899px) {
+  .nav { display: none; }
+  .tabbar { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--panel); border-top: 1px solid var(--panel-line); padding: 0 4px env(safe-area-inset-bottom, 0px); }
+  .tabbar a, .tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 56px; padding: 6px 0 5px; border: 0; background: none; cursor: pointer; text-decoration: none; color: var(--panel-mute); font: 600 11px/1.1 var(--f-text); letter-spacing: .01em; -webkit-tap-highlight-color: transparent; }
+  .tabbar span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tabbar a[aria-current="page"], .tabbar button[aria-current="page"], .tabbar button[aria-expanded="true"] { color: var(--ball); }
+  .tabbar a[aria-current="page"]::before, .tabbar button[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--ball); }
+  .tabbar .navdot { position: absolute; top: 8px; left: calc(50% + 7px); }
+  .more { position: fixed; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 41; min-width: 190px; padding: 6px; border-radius: 12px; background: var(--panel); border: 1px solid var(--panel-line); box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+  .more:not([hidden]) { display: block; }
+  .more a { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 8px; text-decoration: none; color: var(--panel-ink); font: 600 15px/1 var(--f-text); }
+  .more a[aria-current="page"] { color: var(--ball); background: color-mix(in srgb, var(--ball) 14%, transparent); }
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
