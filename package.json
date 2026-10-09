@@ -1,0 +1,20 @@
+{
+  "name": "ldhml-stats",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Proof of concept: fast, cross-linked stats site for LDHML Retro.",
+  "scripts": {
+    "fetch": "node scraper/fetch.mjs",
+    "fetch:force": "node scraper/fetch.mjs --force",
+    "build": "node build.mjs",
+    "refresh": "node scraper/fetch.mjs && node build.mjs",
+    "test": "node scraper/test.mjs && node build.mjs && node site/test-ui.mjs && node site/test-live.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^26.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

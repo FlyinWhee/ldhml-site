@@ -1,0 +1,57 @@
+# Refresh the league data and publish the site to GitHub Pages.
+# NOT TESTED YET. Enable Pages (Settings > Pages > Source: GitHub Actions) before the first run.
+#
+# Schedule (UTC): every 20 minutes during Wednesday game nights, and once a day otherwise.
+# The scraper also skips the request if the saved data is less than 15 minutes old.
+name: Refresh and publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/20 22-23 * * 3'
+    - cron: '*/20 0-4 * * 4'
+    - cron: '15 10 * * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Fetch the latest data
+        run: node scraper/fetch.mjs
+      - name: Save the data snapshot
+        run: |
+          git config user.name "stats-bot"
+          git config user.email "stats-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || (git commit -m "Update league data" && git push)
+      - run: node build.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
