@@ -62,7 +62,7 @@ main#main { padding-block: 0; }
 .arena.hero > .wrap { position: relative; z-index: 2; width: 100%; padding-block: 402px 26px; }
 .hub-hero { display: block; }
 .hero-logo { position: absolute; z-index: 1; left: 50%; top: 22px; width: 330px; max-width: 92vw; height: auto; margin: 0; pointer-events: none;
-  transform: translateX(-50%) rotate(-7deg); opacity: 1; filter: drop-shadow(0 18px 40px rgba(0,0,0,.6));
+  transform: translateX(-50%) rotate(-7deg); opacity: 1; filter: drop-shadow(0 0 1.5px rgba(255,255,255,.55)) drop-shadow(0 18px 40px rgba(0,0,0,.6));
   animation: shield-in .9s cubic-bezier(.2, .8, .2, 1) both; }
 .hub-hero .sub { margin-top: 0; color: var(--panel-ink); text-shadow: 0 2px 12px rgba(0,0,0,.8); font-size: 18px; max-width: 30ch; }
 .hub-stats b { text-shadow: 0 2px 12px rgba(0,0,0,.7); }
