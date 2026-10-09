@@ -4,11 +4,11 @@
   "seasonName": "Automne 2026",
   "default": "retro",
   "leagues": [
-    { "slug": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
-    { "slug": "vintage", "categoryId": 3661, "theme": "vintage", "short": "Vintage", "name": "LDHML Vintage" },
-    { "slug": "draft",   "categoryId": 2433, "theme": "draft",   "short": "Draft",   "name": "LDHML Draft" },
-    { "slug": "3v3-a",   "categoryId": 1896, "theme": "ice",     "short": "3v3 A",   "name": "LDHML 3 vs 3 A" },
-    { "slug": "3v3-b",   "categoryId": 1909, "theme": "asphalt", "short": "3v3 B",   "name": "LDHML 3 vs 3 B" },
-    { "slug": "4v4-b",   "categoryId": 1913, "theme": "pitch",   "short": "4v4 B",   "name": "LDHML 4 vs 4 B" }
+    { "slug": "retro", "logo": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
+    { "slug": "vintage", "logo": "vintage", "categoryId": 3661, "theme": "vintage", "short": "Vintage", "name": "LDHML Vintage" },
+    { "slug": "draft", "logo": "draft",   "categoryId": 2433, "theme": "draft",   "short": "Draft",   "name": "LDHML Draft" },
+    { "slug": "3v3-a", "logo": "dek",   "categoryId": 1896, "theme": "ice",     "short": "3v3 A",   "name": "LDHML 3 vs 3 A" },
+    { "slug": "3v3-b", "logo": "dek",   "categoryId": 1909, "theme": "asphalt", "short": "3v3 B",   "name": "LDHML 3 vs 3 B" },
+    { "slug": "4v4-b", "logo": "dek",   "categoryId": 1913, "theme": "pitch",   "short": "4v4 B",   "name": "LDHML 4 vs 4 B" }
   ]
 }

@@ -526,3 +526,9 @@ a.chip:hover { filter: brightness(1.12); }
   .more a[aria-current="page"] { color: var(--ball); background: color-mix(in srgb, var(--ball) 14%, transparent); }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ---------- league logo in the header (themes on) ---------- */
+.mk-logo { display: none; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
+:root:not([data-league="default"]) .brand .mk-logo { display: block; }
+:root:not([data-league="default"]) .brand .mk-logo + svg { display: none; }
+@media (max-width: 899px) { .mk-logo { height: 40px; } }

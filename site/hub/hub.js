@@ -85,7 +85,7 @@ function cardHtml(l) {
   var rows = top.slice(0, 3).map(function (r, i) {
     return '<li><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(window.LDParsers.niceName(r.name)) + '</span><span class="rec">' + r.w + '-' + r.l + '-' + r.t + '</span><b>' + r.pts + '</b></li>';
   }).join('');
-  return '<article class="lcard" data-slug="' + esc(l.slug) + '" data-t="' + esc(themeOf(l)) + '"><div class="lcard-head">' + BALL +
+  return '<article class="lcard" data-slug="' + esc(l.slug) + '" data-t="' + esc(themeOf(l)) + '"><div class="lcard-head">' + (l.logo && H.logos && H.logos[l.logo] ? '<img class="mk-logo" src="' + H.logos[l.logo] + '" alt="" width="60" height="52">' : BALL) +
     '<h2><a class="lcard-link" href="' + esc(l.slug) + '/"><span>LDHML</span> <i>' + esc(l.short) + '</i></a></h2></div>' +
     '<p class="lcard-meta">' + l.teams + ' ' + t('teams') + ' · ' + pl + ' ' + t('of') + ' ' + l.total + ' ' + t('games') + '</p>' +
     '<div class="bar" role="img" aria-label="' + pl + ' / ' + l.total + '"><i style="width:' + pct + '%"></i></div>' +

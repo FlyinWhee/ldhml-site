@@ -49,3 +49,5 @@ main#main { padding-block: 0; }
 
 /* Themes switched off: the cards use the default look. */
 [data-t="default"] { --brand: linear-gradient(var(--ball), var(--ball)); }
+
+.lcard-head .mk-logo { display: block; height: 60px; max-width: 76px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }

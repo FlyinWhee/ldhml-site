@@ -31,21 +31,21 @@ export const THEMES = {
   },
 
   vintage: {
-    // Old hockey programme: faded paper, navy and brick red. Only the league name keeps the serif face.
-    mark: ['#B88A2E', '#F2D8A0'],
-    brand: 'linear-gradient(180deg, #F0D58C 10%, #C99A3A 90%)',
+    // Old hockey programme, from the logo: faded paper, navy and tan. Only the league name keeps the serif face.
+    mark: ['#C79A5E', '#F2DDB8'],
+    brand: 'linear-gradient(180deg, #EBCB98 10%, #C79A5E 90%)',
     brandFont: "'Playfair Display', 'Georgia', 'Times New Roman', serif",
     light: {
       bg: '#F2F0EA', surface: '#FFFFFF', ink: '#1F2933', muted: '#5F6B76', line: '#DDD9CE', hover: '#F7F5F0',
-      panel: '#1E2A3A', 'panel-2': '#283749', 'panel-line': '#3C4D63', 'panel-ink': '#F4F2EC', 'panel-mute': '#A9B4C2',
-      'led-on': '#E9B949', 'led-off': '#2B3A4E', ball: '#B88A2E', 'on-ball': '#1E1305', 'accent-text': '#9A3B32', focus: '#9A3B32',
+      panel: '#1B2535', 'panel-2': '#263347', 'panel-line': '#3A4A62', 'panel-ink': '#F4F2EC', 'panel-mute': '#A9B4C2',
+      'led-on': '#DDB074', 'led-off': '#2B3A4E', ball: '#C79A5E', 'on-ball': '#1B1206', 'accent-text': '#855A22', focus: '#9A6A2A',
       blue: '#2F4B73', red: '#A4443A', good: '#2F6B3A', bad: '#A4443A',
-      'stripe-a': '#A4443A', 'stripe-b': '#D9C9A0', 'stripe-c': '#A4443A',
+      'stripe-a': '#C79A5E', 'stripe-b': '#F2E6CC', 'stripe-c': '#C79A5E',
       shadow: '0 10px 28px rgba(30, 42, 58, .22)'
     },
     dark: {
       bg: '#0F1620', surface: '#17212D', ink: '#ECEAE3', muted: '#A2AEBB', line: '#273444', hover: '#1C2735',
-      panel: '#0B111A', 'panel-2': '#131C28', 'panel-line': '#2D3C50', 'accent-text': '#E58A80', focus: '#E0B35C',
+      panel: '#0B111A', 'panel-2': '#131C28', 'panel-line': '#2D3C50', 'accent-text': '#E2B87C', focus: '#E2B87C',
       blue: '#8FB0DC', red: '#E58A80', good: '#7BBF88', bad: '#E58A80', shadow: '0 10px 28px rgba(0, 0, 0, .55)'
     },
     decor: `
@@ -53,92 +53,92 @@ export const THEMES = {
   },
 
   draft: {
-    // Draft night: broadcast blue and gold.
-    mark: ['#FFC72C', '#FFF0B8'],
-    brand: 'linear-gradient(180deg, #FFE17A 8%, #FFC72C 92%)',
+    // Draft: black, silver and the gold of the logo.
+    mark: ['#F7A71B', '#FFE3A3'],
+    brand: 'linear-gradient(180deg, #FFD36B 8%, #F7A71B 92%)',
     light: {
-      bg: '#EDF0F9', ink: '#0B1233', muted: '#55608A', line: '#D5DBEE', hover: '#F3F5FC',
-      panel: '#0A1A5C', 'panel-2': '#11267A', 'panel-line': '#2A3F9A', 'panel-ink': '#FFFFFF', 'panel-mute': '#A9B8F0',
-      'led-on': '#FFC72C', 'led-off': '#12236E', ball: '#FFC72C', 'on-ball': '#1A1300', 'accent-text': '#1B3FD6', focus: '#1B3FD6',
-      blue: '#1B3FD6', red: '#E23B3B', 'stripe-a': '#1B3FD6', 'stripe-b': '#FFC72C', 'stripe-c': '#1B3FD6',
-      shadow: '0 10px 28px rgba(10, 26, 92, .26)'
+      bg: '#F1EFEA', ink: '#17140D', muted: '#6A6354', line: '#E0DACB', hover: '#F7F5F0',
+      panel: '#141415', 'panel-2': '#202022', 'panel-line': '#3A3A3E', 'panel-ink': '#FFFFFF', 'panel-mute': '#B3B1AA',
+      'led-on': '#F7A71B', 'led-off': '#2B2B2E', ball: '#F7A71B', 'on-ball': '#1A1100', 'accent-text': '#8F5A00', focus: '#B87400',
+      blue: '#3A3A40', red: '#D9362B', 'stripe-a': '#141415', 'stripe-b': '#F7A71B', 'stripe-c': '#141415',
+      shadow: '0 10px 28px rgba(20, 20, 21, .26)'
     },
     dark: {
-      bg: '#060A1F', surface: '#0E1534', ink: '#EAEEFF', muted: '#9AA6D6', line: '#1F2A5C', hover: '#131C45',
-      panel: '#070E33', 'panel-2': '#0C1748', 'panel-line': '#26357F', 'accent-text': '#8FA8FF', focus: '#FFC72C',
-      blue: '#8FA8FF', red: '#FF7A7A', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
+      bg: '#0A0A0B', surface: '#141416', ink: '#F3F1EA', muted: '#A9A69B', line: '#2D2D31', hover: '#1B1B1E',
+      panel: '#070708', 'panel-2': '#111113', 'panel-line': '#34343A', 'accent-text': '#FFC04D', focus: '#FFC04D',
+      blue: '#D9D6CB', red: '#FF7A6B', shadow: '0 10px 28px rgba(0, 0, 0, .65)'
     },
     decor: `
 {T} .arena > .wrap { position: relative; z-index: 1; }
 {T} .arena::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(115deg, rgba(255, 199, 44, .10) 0 22px, transparent 22px 64px);
+  background: repeating-linear-gradient(115deg, rgba(247, 167, 27, .10) 0 22px, transparent 22px 64px);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 70%); mask-image: linear-gradient(90deg, transparent, #000 70%); }`
   },
 
   ice: {
-    // 3 vs 3 A: fast and small, so cold ice and one hot accent.
-    mark: ['#14B8CC', '#C6F4FA'],
-    brand: 'linear-gradient(180deg, #A5F1FA 8%, #14B8CC 92%)',
+    // 3 vs 3 A: the electric blue of the Dek Mixte logo, with its pink as the second colour.
+    mark: ['#1EA7E1', '#C9ECFA'],
+    brand: 'linear-gradient(180deg, #B6E6FA 8%, #1EA7E1 92%)',
     light: {
-      bg: '#E9F3F5', ink: '#07242C', muted: '#4E6E77', line: '#CFE1E5', hover: '#F1F8F9',
-      panel: '#062A33', 'panel-2': '#0B3845', 'panel-line': '#1B5566', 'panel-ink': '#EFFBFD', 'panel-mute': '#8FC3CF',
-      'led-on': '#3FE0F0', 'led-off': '#0C3A46', ball: '#14B8CC', 'on-ball': '#00262C', 'accent-text': '#0A7385', focus: '#0A8CA3',
-      blue: '#0A8CA3', red: '#E8476B', 'stripe-a': '#14B8CC', 'stripe-b': '#E8476B', 'stripe-c': '#14B8CC',
-      shadow: '0 10px 28px rgba(6, 42, 51, .24)'
+      bg: '#E8F1F8', ink: '#08212F', muted: '#4F6B7D', line: '#CFDDE8', hover: '#F1F7FB',
+      panel: '#071F33', 'panel-2': '#0C2C47', 'panel-line': '#1B4A6E', 'panel-ink': '#EFF8FD', 'panel-mute': '#8DB8D6',
+      'led-on': '#4FC3F0', 'led-off': '#0E3150', ball: '#1EA7E1', 'on-ball': '#001B2B', 'accent-text': '#0B6FA0', focus: '#0B86C0',
+      blue: '#0B86C0', red: '#E8457E', 'stripe-a': '#1EA7E1', 'stripe-b': '#E8457E', 'stripe-c': '#1EA7E1',
+      shadow: '0 10px 28px rgba(7, 31, 51, .24)'
     },
     dark: {
-      bg: '#04141A', surface: '#0B222B', ink: '#E5F6F9', muted: '#8FB5BE', line: '#17414D', hover: '#0F2C37',
-      panel: '#031920', 'panel-2': '#072630', 'panel-line': '#14505F', 'accent-text': '#5FD8E8', focus: '#5FD8E8',
-      blue: '#5FD8E8', red: '#FF8AA3', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
+      bg: '#050F18', surface: '#0B1B29', ink: '#E6F3FB', muted: '#8FB0C6', line: '#183A55', hover: '#102536',
+      panel: '#04121D', 'panel-2': '#08202F', 'panel-line': '#164A6C', 'accent-text': '#5CC4F2', focus: '#5CC4F2',
+      blue: '#5CC4F2', red: '#FF8AAE', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
     },
     decor: `
 {T} .arena > .wrap { position: relative; z-index: 1; }
 {T} .arena::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(115deg, transparent 40%, rgba(143, 230, 244, .10) 40.2%, transparent 40.6%), linear-gradient(98deg, transparent 62%, rgba(143, 230, 244, .09) 62.2%, transparent 62.5%), radial-gradient(60% 90% at 85% 100%, rgba(63, 224, 240, .16), transparent); }`
+  background: linear-gradient(115deg, transparent 40%, rgba(120, 200, 245, .10) 40.2%, transparent 40.6%), linear-gradient(98deg, transparent 62%, rgba(120, 200, 245, .09) 62.2%, transparent 62.5%), radial-gradient(60% 90% at 85% 100%, rgba(30, 167, 225, .18), transparent); }`
   },
 
   asphalt: {
-    // 3 vs 3 B: street court, grey asphalt and hazard yellow.
-    mark: ['#FFC800', '#FFEFA6'],
-    brand: 'linear-gradient(180deg, #FFE55C 8%, #FFC800 92%)',
+    // 3 vs 3 B: the black and silver of the Dek Mixte shield, with a blue and pink edge.
+    mark: ['#C9CDD6', '#FFFFFF'],
+    brand: 'linear-gradient(180deg, #FFFFFF 8%, #B4B9C6 92%)',
     light: {
-      bg: '#EEEDE8', surface: '#FFFEFA', ink: '#1A1A1C', muted: '#66655F', line: '#DAD8D0', hover: '#F5F4EF',
-      panel: '#1B1B1F', 'panel-2': '#26262C', 'panel-line': '#3C3C45', 'panel-ink': '#F7F5EC', 'panel-mute': '#A8A69B',
-      'led-on': '#FFD21F', 'led-off': '#2E2E35', ball: '#FFC800', 'on-ball': '#1A1500', 'accent-text': '#7A5A00', focus: '#9C7300',
-      blue: '#2D2D35', red: '#D9362B', 'stripe-a': '#1B1B1F', 'stripe-b': '#FFC800', 'stripe-c': '#1B1B1F',
-      shadow: '0 10px 28px rgba(27, 27, 31, .26)'
+      bg: '#EEEFF1', surface: '#FFFFFF', ink: '#15171C', muted: '#5E6470', line: '#D8DADF', hover: '#F5F6F8',
+      panel: '#16181D', 'panel-2': '#21242B', 'panel-line': '#383C46', 'panel-ink': '#F5F6F8', 'panel-mute': '#A9AEBA',
+      'led-on': '#E6E8EE', 'led-off': '#2A2D35', ball: '#C9CDD6', 'on-ball': '#14161A', 'accent-text': '#C42762', focus: '#C42762',
+      blue: '#2B2F38', red: '#E8457E', 'stripe-a': '#16181D', 'stripe-b': '#E8457E', 'stripe-c': '#16181D',
+      shadow: '0 10px 28px rgba(22, 24, 29, .26)'
     },
     dark: {
-      bg: '#0E0E10', surface: '#17171B', ink: '#F0EEE4', muted: '#A09E92', line: '#2C2C33', hover: '#1E1E24',
-      panel: '#0A0A0C', 'panel-2': '#141418', 'panel-line': '#34343D', 'accent-text': '#FFD21F', focus: '#FFD21F',
-      blue: '#C9C7BA', red: '#FF6B5E', shadow: '0 10px 28px rgba(0, 0, 0, .65)'
+      bg: '#0C0D10', surface: '#15171B', ink: '#F0F1F4', muted: '#A0A5B0', line: '#2A2D35', hover: '#1B1D22',
+      panel: '#08090B', 'panel-2': '#121418', 'panel-line': '#30333C', 'accent-text': '#FF7FA6', focus: '#FF7FA6',
+      blue: '#C9CDD6', red: '#FF7FA6', shadow: '0 10px 28px rgba(0, 0, 0, .65)'
     },
     decor: `
 {T} .arena > .wrap { position: relative; z-index: 1; }
-{T} .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 10px; pointer-events: none;
-  background: repeating-linear-gradient(-45deg, #FFC800 0 12px, #1B1B1F 12px 24px); }`
+{T} .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 6px; pointer-events: none;
+  background: linear-gradient(90deg, #1EA7E1 0 50%, #E8457E 50% 100%); }`
   },
 
   pitch: {
-    // 4 vs 4 B: a full-size court, mown-grass green.
-    mark: ['#22A45D', '#BDF0D3'],
-    brand: 'linear-gradient(180deg, #F2D56B 8%, #5BE08A 92%)',
+    // 4 vs 4 B: the pink and red side of the Dek Mixte logo, on a dark plum.
+    mark: ['#E8457E', '#FFC4D9'],
+    brand: 'linear-gradient(180deg, #FFC4D9 8%, #E8457E 92%)',
     light: {
-      bg: '#EAF2EC', ink: '#0A2216', muted: '#4F6B5B', line: '#CFE0D4', hover: '#F1F7F3',
-      panel: '#0B2E1D', 'panel-2': '#11402A', 'panel-line': '#1F5E3E', 'panel-ink': '#F1FBF5', 'panel-mute': '#93C4A8',
-      'led-on': '#5BE08A', 'led-off': '#123D28', ball: '#22A45D', 'on-ball': '#021A0D', 'accent-text': '#12703F', focus: '#12873F',
-      blue: '#12703F', red: '#E2552B', 'stripe-a': '#22A45D', 'stripe-b': '#F2C94C', 'stripe-c': '#22A45D',
-      shadow: '0 10px 28px rgba(11, 46, 29, .25)'
+      bg: '#F6EEF2', ink: '#2A0F1E', muted: '#7A5568', line: '#EAD6E0', hover: '#FBF5F8',
+      panel: '#2A0D20', 'panel-2': '#3A1530', 'panel-line': '#5C2A4C', 'panel-ink': '#FFF3F8', 'panel-mute': '#D6A6C0',
+      'led-on': '#FF6FA0', 'led-off': '#3E1832', ball: '#E8457E', 'on-ball': '#FFFFFF', 'accent-text': '#B01A56', focus: '#B01A56',
+      blue: '#B01A56', red: '#E2552B', 'stripe-a': '#E8457E', 'stripe-b': '#1EA7E1', 'stripe-c': '#E8457E',
+      shadow: '0 10px 28px rgba(42, 13, 32, .26)'
     },
     dark: {
-      bg: '#05130C', surface: '#0C2017', ink: '#E6F6EC', muted: '#8FB8A0', line: '#18402B', hover: '#102B1E',
-      panel: '#04160D', 'panel-2': '#082417', 'panel-line': '#17563A', 'accent-text': '#5BE08A', focus: '#5BE08A',
-      blue: '#5BE08A', red: '#FF8A66', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
+      bg: '#12060E', surface: '#1E0C17', ink: '#FBEAF2', muted: '#C195AC', line: '#43203A', hover: '#271020',
+      panel: '#16070F', 'panel-2': '#220C19', 'panel-line': '#4E2442', 'accent-text': '#FF8DB3', focus: '#FF8DB3',
+      blue: '#FF8DB3', red: '#FF9A7A', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
     },
     decor: `
 {T} .arena > .wrap { position: relative; z-index: 1; }
 {T} .arena::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(91, 224, 138, .08) 0 56px, transparent 56px 112px); }`
+  background: repeating-linear-gradient(90deg, rgba(232, 69, 126, .08) 0 56px, transparent 56px 112px); }`
   }
 };
 
