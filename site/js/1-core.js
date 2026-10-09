@@ -452,7 +452,7 @@
     var cols = [idxCol, {
       k: 'name', label: t('player'), title: t('player'), get: function (p) { return p.name; }, dir: 'asc', stick: true,
       html: function (p) {
-        var others = (opts.team ? p.teams.concat(p.also || []).filter(function (a, i, l) { return a !== opts.team && l.indexOf(a) === i; }) : []);
+        var others = [];
         return '<a class="tl strong" href="#player-' + p.id + '">' + esc(p.name) + '</a>' +
           (others.length ? '<span class="alsoplayed">' + t('alsoPlayed') + ' ' + others.map(function (a) { var tm = TA[a]; return tm ? '<a href="#team-' + tm.id + '">' + esc(tm.name) + '</a>' : esc(a); }).join(', ') + '</span>' : '');
       }
