@@ -104,7 +104,7 @@ for (const out of outDirs) {
   // The artifact host adds its own <html> wrapper to the main page, so that one is a fragment.
   await writeFile(path.join(out, 'index.html'), isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.' }));
   for (const { lg, data } of leagues) {
-    const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null, generic: lg.logo && lg.logo !== 'dek' ? logos.dek : null }, registry, base: '../' };
+    const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null }, registry, base: '../' };
     const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
     const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.` });
     await mkdir(path.join(out, lg.slug), { recursive: true });

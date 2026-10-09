@@ -527,13 +527,6 @@ a.chip:hover { filter: brightness(1.12); }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 }
 
-/* ---------- league logo in the header (themes on) ---------- */
-.mk-logo { display: none; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
-:root:not([data-league="default"]) .brand .mk-logo { display: block; }
-:root:not([data-league="default"]) .brand .mk-logo + svg { display: none; }
+/* ---------- league logo in the header (shown with or without the theme) ---------- */
+.mk-logo { display: block; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
 @media (max-width: 899px) { .mk-logo { height: 40px; } }
-
-.mk-generic { display: none; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
-:root[data-league="default"] .brand .mk-generic { display: block; }
-.brand .mk-logo.both { display: block; }
-@media (max-width: 899px) { .mk-generic { height: 40px; } }
