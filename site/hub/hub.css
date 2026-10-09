@@ -1,0 +1,48 @@
+/* ---------- LDHML home page ---------- */
+main#main { padding-block: 0; }
+.hub-tools { margin-left: auto; padding: 8px 0; }
+.arena h1 { font-size: clamp(64px, 14vw, 140px); }
+.hub-stats { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 36px; margin-top: 22px; }
+.hub-stats li { display: grid; }
+.hub-stats b { font: 600 44px/1 var(--f-display); color: var(--ball); font-variant-numeric: tabular-nums; }
+.hub-stats span { font: 500 15px/1.2 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--panel-mute); }
+.hub-body { padding-block: 26px 24px; }
+.hub-h { font: 600 clamp(30px, 5vw, 42px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin: 30px 0 14px; }
+
+.night { background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--ball); border-radius: 3px; padding: 14px 18px 16px; }
+.night-h { font: 600 28px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.night-h small { font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.night-l { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.lcard-mini a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: var(--panel); color: var(--panel-ink); text-decoration: none; font-size: 14px; border: 1px solid var(--panel-line); }
+.lcard-mini a:hover { border-color: var(--ball); }
+.lcard-mini i { width: 10px; height: 10px; border-radius: 50%; background: var(--ball); }
+.lcard-mini b { font: 600 18px/1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+.lcard-mini span { color: var(--panel-mute); }
+
+.lcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
+.lcard { position: relative; display: grid; align-content: start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; padding-bottom: 16px; transition: transform .15s, box-shadow .15s; min-width: 0; }
+.lcard:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.lcard-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px 14px; background: var(--panel); color: var(--panel-ink); border-bottom: 5px solid transparent;
+  border-image: linear-gradient(90deg, var(--stripe-a) 0 33%, var(--stripe-b) 33% 66%, var(--stripe-c) 66%) 1; }
+.lcard-head svg { flex: none; }
+.lcard-head h2 { font: 600 38px/.95 var(--f-display); letter-spacing: .03em; text-transform: uppercase; min-width: 0; }
+.lcard-head h2 span { font-size: .62em; color: var(--panel-mute); letter-spacing: .08em; }
+.lcard-head h2 i { font-style: normal; background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lcard-link { text-decoration: none; }
+.lcard-link::after { content: ""; position: absolute; inset: 0; }
+.lcard-link:focus-visible { outline: none; }
+.lcard:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.lcard-meta { padding-inline: 18px; color: var(--muted); font-size: 14px; }
+.bar { margin-inline: 18px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ball); }
+.lcard-top { list-style: none; padding-inline: 18px; display: grid; gap: 4px; }
+.lcard-top li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 32px; align-items: baseline; gap: 8px; font-size: 15px; }
+.lcard-top .rk { font: 600 18px/1 var(--f-display); color: var(--muted); }
+.lcard-top .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.lcard-top .rec { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.lcard-top b { text-align: right; font: 600 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.lcard-none { padding-inline: 18px; color: var(--muted); font-size: 14px; }
+.lcard-sc { margin-inline: 18px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: 8px; font-size: 14px; min-width: 0; }
+.lcard-sc small { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.lcard-sc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lcard-sc b { margin-left: auto; font: 600 18px/1 var(--f-display); white-space: nowrap; }

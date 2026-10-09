@@ -1,4 +1,7 @@
   var D = JSON.parse(document.getElementById('league-data').textContent);
+  /* D.league: this league (slug, theme, short name). D.registry: every league. D.base: path to the LDHML home page. */
+  var LG = D.league || { slug: 'retro', theme: 'retro', short: 'Retro', name: 'LDHML Retro' };
+  var MARK = (D.marks && D.marks[LG.theme]) || ['#FF5B14', '#FFB48A'];
 
   /* ================= helpers ================= */
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -49,8 +52,8 @@
       scopeNoteMain: 'Each player counts only what he did for his main team (the team he played most games for). Substitute games for other teams are left out.',
       scopeNoteAll: 'Each player counts every game he played in this league, for all teams, substitute games included. This matches the totals on the official site.',
       alsoShort: 'also', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
-      teamsLede: 'All 10 teams in standings order. Open a team for its roster, substitutes and schedule.',
-      shotsLive: 'Shots on goal', clockLabel: 'Clock', openGame: 'Open the game page'
+      teamsLede: 'All {n} teams in standings order. Open a team for its roster, substitutes and schedule.',
+      shotsLive: 'Shots on goal', pickLabel: 'League', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page'
     },
     fr: {
       home: 'Accueil', standings: 'Classement', schedule: 'Calendrier', players: 'Joueurs', goalies: 'Gardiens', leaders: 'Meneurs',
@@ -89,8 +92,8 @@
       scopeNoteMain: 'Chaque joueur compte seulement ce qu’il a fait pour son équipe principale (celle pour qui il a joué le plus de matchs). Les matchs de remplacement pour d’autres équipes sont exclus.',
       scopeNoteAll: 'Chaque joueur compte tous ses matchs dans cette ligue, pour toutes les équipes, remplacements inclus. C’est ce que montre le site officiel.',
       alsoShort: 'aussi', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
-      teamsLede: 'Les 10 équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
-      shotsLive: 'Tirs au but', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match'
+      teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
+      shotsLive: 'Tirs au but', pickLabel: 'Ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match'
     }
   };
   var COLS = {
@@ -138,7 +141,13 @@
     TOP: ['#66748A', '#FFFFFF']   // Top Gun: steel silver
   };
   /* Used inside style="--tc:" + colorOf(abb): it sets the team colour and the ink together. */
-  var colorOf = function (abb) { var x = COLORS[abb] || ['#566471', '#FFFFFF']; return x[0] + ';--tx:' + x[1]; };
+  /* Only the Retro league has artwork colours. Other leagues get a stable colour made from the team code. */
+  var hashColor = function (abb) {
+    var h = 0, i;
+    for (i = 0; i < abb.length; i++) h = (h * 31 + abb.charCodeAt(i)) % 360;
+    return ['hsl(' + h + ', 52%, 38%)', '#FFFFFF'];
+  };
+  var colorOf = function (abb) { var x = (LG.slug === 'retro' && COLORS[abb]) || hashColor(String(abb || '')); return x[0] + ';--tx:' + x[1]; };
   /* Scope of the player numbers. "main": only what a player did for his main team in this league.
    * "all": everything he did in this league, for every team (substitutions included). */
   var SCOPE = 'main';
@@ -293,7 +302,7 @@
   /* ================= small components ================= */
   var ICON_EXT = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.6 10.6L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  var BALL = '<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" fill="#FF5B14"/><path d="M6 11a15 15 0 0 1 10-7" fill="none" stroke="#FFB48A" stroke-width="2" stroke-linecap="round" opacity=".7"/><g fill="#0A1218"><circle cx="18" cy="8" r="2.1"/><circle cx="18" cy="28" r="2.1"/><circle cx="8" cy="18" r="2.1"/><circle cx="28" cy="18" r="2.1"/><circle cx="11" cy="11" r="2.1"/><circle cx="25" cy="11" r="2.1"/><circle cx="11" cy="25" r="2.1"/><circle cx="25" cy="25" r="2.1"/><circle cx="18" cy="18" r="2.1"/></g></svg>';
+  var BALL = '<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" fill="' + MARK[0] + '"/><path d="M6 11a15 15 0 0 1 10-7" fill="none" stroke="' + MARK[1] + '" stroke-width="2" stroke-linecap="round" opacity=".7"/><g fill="#0A1218"><circle cx="18" cy="8" r="2.1"/><circle cx="18" cy="28" r="2.1"/><circle cx="8" cy="18" r="2.1"/><circle cx="28" cy="18" r="2.1"/><circle cx="11" cy="11" r="2.1"/><circle cx="25" cy="11" r="2.1"/><circle cx="11" cy="25" r="2.1"/><circle cx="25" cy="25" r="2.1"/><circle cx="18" cy="18" r="2.1"/></g></svg>';
 
   /* LED dot-matrix numerals, like the scoreboard on the wall of the arena. Each glyph is a grid of 7 rows. */
   var GLYPH = {

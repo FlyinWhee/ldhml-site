@@ -6,8 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const html = await readFile(path.join(root, 'dist/index.html'), 'utf8');
-const data = JSON.parse(await readFile(path.join(root, 'data/games.json'), 'utf8'));
+const html = await readFile(path.join(root, 'dist/retro/index.html'), 'utf8');
+const data = JSON.parse(await readFile(path.join(root, 'data/retro/games.json'), 'utf8'));
 const nextGame = data.find((g) => g.as == null && !g.cancelled);
 const sameDay = data.filter((g) => g.date === nextGame.date);
 const gid = nextGame.id;

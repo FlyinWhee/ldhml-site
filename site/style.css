@@ -436,35 +436,7 @@ a.chip:hover { filter: brightness(1.12); }
 @media (min-width: 900px) and (max-width: 1240px) { .gs input { width: 100px; } .nav a { font-size: 15px; padding-inline: 3px; letter-spacing: .02em; } .brand b { font-size: 26px; } .brand { gap: 6px; } .top-in { gap: 2px 8px; } }
 @media (min-width: 900px) and (max-width: 1080px) { .top-in { flex-wrap: wrap; padding-top: 10px; } .nav { flex-basis: 100%; order: 3; padding-bottom: 6px; } .tools { margin-left: auto; order: 0; padding-bottom: 6px; } .brand { padding: 0 0 6px; } .brand b { font-size: 30px; } }
 
-/* ---------- theme: Retro ----------
- * A theme is a set of tokens on :root[data-league="..."]. The default theme is the one in the first block of this file.
- * Retro takes its colours from the league logo (deep indigo, magenta, a touch of yellow) and keeps the same layout. */
-:root[data-league="retro"] {
-  --bg: #EFEDF6; --ink: #16112E; --muted: #5F5B7A; --line: #DAD6E8; --hover: #F4F2FA;
-  --panel: #130E2E; --panel-2: #1C1545; --panel-line: #352B66; --panel-ink: #F5F2FF; --panel-mute: #A8A1D0;
-  --led-off: #251B50; --ball: #DE3A93; --on-ball: #FFFFFF; --accent-text: #B3126F; --focus: #C21E84;
-  --blue: #4A3FD6; --red: #DE3A93;
-  --stripe-a: #4A3FD6; --stripe-b: #DE3A93; --stripe-c: #F6D635;
-  --shadow: 0 10px 28px rgba(19, 14, 46, .25);
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-league="retro"]:not([data-theme="light"]) {
-    --bg: #0B0820; --surface: #141030; --ink: #EAE7FA; --muted: #A29CC8; --line: #2A2352; --hover: #1A1540;
-    --panel: #0F0A28; --panel-2: #181240; --panel-line: #302760; --accent-text: #FF7CC4; --focus: #FF7CC4;
-    --blue: #8F86FF; --red: #FF6FBF; --shadow: 0 10px 28px rgba(0, 0, 0, .6);
-  }
-}
-:root[data-league="retro"][data-theme="dark"] {
-  --bg: #0B0820; --surface: #141030; --ink: #EAE7FA; --muted: #A29CC8; --line: #2A2352; --hover: #1A1540;
-  --panel: #0F0A28; --panel-2: #181240; --panel-line: #302760; --accent-text: #FF7CC4; --focus: #FF7CC4;
-  --blue: #8F86FF; --red: #FF6FBF; --shadow: 0 10px 28px rgba(0, 0, 0, .6);
-}
-:root[data-league="retro"] .brand b i { background: linear-gradient(180deg, #F6D635 8%, #DE3A93 92%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-/* A faint synthwave floor under the home scoreboards. */
-:root[data-league="retro"] .arena > .wrap { position: relative; z-index: 1; }
-:root[data-league="retro"] .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 55%; pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 72px), repeating-linear-gradient(0deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 30px);
-  -webkit-mask-image: linear-gradient(transparent, #000); mask-image: linear-gradient(transparent, #000); }
+/* Themes for the sub-leagues are generated from site/themes.mjs and added after this file. */
 
 /* ---------- teams page ---------- */
 .tcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; margin-top: 18px; }
@@ -486,3 +458,14 @@ a.chip:hover { filter: brightness(1.12); }
 .tcard-form { margin-left: auto; display: inline-flex; }
 .tcard-top1 { display: flex; align-items: baseline; gap: 8px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
 .tcard-top1 b { margin-left: auto; font: 600 20px/1 var(--f-display); }
+
+/* ---------- league picker (bottom right of every page) ---------- */
+.lgpick { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 40; }
+.lgpick label { display: block; position: relative; }
+.lgpick select { appearance: none; -webkit-appearance: none; cursor: pointer; max-width: min(72vw, 260px); padding: 10px 38px 10px 16px; border-radius: 999px;
+  border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink); box-shadow: var(--shadow);
+  font: 500 17px/1.1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+.lgpick select:hover { border-color: var(--ball); }
+.lgpick label::after { content: ""; position: absolute; right: 16px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--ball); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; }
+.lgpick option { background: var(--panel); color: var(--panel-ink); font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; }
+.foot { padding-bottom: 84px; }

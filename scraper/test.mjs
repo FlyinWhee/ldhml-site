@@ -1,6 +1,6 @@
 // Parser tests using row samples copied from the live NBHPA pages (2026-10-09).
 import assert from 'node:assert/strict';
-import { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap } from './fetch.mjs';
+import { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap } from './lib.mjs';
 
 const teams = [
   { id: '204339', abb: 'TOP' }, { id: '204208', abb: 'FLI' },

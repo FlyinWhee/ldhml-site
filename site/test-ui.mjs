@@ -6,13 +6,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const html = await readFile(path.join(root, 'dist/index.html'), 'utf8');
+const slug = process.argv[2] || 'retro';
+const html = await readFile(path.join(root, 'dist', slug, 'index.html'), 'utf8');
 const errors = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
 vc.on('error', (e) => errors.push(String(e)));
 
-const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' });
+const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' + slug + '/' });
 const w = dom.window;
 w.scrollTo = () => {};
 const wait = (ms = 15) => new Promise((r) => setTimeout(r, ms));
@@ -57,7 +58,25 @@ ids.forEach((i) => known.add('player-' + i));
 const broken = [...seen].filter((h) => !known.has(h.slice(1)));
 assert.deepEqual(broken, [], 'broken internal links: ' + broken.join(', '));
 
-// 4. content checks
+// 4. checks that hold for every league
+assert.equal(w.document.documentElement.getAttribute('data-league'), data.league.theme, 'theme attribute follows the league');
+await go('#home');
+assert.ok(w.document.getElementById('top').textContent.includes(data.league.short), 'brand shows the league name');
+assert.ok(w.document.querySelectorAll('.sbc').length >= 1, 'scoreboard shows games');
+const picker = [...w.document.querySelectorAll('#lgsel option')];
+assert.equal(picker.length, data.registry.length + 1, 'picker lists the home page and every league');
+assert.equal(picker.find((o) => o.selected).value, slug, 'picker shows the current league');
+assert.ok(w.document.querySelector('#foot a[href="../"]'), 'footer links to the LDHML home page');
+await go('#standings');
+const lead = [...data.teams].sort((x, y) => x.pos - y.pos)[0];
+assert.ok(w.document.querySelector('.tbl tbody tr').textContent.includes(lead.name), 'standings start with the leader');
+await go('#teams');
+assert.equal(w.document.querySelectorAll('.tcard').length, data.teams.length, 'one card per team');
+assert.ok(w.document.querySelector('.lede').textContent.includes(String(data.teams.length)), 'teams page says how many teams');
+assert.ok(![...w.document.querySelectorAll('a')].some((a) => /cphjoliette/.test(a.href)), 'no link to the old site');
+
+// 5. Retro-only checks (numbers from the supplied data)
+if (slug === 'retro') {
 await go('#home');
 assert.ok(w.document.getElementById('band').textContent.includes('TOP'), 'scoreboard shows teams');
 const finals = w.document.querySelectorAll('.sbc').length;
@@ -144,6 +163,8 @@ w.document.querySelector('[data-scope="all"]').click(); await wait();
 assert.equal(cells(rowOf('Mailloux'))[2], '4', 'goalie: 4 games in the league');
 w.document.querySelector('[data-scope="main"]').click(); await wait();
 
+}
+
 assert.deepEqual(errors, [], 'page errors:\n' + errors.join('\n'));
-console.log(`UI smoke test passed: ${data.teams.length} team pages, ${ids.size} player pages, ${seen.size} distinct internal links.`);
+console.log(`UI smoke test passed (${slug}): ${data.teams.length} team pages, ${ids.size} player pages, ${seen.size} distinct internal links.`);
 w.close(); process.exit(0);

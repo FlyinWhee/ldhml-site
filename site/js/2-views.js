@@ -213,7 +213,7 @@
         '<span class="tcard-stats"><span><small>' + L('gf')[0] + '</small><b>' + tm.gf + '</b></span><span><small>' + L('ga')[0] + '</small><b>' + tm.ga + '</b></span><span><small>' + L('diff')[0] + '</small><b>' + signed(tm.diff) + '</b></span><span class="tcard-form">' + formHtml(tm.id) + '</span></span>' +
         (top ? '<span class="tcard-top1"><small>' + t('points') + '</small>' + esc(top.name) + ' <b>' + top.p + '</b></span>' : '') + '</div>';
     }).join('');
-    return '<h1 class="ph">' + t('teams') + '</h1><p class="lede">' + t('teamsLede') + '</p><div class="tcards">' + cards + '</div>';
+    return '<h1 class="ph">' + t('teams') + '</h1><p class="lede">' + t('teamsLede', { n: teams.length }) + '</p><div class="tcards">' + cards + '</div>';
   }
 
   function viewTeam(r) {
@@ -522,15 +522,26 @@
   }
 
   /* ================= chrome ================= */
+  /* League picker: a native select fixed in the bottom right corner. The first option is the LDHML home page. */
+  function renderPicker() {
+    var el = $('#picker');
+    if (!el) return;
+    var reg = D.registry || [];
+    el.innerHTML = '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '">' +
+      '<option value="">' + t('allLeagues') + '</option>' +
+      reg.map(function (l) { return '<option value="' + esc(l.slug) + '"' + (l.slug === LG.slug ? ' selected' : '') + '>' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
+    $('#lgsel').addEventListener('change', function (e) { location.href = (D.base || './') + e.target.value + (e.target.value ? '/' : ''); });
+  }
   var NAV = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
   function renderChrome() {
-    $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + BALL + '<span><b>LDHML <i>Retro</i></b><small>' + esc(season()) + '</small></span></a>' +
+    $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + BALL + '<span><b>LDHML <i>' + esc(LG.short) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
       '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('search') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
       '<button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
-    $('#foot').innerHTML = '<p id="fresh" class="fresh"></p><p>' + t('footUpdated', { t: esc(fmtStamp(D.meta.fetchedAt)) }) + '</p><p>' + t('footSource')+ '</p>';
+    $('#foot').innerHTML = '<p id="fresh" class="fresh"></p><p>' + t('footUpdated', { t: esc(fmtStamp(D.meta.fetchedAt)) }) + '</p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
     document.documentElement.lang = lang;
-    document.documentElement.setAttribute('data-league', String(D.meta.category || '').toLowerCase() === 'retro' ? 'retro' : 'default');
+    document.documentElement.setAttribute('data-league', LG.theme);
+    renderPicker();
     updateFresh();
   }
 
@@ -553,10 +564,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
       if (a.getAttribute('data-nav') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    var title = 'LDHML Retro';
-    if (r.name === 'team' && T[r.id]) title = T[r.id].name + ' | LDHML Retro';
-    if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | LDHML Retro';
-    if (r.name === 'game' && gameById[r.id]) { var gg = gameById[r.id]; title = abbOfTeam(gg.away) + (played(gg) ? ' ' + gg.as + '-' + gg.hs + ' ' : ' @ ') + abbOfTeam(gg.home) + ' | LDHML Retro'; }
+    var title = LG.name;
+    if (r.name === 'team' && T[r.id]) title = T[r.id].name + ' | ' + LG.name;
+    if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | ' + LG.name;
+    if (r.name === 'game' && gameById[r.id]) { var gg = gameById[r.id]; title = abbOfTeam(gg.away) + (played(gg) ? ' ' + gg.as + '-' + gg.hs + ' ' : ' @ ') + abbOfTeam(gg.home) + ' | ' + LG.name; }
     document.title = title;
     if (!keepScroll) window.scrollTo(0, 0);
   }

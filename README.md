@@ -1,25 +1,46 @@
-# LDHML Retro Stats (proof of concept)
+# LDHML Stats (proof of concept)
 
-A fast, cross-linked stats site for the LDHML Retro league.
-Every team name and every player name is a link. Standings, schedule, scores, players, goalies and leaders are one click apart.
+A fast, cross-linked stats site for the LDHML ball hockey leagues.
+The home page lists every league. Each league has its own page, theme and data. Every team name and every player name is a link.
+
+| URL | Page |
+| --- | --- |
+| `/` | LDHML home page: one card per league, next game nights |
+| `/retro/`, `/vintage/`, `/draft/`, `/3v3-a/`, `/3v3-b/`, `/4v4-b/` | One league: standings, teams, schedule, players, goalies, leaders, live page |
+
+A picker in the bottom right corner of every page switches league. Pages work in French (default) and English.
 
 ## How it works
 
-1. `scraper/fetch.mjs` reads the data from the public NBHPA league pages. It makes about 5 requests per run, plus one for each new finished game (box scores are saved in `data/box.json` and only new games, or games from the last 3 days, are requested again) and saves JSON files in `data/`.
-2. `build.mjs` puts the JSON inside `site/template.html`. The result is one static file: `dist/index.html`.
-3. Any static host can serve that file. No server and no database are needed.
+1. `leagues.json` lists the leagues (URL slug, NBHPA category id, theme). Add a league there, then run the fetch.
+2. `scraper/fetch.mjs` reads the data of each league from the public NBHPA pages. It makes about 4 requests per league, plus one for each new finished game. The snapshot is saved in `data/<slug>/`.
+3. `build.mjs` puts each snapshot inside `site/template.html`. Each league becomes one static file, `dist/<slug>/index.html`. The home page is `dist/index.html`.
+4. Any static host can serve `dist/`. No server and no database are needed.
+
+## Themes
+
+`site/themes.mjs` holds one theme per league: CSS tokens (light and dark), the colour of the ball icon, the league name gradient and a small decoration for the top banner.
+The home page uses the default theme (the first block of `site/style.css`). To change a look, edit the tokens of one theme. Layout and components are shared.
+Only Retro has team colours taken from its artwork. Other leagues get a stable colour made from the team code.
 
 ## Commands
 
 ```
 npm install
-npm run fetch        # refresh data (skips if the data is less than 15 minutes old)
-npm run fetch:force  # refresh data now
-npm run build        # build dist/index.html
-npm test             # parser tests, build, and a click-through test of every page
+npm run fetch                 # refresh every league (skips a league if its data is less than 15 minutes old)
+node scraper/fetch.mjs retro  # refresh one league
+npm run fetch:force           # refresh now
+npm run import-raw -- raw/ldhml-raw.json   # build snapshots from a raw file saved in a browser
+npm run build                 # build dist/
+npm test                      # parser tests, build, click-through test of every page of every league, home page test, live test
 ```
 
 Open `dist/index.html` in a browser to see the site.
+
+## Refresh from your own computer
+
+GitHub's servers get HTTP 403 from admin.nbhpa.com, so the scheduled workflow keeps the last saved data. Visitors still get live data, because their browsers read the API.
+To refresh the saved data, run `npm run fetch:force` on your own computer, then commit and push `data/`.
 
 ## Data source
 
@@ -33,7 +54,7 @@ The official site shows its tables inside frames from `admin.nbhpa.com`. Those f
 | Schedule and scores | `POST /sites/site_schedule_include.php` (HTML rows) |
 | Box score of one game | `GET /sites/site_game_recap.php?game_id=...&league_id=10` (HTML: lines per player, goals with scorer and assists, penalties, shots) |
 
-The IDs for this league are `league_id=10`, `season_id=4307` (LDHML AUTOMNE 2026) and `category_id=6796` (LDHML RETRO). Change them with the `SEASON_ID` and `CATEGORY_ID` environment variables when a new season starts.
+All leagues share `league_id=10` and one season (`season_id=4307`, LDHML AUTOMNE 2026), set in `leagues.json`. Each league has its own `category_id` (Retro 6796, Vintage 3661, Draft 2433, 3v3 A 1896, 3v3 B 1909, 4v4 B 1913). When a new season starts, change `seasonId` and `seasonName`, and check the category ids on the official standings page.
 
 ## Live mode
 
@@ -66,7 +87,7 @@ Unverified until a real game (next one: see the schedule): the `status` text dur
 
 ## Automatic refresh
 
-`.github/workflows/refresh.yml` refreshes the data every 20 minutes on Wednesday nights and once a day otherwise. It then publishes the site to GitHub Pages. This workflow has not been run yet.
+`.github/workflows/refresh.yml` tries to refresh the data every day, then publishes the site to GitHub Pages. The fetch step is allowed to fail (see above). The publish step always runs.
 
 ## Known limits
 
