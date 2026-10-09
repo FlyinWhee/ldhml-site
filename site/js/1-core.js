@@ -93,7 +93,7 @@
       scopeMain: 'Équipe principale', scopeAll: 'Toutes les équipes', scopeLabel: 'Statistiques affichées',
       scopeNoteMain: 'Chaque joueur compte seulement ce qu’il a fait pour son équipe principale (celle pour qui il a joué le plus de matchs). Les matchs de remplacement pour d’autres équipes sont exclus.',
       scopeNoteAll: 'Chaque joueur compte tous ses matchs dans cette ligue, pour toutes les équipes, remplacements inclus. C’est ce que montre le site officiel.',
-      alsoShort: 'REMPL. :', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
+      alsoShort: 'SUB:', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
       teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
       shotsLive: 'Tirs au but', pickLabel: 'Ligue', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match'
     }
