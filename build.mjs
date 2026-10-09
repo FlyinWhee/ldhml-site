@@ -72,6 +72,7 @@ for (const k of logoKeys) {
   logos[k] = 'data:image/webp;base64,' + (await readFile(path.join(root, `assets/logos/${k}.webp`))).toString('base64');
   icons[k] = 'data:image/png;base64,' + (await readFile(path.join(root, `assets/logos/${k}-icon.png`))).toString('base64');
 }
+const hubIcon = 'data:image/png;base64,' + (await readFile(path.join(root, 'assets/logos/hub-icon.png'))).toString('base64');
 const registry = leagues.map(({ lg }) => ({ slug: lg.slug, name: lg.name, short: lg.short, theme: lg.theme }));
 
 // ---- home page data: a small summary of each league ----
@@ -100,7 +101,7 @@ for (const out of outDirs) {
   await mkdir(out, { recursive: true });
   const isArtifact = out.endsWith('artifact');
   // The artifact host adds its own <html> wrapper to the main page, so that one is a fragment.
-  await writeFile(path.join(out, 'index.html'), isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.' }));
+  await writeFile(path.join(out, 'index.html'), isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.' }));
   for (const { lg, data } of leagues) {
     const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null }, registry, base: '../' };
     const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
