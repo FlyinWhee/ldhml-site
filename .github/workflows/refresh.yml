@@ -1,8 +1,9 @@
 # Refresh the league data and publish the site to GitHub Pages.
 # NOT TESTED YET. Enable Pages (Settings > Pages > Source: GitHub Actions) before the first run.
 #
-# Schedule (UTC): every 20 minutes during Wednesday game nights, and once a day otherwise.
-# The scraper also skips the request if the saved data is less than 15 minutes old.
+# Schedule (UTC): once a day. The page itself refreshes live data in each visitor's browser.
+# The league server may refuse requests from GitHub's servers (HTTP 403). The fetch step then
+# fails softly: the site is still built and deployed with the last saved data.
 name: Refresh and publish
 
 on:
@@ -10,8 +11,6 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '*/20 22-23 * * 3'
-    - cron: '*/20 0-4 * * 4'
     - cron: '15 10 * * *'
 
 permissions:
@@ -34,6 +33,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Fetch the latest data
+        continue-on-error: true
         run: node scraper/fetch.mjs
       - name: Save the data snapshot
         run: |

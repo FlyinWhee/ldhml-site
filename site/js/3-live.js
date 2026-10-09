@@ -172,7 +172,8 @@
       });
     });
     /* Finished games that have no box score yet. */
-    tonight.concat(games.filter(function (g) { return g.date < todayStr() && played(g) && !D.box.games[g.id] && g.date >= new Date(nowMs() - 3 * 86400000).toISOString().slice(0, 10); })).forEach(function (g) {
+    var missing = tonight.concat(games.filter(function (g) { return g.date < todayStr() && played(g) && !D.box.games[g.id]; })).filter(function (g, i, l) { return l.indexOf(g) === i; });
+    missing.slice(0, 40).filter(function (g) { var x = LIVE.games[g.id]; return played(g) && !D.box.games[g.id] && (!x || Date.now() - (x.finalRecapAt || 0) >= 90000); }).slice(0, 2).forEach(function (g) {
       var x = LIVE.games[g.id] || (LIVE.games[g.id] = { state: 'none', next: 0, fail: 0 });
       if (played(g) && !D.box.games[g.id] && now - (x.finalRecapAt || 0) >= 90000 && LIVE.net !== 'offline') {
         steps.push(function () { x.finalRecapAt = Date.now(); return fetchRecap(g).then(function (c) { if (c) LIVE.changed = true; }, function () {}); });
