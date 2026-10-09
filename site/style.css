@@ -85,7 +85,8 @@ button, input, select { font: inherit; color: inherit; }
 .top { background: var(--panel); color: var(--panel-ink); }
 .top::after { content: ""; display: block; height: 5px; background: linear-gradient(90deg, var(--stripe-a) 0 34%, var(--stripe-b) 34% 66%, var(--stripe-c) 66% 100%); }
 .top-in { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 20px; padding-top: 10px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; padding-bottom: 6px; }
+.brand { display: flex; flex: none; align-items: center; gap: 10px; text-decoration: none; padding-bottom: 6px; }
+.brand b { white-space: nowrap; }
 .brand b { display: block; font: 600 34px/.9 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
 .brand b i { font-style: normal; color: var(--ball); }
 .brand b, .lcard-head h2 i { font-family: var(--f-brand, var(--f-display)); }
@@ -94,7 +95,7 @@ button, input, select { font: inherit; color: inherit; }
 .nav { display: flex; gap: 0; overflow-x: auto; flex-basis: 100%; order: 3; scrollbar-width: none; padding-bottom: 6px; }
 .nav::-webkit-scrollbar { display: none; }
 .nav a { position: relative; isolation: isolate; padding: 8px 8px 6px; font: 500 18px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; color: var(--panel-mute); white-space: nowrap; }
-.nav a::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; transform: skewX(-14deg); background: transparent; transition: background .15s; }
+.nav a::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; transform: skewX(-11deg); background: transparent; transition: background .15s; }
 .nav a:hover { color: var(--panel-ink); }
 .nav a[aria-current="page"] { color: var(--on-ball); }
 .nav a[aria-current="page"]::before { background: var(--ball); }
@@ -111,10 +112,20 @@ button, input, select { font: inherit; color: inherit; }
 .lang:hover { color: var(--panel-ink); }
 @media (min-width: 900px) {
   .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; }
-  .top-in { flex-wrap: nowrap; padding-top: 0; }
+  /* Narrow desktop: brand and tools on the first row, the full-size menu on its own row below. */
+  .top-in { flex-wrap: wrap; padding-top: 0; gap: 0 20px; }
   .brand { padding: 9px 0 8px; }
-  .tools { margin-left: 0; padding: 0; order: 4; }
-  .nav { flex: 1; flex-basis: auto; order: 0; padding: 0; align-self: stretch; align-items: center; }
+  .tools { margin-left: auto; padding: 0; order: 1; }
+  .nav { order: 2; flex-basis: 100%; padding: 0; overflow: visible; align-items: stretch; border-top: 1px solid var(--panel-line); }
+  .nav a { display: flex; align-items: center; padding: 0 8px; min-height: 46px; }
+  .nav a::before { inset: 0 -5px; }
+}
+/* Wide enough for everything on one row. The highlighted item fills the whole height of the bar. */
+@media (min-width: 1300px) {
+  .top-in { flex-wrap: nowrap; }
+  .tools { margin-left: 0; order: 4; }
+  .nav { order: 0; flex: 1; flex-basis: auto; border-top: 0; align-self: stretch; }
+  .nav a { padding: 0 5px; min-height: 0; letter-spacing: .05em; }
 }
 
 /* ---------- arena band (home hero) ---------- */
@@ -426,10 +437,8 @@ a.chip:hover { filter: brightness(1.12); }
 .rg li small { color: var(--panel-mute); }
 .rg li small a { color: var(--panel-mute); }
 
-@media (min-width: 761px) { .top-in { gap: 2px 14px; } .nav a { padding-inline: 5px; font-size: 16px; letter-spacing: .03em; } .gs input { width: 108px; } .brand b { font-size: 30px; } }
+@media (min-width: 761px) { .brand b { font-size: 30px; } }
 .lvs { align-items: start; }
-@media (min-width: 761px) { .top-in { gap: 2px 10px; } .nav a { padding-inline: 4px; } }
-@media (min-width: 761px) { .gs input { width: 92px; } }
 
 /* Same width for the score column in the header and in every row, so the period numbers line up. */
 .sbc-head, .sbc-row { grid-template-columns: 6px minmax(0, 1fr) repeat(var(--np, 3), 1.6rem) 64px; }
@@ -448,8 +457,6 @@ a.chip:hover { filter: brightness(1.12); }
 .also .abbs { opacity: .9; }
 .pteams a.is-main { outline: 2px solid var(--ball); outline-offset: 2px; border-radius: 3px; }
 .maintag { font-style: normal; margin-left: 8px; padding: 1px 6px; border-radius: 2px; background: var(--ink); color: var(--bg); font: 500 12px/1.4 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
-@media (min-width: 900px) and (max-width: 1400px) { .gs input { width: 100px; } .nav a { font-size: 15px; padding-inline: 3px; letter-spacing: .02em; } .brand b { font-size: 26px; } .brand { gap: 6px; } .top-in { gap: 2px 8px; } }
-@media (min-width: 900px) and (max-width: 1080px) { .top-in { flex-wrap: wrap; padding-top: 10px; } .nav { flex-basis: 100%; order: 3; padding-bottom: 6px; } .tools { margin-left: auto; order: 0; padding-bottom: 6px; } .brand { padding: 0 0 6px; } .brand b { font-size: 30px; } }
 
 /* Themes for the sub-leagues are generated from site/themes.mjs and added after this file. */
 
@@ -493,20 +500,30 @@ a.chip:hover { filter: brightness(1.12); }
 .lgpick .thm[aria-pressed="false"] i { background: transparent; border-color: var(--panel-mute); }
 @media (max-width: 420px) { .lgpick { justify-content: flex-start; } .lgpick select { max-width: 70vw; } }
 
-/* ---------- search box on desktop: opens wider over the menu when used ---------- */
+/* ---------- search box on desktop ---------- */
 @media (min-width: 900px) {
-  .gs { width: 116px; height: 38px; }
-  .gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; transition: width .15s ease; font-size: 15px; }
-  .gs input:focus { width: 340px; z-index: 5; box-shadow: var(--shadow); }
-  .gs svg { z-index: 6; }
-  .gs:focus-within svg { left: -230px; }
+  .gs { width: 230px; height: 38px; }
+  .gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; font-size: 15px; transition: width .15s ease; }
+  .gs input:focus { box-shadow: var(--shadow); }
 }
-/* On large screens the page is wider, so the search box is wider at rest too. */
-@media (min-width: 1360px) {
-  .wrap { max-width: 1320px; }
-  .gs { width: 230px; }
-  .gs:focus-within svg { left: 10px; }
-  .gs input:focus { width: 100%; }
+@media (min-width: 1300px) and (max-width: 1459px) { .brand b { font-size: 26px; } .brand { gap: 8px; } .top-in { gap: 0 14px; } }
+/* One-row header: the search box is small at rest and opens wider over the menu when used. */
+@media (min-width: 1300px) {
+  .gs { width: 40px; }
+  .gs input { padding-left: 0; cursor: pointer; }
+  .gs input::placeholder { color: transparent; }
+  .gs svg { z-index: 6; left: 11px; }
+  .gs input:focus { width: 340px; z-index: 5; padding-left: 32px; cursor: text; }
+  .gs input:focus::placeholder { color: var(--panel-mute); }
+  .gs:focus-within svg { left: -289px; }
+}
+@media (min-width: 1360px) { .wrap { max-width: 1320px; } }
+@media (min-width: 1460px) {
+  .gs { width: 130px; }
+  .gs input { padding-left: 32px; cursor: text; }
+  .gs input::placeholder { color: var(--panel-mute); }
+  .gs svg { left: 10px; }
+  .gs:focus-within svg { left: -199px; }
 }
 @media (prefers-reduced-motion: reduce) { .gs input { transition: none; } }
 

@@ -191,8 +191,11 @@
   }
 
   function viewLeaders() {
-    return '<h1 class="ph">' + t('leaders') + '</h1><p class="lede">' + t('leadersLede') + '</p>' + scopeBar() + '<div class="sec"><div class="lg">' +
-      leaderDefs().map(function (d) { return leaderCard(d, 10); }).join('') + '</div></div>';
+    var defs = leaderDefs();
+    var cards = function (goalie) { return defs.filter(function (d) { return !!d.goalie === goalie; }).map(function (d) { return leaderCard(d, 10); }).join(''); };
+    return '<h1 class="ph">' + t('leaders') + '</h1><p class="lede">' + t('leadersLede') + '</p>' + scopeBar() +
+      '<section class="sec"><div class="sec-h"><h2>' + t('skaters') + '</h2></div><div class="lg">' + cards(false) + '</div></section>' +
+      '<section class="sec"><div class="sec-h"><h2>' + t('goalies') + '</h2></div><div class="lg">' + cards(true) + '</div></section>';
   }
 
   /* Scope switch: main team (default) or every team of this league. Shown only when somebody played for more than one team. */
