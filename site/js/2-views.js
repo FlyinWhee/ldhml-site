@@ -152,7 +152,13 @@
       if (f.mode === 'upcoming') return !played(g);
       return true;
     });
-    if (f.mode === 'results') list = list.slice().reverse();
+    if (f.mode === 'results') {
+      // Newest day first, but the games of one day stay in time order.
+      var tkey = function (g) { var m = String(g.time || '').match(/(\d+):(\d+)/); return m ? ('0' + m[1]).slice(-2) + ':' + m[2] : '99:99'; };
+      list = list.map(function (g, i) { return { g: g, i: i }; }).sort(function (a, b) {
+        return a.g.date < b.g.date ? 1 : a.g.date > b.g.date ? -1 : (tkey(a.g) < tkey(b.g) ? -1 : tkey(a.g) > tkey(b.g) ? 1 : a.i - b.i);
+      }).map(function (x) { return x.g; });
+    }
     var modes = [['upcoming', t('upcoming')], ['results', t('results')], ['all', t('all')]];
     var seg = '<div class="seg" role="group">' + modes.map(function (m) { return '<button type="button" data-set="sched.mode=' + m[0] + '" aria-pressed="' + (f.mode === m[0]) + '">' + m[1] + '</button>'; }).join('') + '</div>';
     var sel = '<select id="sched-team" class="ctl" data-bind="sched.team" aria-label="' + t('team') + '"><option value="">' + t('allTeams') + '</option>' +
