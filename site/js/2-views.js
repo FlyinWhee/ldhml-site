@@ -371,18 +371,23 @@
     for (var k = 0; k <= nP; k++) svg += '<line class="pb" x1="' + X(k * per) + '" y1="22" x2="' + X(k * per) + '" y2="' + (H - 22) + '"/>';
     svg += '<line class="axis" x1="' + X(0) + '" y1="' + axis + '" x2="' + X(nP * per) + '" y2="' + axis + '"/>';
     for (var i = 0; i < nP; i++) svg += '<text x="' + X(i * per + per / 2) + '" y="' + (H - 4) + '" text-anchor="middle">' + perLabel(i) + '</text>';
-    var awayAbb = abbOfTeam(g.away), last = [-99, -99], level = [0, 0];
+    var awayAbb = abbOfTeam(g.away), homeAbb = abbOfTeam(g.home), last = [-99, -99], level = [0, 0], tally = [0, 0];
+    var nameOf = function (id) { return (people[id] || {}).name || BOX.names[id] || ''; };
     b.goals.slice().sort(function (x, y) { return ((x[0] - 1) * per + per - clockSec(x[1])) - ((y[0] - 1) * per + per - clockSec(y[1])); }).forEach(function (go) {
       var side = go[2] === awayAbb ? 0 : 1;
       var x = X((go[0] - 1) * per + per - Math.min(per, clockSec(go[1])));
       level[side] = (x - last[side] < 17) ? Math.min(2, level[side] + 1) : 0;
       last[side] = x;
+      tally[side]++;
       var y = side === 0 ? axis - 20 - level[side] * 17 : axis + 20 + level[side] * 17;
-      var who = go[3] ? ((people[go[3]] || {}).name || BOX.names[go[3]] || '') : t('teamGoal');
-      var tip = go[1] + ' ' + perLabel(go[0] - 1) + ' ' + go[2] + ' · ' + who;
-      var inner = '<line class="stem" x1="' + x + '" y1="' + axis + '" x2="' + x + '" y2="' + y + '"/><circle class="dot" cx="' + x + '" cy="' + y + '" r="7.5"/><title>' + esc(tip) + '</title>';
-      var wrap = '<g style="--tc:' + colorOf(go[2]) + '">' + inner + '</g>';
-      svg += (go[3] && people[go[3]]) ? '<a href="#player-' + go[3] + '">' + wrap + '</a>' : wrap;
+      var who = go[3] ? nameOf(go[3]) : t('teamGoal');
+      var assists = (go[4] || []).map(nameOf).filter(Boolean).join(', ');
+      /* The tooltip is built from these data attributes (see showTip). */
+      var tipAttrs = ' data-tip-time="' + esc(go[1] + ' · ' + perLabel(go[0] - 1)) + '" data-tip-who="' + esc(who) + '" data-tip-ast="' + esc(assists) + '"' +
+        ' data-tip-team="' + esc(go[2]) + '" data-tip-score="' + esc(awayAbb + ' ' + tally[0] + ' - ' + tally[1] + ' ' + homeAbb) + '"';
+      var inner = '<line class="stem" x1="' + x + '" y1="' + axis + '" x2="' + x + '" y2="' + y + '"/><circle class="dot" cx="' + x + '" cy="' + y + '" r="7.5"/><circle class="hit" cx="' + x + '" cy="' + y + '" r="13"/>';
+      var wrap = '<g class="goal" style="--tc:' + colorOf(go[2]) + '"' + tipAttrs + '>' + inner + '</g>';
+      svg += (go[3] && people[go[3]]) ? '<a href="#player-' + go[3] + '" aria-label="' + esc(go[1] + ' ' + go[2] + ' ' + who) + '">' + wrap + '</a>' : wrap;
     });
     svg += '</svg>';
     var lg = function (id) { var tm = T[id]; return '<span class="tcell">' + crest(tm.abb, 'sm') + esc(tm.name) + '</span>'; };
@@ -527,7 +532,8 @@
     var el = $('#picker');
     if (!el) return;
     var reg = D.registry || [];
-    el.innerHTML = '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '">' +
+    el.innerHTML = '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
+      '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '">' +
       '<option value="">' + t('allLeagues') + '</option>' +
       reg.map(function (l) { return '<option value="' + esc(l.slug) + '"' + (l.slug === LG.slug ? ' selected' : '') + '>' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
     $('#lgsel').addEventListener('change', function (e) { location.href = (D.base || './') + e.target.value + (e.target.value ? '/' : ''); });
@@ -540,7 +546,7 @@
       '<button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
     $('#foot').innerHTML = '<p id="fresh" class="fresh"></p><p>' + t('footUpdated', { t: esc(fmtStamp(D.meta.fetchedAt)) }) + '</p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
     document.documentElement.lang = lang;
-    document.documentElement.setAttribute('data-league', LG.theme);
+    document.documentElement.setAttribute('data-league', THEME_ON ? LG.theme : 'default');
     renderPicker();
     updateFresh();
   }
@@ -607,12 +613,43 @@
     $('#gs').setAttribute('aria-activedescendant', items[activeIdx].id);
   }
 
+  /* ================= goal tooltip (box score timeline) ================= */
+  var tipEl = null;
+  function showTip(g) {
+    if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
+    var a = function (k) { return g.getAttribute('data-tip-' + k) || ''; };
+    tipEl.style.setProperty('--tc', colorOf(a('team')).split(';')[0]);
+    tipEl.innerHTML = '<span class="tip-time">' + esc(a('time')) + '</span><b>' + esc(a('who')) + '</b>' +
+      '<span class="tip-team"><i></i>' + esc(a('team')) + '</span>' +
+      (a('ast') ? '<span class="tip-ast">' + t('assistsLabel') + ' ' + esc(a('ast')) + '</span>' : '') +
+      '<span class="tip-score">' + esc(a('score')) + '</span>';
+    tipEl.hidden = false;
+    var r = g.getBoundingClientRect(), tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+    var left = Math.max(8, Math.min(window.innerWidth - tw - 8, r.left + r.width / 2 - tw / 2));
+    var top = r.top - th - 10;
+    if (top < 8) top = r.bottom + 10;
+    tipEl.style.left = left + 'px'; tipEl.style.top = top + 'px';
+  }
+  function hideTip() { if (tipEl) tipEl.hidden = true; }
+  var tipTarget = function (e) { return e.target && e.target.closest ? e.target.closest('.timeline g.goal') : null; };
+  document.addEventListener('mouseover', function (e) { var g = tipTarget(e); if (g) showTip(g); });
+  document.addEventListener('mouseout', function (e) { if (tipTarget(e)) hideTip(); });
+  document.addEventListener('focusin', function (e) { var g = tipTarget(e) || (e.target.querySelector && e.target.querySelector('g.goal')); if (g) showTip(g); });
+  document.addEventListener('focusout', hideTip);
+  window.addEventListener('hashchange', hideTip);
+  window.addEventListener('scroll', hideTip, true);
+
   /* ================= events ================= */
   function setPath(p, v) { var a = p.split('.'); ui[a[0]][a[1]] = v; }
   document.addEventListener('click', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-set],[data-sort],[data-lang],[data-scope]') : null;
+    var el = e.target.closest ? e.target.closest('[data-set],[data-sort],[data-lang],[data-scope],[data-theme-toggle]') : null;
     if (el) {
-      if (el.hasAttribute('data-set')) { var kv = el.getAttribute('data-set').split('='); setPath(kv[0], kv[1]); render(true); }
+      if (el.hasAttribute('data-theme-toggle')) {
+        THEME_ON = !THEME_ON;
+        try { localStorage.setItem('ldhml-theme', THEME_ON ? 'on' : 'off'); } catch (err) { /* ignore */ }
+        document.documentElement.setAttribute('data-league', THEME_ON ? LG.theme : 'default');
+        renderPicker();
+      } else if (el.hasAttribute('data-set')) { var kv = el.getAttribute('data-set').split('='); setPath(kv[0], kv[1]); render(true); }
       else if (el.hasAttribute('data-scope')) {
         SCOPE = el.getAttribute('data-scope');
         try { localStorage.setItem('ldhml-scope', SCOPE); } catch (err) { /* ignore */ }

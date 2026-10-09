@@ -8,25 +8,25 @@
 //   decor        : extra CSS for the page, with {T} for the theme selector
 export const THEMES = {
   retro: {
-    // Colours of the league logo: deep indigo, magenta, a touch of yellow.
+    // Same family as the league logo (indigo, magenta, a touch of gold), but calm: dusty tones, a very faint floor, no loud gradient.
     mark: ['#FF5B14', '#FFB48A'],
-    brand: 'linear-gradient(180deg, #F6D635 8%, #DE3A93 92%)',
+    brand: 'linear-gradient(180deg, #E9DFB4 8%, #D79BC0 92%)',
     light: {
-      bg: '#EFEDF6', ink: '#16112E', muted: '#5F5B7A', line: '#DAD6E8', hover: '#F4F2FA',
-      panel: '#130E2E', 'panel-2': '#1C1545', 'panel-line': '#352B66', 'panel-ink': '#F5F2FF', 'panel-mute': '#A8A1D0',
-      'led-off': '#251B50', ball: '#DE3A93', 'on-ball': '#FFFFFF', 'accent-text': '#B3126F', focus: '#C21E84',
-      blue: '#4A3FD6', red: '#DE3A93', 'stripe-a': '#4A3FD6', 'stripe-b': '#DE3A93', 'stripe-c': '#F6D635',
-      shadow: '0 10px 28px rgba(19, 14, 46, .25)'
+      bg: '#F0EFF5', ink: '#1B1A2E', muted: '#5E5C72', line: '#DEDCE8', hover: '#F5F4F9',
+      panel: '#1C1A33', 'panel-2': '#25223F', 'panel-line': '#3A3760', 'panel-ink': '#F3F2F8', 'panel-mute': '#A9A7C4',
+      'led-off': '#2A2745', ball: '#B65A92', 'on-ball': '#FFFFFF', 'accent-text': '#8F2F6B', focus: '#A33F7C',
+      blue: '#5A55B5', red: '#B65A92', 'stripe-a': '#5A55B5', 'stripe-b': '#B65A92', 'stripe-c': '#C9B263',
+      shadow: '0 10px 28px rgba(28, 26, 51, .22)'
     },
     dark: {
-      bg: '#0B0820', surface: '#141030', ink: '#EAE7FA', muted: '#A29CC8', line: '#2A2352', hover: '#1A1540',
-      panel: '#0F0A28', 'panel-2': '#181240', 'panel-line': '#302760', 'accent-text': '#FF7CC4', focus: '#FF7CC4',
-      blue: '#8F86FF', red: '#FF6FBF', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
+      bg: '#0E0D1A', surface: '#17162A', ink: '#E9E8F2', muted: '#A3A1BD', line: '#2B2947', hover: '#1D1C33',
+      panel: '#12112A', 'panel-2': '#1B1A38', 'panel-line': '#34325B', 'accent-text': '#E69BC8', focus: '#E69BC8',
+      blue: '#9591E0', red: '#D98AB8', shadow: '0 10px 28px rgba(0, 0, 0, .55)'
     },
     decor: `
 {T} .arena > .wrap { position: relative; z-index: 1; }
-{T} .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 55%; pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 72px), repeating-linear-gradient(0deg, rgba(222, 58, 147, .16) 0 1px, transparent 1px 30px);
+{T} .arena::after { content: ""; position: absolute; inset: auto 0 0 0; height: 45%; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(182, 90, 146, .06) 0 1px, transparent 1px 84px), repeating-linear-gradient(0deg, rgba(182, 90, 146, .06) 0 1px, transparent 1px 34px);
   -webkit-mask-image: linear-gradient(transparent, #000); mask-image: linear-gradient(transparent, #000); }`
   },
 
@@ -155,7 +155,7 @@ export function themeCss() {
   let css = '';
   for (const [name, th] of Object.entries(THEMES)) {
     const T = `:root[data-league="${name}"]`;
-    const light = { ...th.light, ...(th.font ? { 'f-display': th.font } : {}) };
+    const light = { ...th.light, 'mark-a': th.mark[0], 'mark-b': th.mark[1], ...(th.font ? { 'f-display': th.font } : {}) };
     css += `/* theme: ${name} */\n${T} { ${tokens(light)} }\n`;
     css += `@media (prefers-color-scheme: dark) { ${T}:not([data-theme="light"]) { ${tokens(th.dark)} } }\n`;
     css += `${T}[data-theme="dark"] { ${tokens(th.dark)} }\n`;
@@ -165,8 +165,6 @@ export function themeCss() {
   return css;
 }
 
-// Ball icon colours, read by the browser code.
-export const MARKS = Object.fromEntries(Object.entries(THEMES).map(([k, v]) => [k, v.mark]));
 
 // Scoped tokens for the league cards on the LDHML home page (the page itself uses the default theme).
 export function cardCss() {
@@ -176,6 +174,7 @@ export function cardCss() {
     const t = {};
     for (const k of keys) if (th.light[k]) t[k] = th.light[k];
     if (th.font) t['f-display'] = th.font;
+    t['mark-a'] = th.mark[0]; t['mark-b'] = th.mark[1];
     t.brand = th.brand;
     css += `[data-t="${name}"] { ${tokens(t)} }\n`;
   }

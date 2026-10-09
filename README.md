@@ -21,7 +21,15 @@ A picker in the bottom right corner of every page switches league. Pages work in
 
 `site/themes.mjs` holds one theme per league: CSS tokens (light and dark), the colour of the ball icon, the league name gradient and a small decoration for the top banner.
 The home page uses the default theme (the first block of `site/style.css`). To change a look, edit the tokens of one theme. Layout and components are shared.
+The "Theme" button next to the league picker switches the theme off for the default look. The choice is saved in the browser and applies to every page.
 Only Retro has team colours taken from its artwork. Other leagues get a stable colour made from the team code.
+
+## Names
+
+The league data mixes `TOP GUN`, `Top Gun` and `Groupe BEI`. `niceName()` in `shared/parsers.js` fixes this when the page loads (snapshot and live data alike):
+a name written only in capitals becomes normal case (`Top Gun`, `Martin Gagnon`), a name that already has lower case letters is left alone (`Groupe BEI`),
+and a letter after a hyphen is capitalised (`Jean-Pierre`). Words of 1 to 2 letters, words without vowels and 3 letter words that are not consonant-vowel-consonant stay in capitals
+(`GI`, `TMNT`, `EDB`). If a 3 letter word is wrongly kept in capitals, add it to `WORDS` in that file.
 
 ## Commands
 

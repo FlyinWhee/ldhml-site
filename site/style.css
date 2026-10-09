@@ -17,6 +17,8 @@
   --led-on: #FF6A1A;
   --led-off: #1A2832;
   --ball: #FF5B14;
+  --mark-a: #FF5B14;
+  --mark-b: #FFB48A;
   --on-ball: #170800;
   --accent-text: #B33C08;
   --blue: #1F5FD3;
@@ -326,7 +328,19 @@ a.chip:hover { filter: brightness(1.12); }
 .timeline .pb { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 4; }
 .timeline .stem { stroke: var(--tc); stroke-width: 2; }
 .timeline .dot { fill: var(--tc); stroke: var(--surface); stroke-width: 2; }
-.timeline a:hover .dot { stroke: var(--ink); }
+.timeline .hit { fill: transparent; }
+.timeline g.goal { cursor: pointer; }
+.timeline g.goal:hover .dot, .timeline a:focus-visible .dot { stroke: var(--ink); stroke-width: 3; }
+.timeline a:focus-visible { outline: none; }
+.tip { position: fixed; z-index: 70; display: grid; gap: 2px; max-width: min(280px, calc(100vw - 16px)); padding: 9px 12px; border-radius: 3px; pointer-events: none;
+  background: var(--panel); color: var(--panel-ink); border: 1px solid var(--panel-line); border-left: 5px solid var(--tc, var(--ball)); box-shadow: var(--shadow); font-size: 13.5px; line-height: 1.3; }
+.tip[hidden] { display: none; }
+.tip b { font: 600 20px/1.1 var(--f-display); letter-spacing: .02em; }
+.tip-time, .tip-team, .tip-score { font: 500 14px/1.2 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-mute); }
+.tip-team { display: flex; align-items: center; gap: 6px; }
+.tip-team i { width: 9px; height: 9px; border-radius: 50%; background: var(--tc, var(--ball)); }
+.tip-ast { color: var(--panel-ink); opacity: .85; }
+.tip-score { color: var(--ball); }
 .timeline .legend { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); padding: 2px 4px 6px; }
 .goals { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 3px; }
 .goals h3 { font: 500 18px/1 var(--f-display); letter-spacing: .12em; text-transform: uppercase; padding: 9px 14px 7px; background: var(--hover); border-bottom: 1px solid var(--line); color: var(--muted); }
@@ -460,7 +474,7 @@ a.chip:hover { filter: brightness(1.12); }
 .tcard-top1 b { margin-left: auto; font: 600 20px/1 var(--f-display); }
 
 /* ---------- league picker (bottom right of every page) ---------- */
-.lgpick { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 40; }
+.lgpick { display: flex; align-items: center; gap: 8px; position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 40; }
 .lgpick label { display: block; position: relative; }
 .lgpick select { appearance: none; -webkit-appearance: none; cursor: pointer; max-width: min(72vw, 260px); padding: 10px 38px 10px 16px; border-radius: 999px;
   border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink); box-shadow: var(--shadow);
@@ -469,3 +483,11 @@ a.chip:hover { filter: brightness(1.12); }
 .lgpick label::after { content: ""; position: absolute; right: 16px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--ball); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; }
 .lgpick option { background: var(--panel); color: var(--panel-ink); font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; }
 .foot { padding-bottom: 84px; }
+
+.lgpick .thm { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink);
+  box-shadow: var(--shadow); font: 500 17px/1.1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+.lgpick .thm:hover { border-color: var(--ball); }
+.lgpick .thm i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ball); background: linear-gradient(90deg, var(--ball) 50%, transparent 50%); }
+.lgpick .thm[aria-pressed="false"] { color: var(--panel-mute); }
+.lgpick .thm[aria-pressed="false"] i { background: transparent; border-color: var(--panel-mute); }
+@media (max-width: 420px) { .lgpick .thm { padding-inline: 11px; } .lgpick select { max-width: 52vw; } }

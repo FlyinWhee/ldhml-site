@@ -46,3 +46,6 @@ main#main { padding-block: 0; }
 .lcard-sc small { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .lcard-sc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcard-sc b { margin-left: auto; font: 600 18px/1 var(--f-display); white-space: nowrap; }
+
+/* Themes switched off: the cards use the default look. */
+[data-t="default"] { --brand: linear-gradient(var(--ball), var(--ball)); }

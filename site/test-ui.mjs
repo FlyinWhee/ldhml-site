@@ -32,12 +32,12 @@ for (const h of ['#home', '#standings', '#schedule', '#players', '#goalies', '#l
   hrefs().forEach((x) => seen.add(x));
 }
 // 2. every team and every person page renders
-for (const t of data.teams) { await go('#team-' + t.id); assert.ok(main().includes(t.name), `team page ${t.name}`); hrefs().forEach((x) => seen.add(x)); }
+for (const t of data.teams) { await go('#team-' + t.id); assert.ok(main().toLowerCase().includes(t.name.toLowerCase()), `team page ${t.name}`); hrefs().forEach((x) => seen.add(x)); }
 const ids = new Set([...data.players, ...data.goalies].map((p) => p.id));
 for (const id of ids) {
   await go('#player-' + id);
   const name = [...data.players, ...data.goalies].find((p) => p.id === id).name;
-  assert.ok(main().includes(name), `player page ${name}`);
+  assert.ok(main().toLowerCase().includes(name.toLowerCase().replace(/\s+/g, ' ')), `player page ${name}`);
   hrefs().forEach((x) => seen.add(x));
 }
 // 2b. every game page renders (played games show a box score)
@@ -69,11 +69,36 @@ assert.equal(picker.find((o) => o.selected).value, slug, 'picker shows the curre
 assert.ok(w.document.querySelector('#foot a[href="../"]'), 'footer links to the LDHML home page');
 await go('#standings');
 const lead = [...data.teams].sort((x, y) => x.pos - y.pos)[0];
-assert.ok(w.document.querySelector('.tbl tbody tr').textContent.includes(lead.name), 'standings start with the leader');
+assert.ok(w.document.querySelector('.tbl tbody tr').textContent.toLowerCase().includes(lead.name.toLowerCase()), 'standings start with the leader');
 await go('#teams');
 assert.equal(w.document.querySelectorAll('.tcard').length, data.teams.length, 'one card per team');
 assert.ok(w.document.querySelector('.lede').textContent.includes(String(data.teams.length)), 'teams page says how many teams');
 assert.ok(![...w.document.querySelectorAll('a')].some((a) => /cphjoliette/.test(a.href)), 'no link to the old site');
+
+// 4b. names: no all-capital team or player name is left (acronyms of 1 to 3 letters and words without vowels are allowed)
+const shown = [...w.document.querySelectorAll('.tbl tbody tr td:nth-child(2)')].map((x) => x.textContent);
+await go('#teams');
+const teamNames = [...w.document.querySelectorAll('.tcard-link')].map((x) => x.textContent);
+for (const n of teamNames) assert.ok(!/^[A-ZÀ-Ý][A-ZÀ-Ý ]{3,}$/.test(n) || !/[AEIOUY]/.test(n.replace(/ /g, '')), 'team name still in capitals: ' + n);
+// 4c. theme switch
+await go('#home');
+assert.equal(w.document.documentElement.getAttribute('data-league'), data.league.theme);
+w.document.querySelector('[data-theme-toggle]').click(); await wait();
+assert.equal(w.document.documentElement.getAttribute('data-league'), 'default', 'theme can be switched off');
+assert.equal(w.document.querySelector('[data-theme-toggle]').getAttribute('aria-pressed'), 'false');
+w.document.querySelector('[data-theme-toggle]').click(); await wait();
+assert.equal(w.document.documentElement.getAttribute('data-league'), data.league.theme, 'theme can be switched on again');
+
+// 4d. goal tooltip on the timeline of a played game with goals
+const gp = data.games.find((g) => data.box.games[g.id] && data.box.games[g.id].goals.length);
+await go('#game-' + gp.id);
+const goal = w.document.querySelector('.timeline g.goal');
+assert.ok(goal && goal.getAttribute('data-tip-who'), 'timeline goals carry tooltip data');
+goal.dispatchEvent(new w.MouseEvent('mouseover', { bubbles: true })); await wait();
+const tip = w.document.querySelector('.tip');
+assert.ok(tip && !tip.hidden && /\d/.test(tip.textContent) && tip.textContent.includes(goal.getAttribute('data-tip-who')), 'tooltip shows scorer and time');
+goal.dispatchEvent(new w.MouseEvent('mouseout', { bubbles: true })); await wait();
+assert.ok(w.document.querySelector('.tip').hidden, 'tooltip hides');
 
 // 5. Retro-only checks (numbers from the supplied data)
 if (slug === 'retro') {
@@ -96,7 +121,7 @@ assert.equal(w.document.querySelectorAll('.tbl tbody tr').length, 2, 'accent-ins
 w.document.querySelector('[data-set="players.sex=f"]').click(); await wait();
 assert.equal(w.document.querySelectorAll('.tbl tbody tr').length, 2, 'women filter keeps both');
 const gs = w.document.getElementById('gs'); gs.value = 'gagnon'; gs.dispatchEvent(new w.Event('input', { bubbles: true })); await wait();
-assert.ok(w.document.querySelector('.gs-item') && /MARTIN GAGNON/.test(w.document.querySelector('.gs-item').textContent), 'global search finds a player');
+assert.ok(w.document.querySelector('.gs-item') && /Martin Gagnon/.test(w.document.querySelector('.gs-item').textContent), 'global search finds a player');
 assert.ok(/Classement/.test(w.document.getElementById('top').textContent), 'French is the default language');
 assert.equal(w.document.documentElement.lang, 'fr');
 w.document.querySelector('[data-lang]').click(); await wait();

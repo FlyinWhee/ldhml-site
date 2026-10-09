@@ -1,6 +1,7 @@
 // Parser tests using row samples copied from the live NBHPA pages (2026-10-09).
 import assert from 'node:assert/strict';
 import { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap } from './lib.mjs';
+const niceName = globalThis.LDParsers.niceName;
 
 const teams = [
   { id: '204339', abb: 'TOP' }, { id: '204208', abb: 'FLI' },
@@ -117,3 +118,14 @@ assert.deepEqual(rc.game.pens, [[2, '11:05', 'FLI', '544401', 'mineure'], [2, '0
 assert.equal(rc.names['310215'], 'M. JOBIN');
 
 console.log('All parser tests passed.');
+
+// ---- name normalisation ----
+const cases = {
+  'TOP GUN': 'Top Gun', 'GI JOE': 'GI Joe', 'TMNT': 'TMNT', 'EDB': 'EDB', 'EMZ': 'EMZ', 'JETS': 'Jets', 'DEUX TEMPS': 'Deux Temps',
+  'CÂLINOURS': 'Câlinours', 'MARTIN GAGNON': 'Martin Gagnon', 'JEAN-PIERRE BACON': 'Jean-Pierre Bacon',
+  'Groupe BEI': 'Groupe BEI', 'Ghostbusters': 'Ghostbusters', 'ZZ Plotz': 'ZZ Plotz', 'Boostés - Vintage': 'Boostés - Vintage',
+  'Jean-pierre Bacon': 'Jean-Pierre Bacon', 'Martin St-jean': 'Martin St-Jean', 'Draft G. Paré': 'Draft G. Paré'
+};
+for (const [from, to] of Object.entries(cases)) assert.equal(niceName(from), to, `${from} -> ${to}`);
+assert.equal(niceName(niceName('TOP GUN')), 'Top Gun', 'normalising twice changes nothing');
+console.log('Name tests passed.');

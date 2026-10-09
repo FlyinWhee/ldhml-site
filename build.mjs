@@ -6,7 +6,11 @@
 import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { themeCss, cardCss, MARKS } from './site/themes.mjs';
+import { themeCss, cardCss } from './site/themes.mjs';
+
+globalThis.DOMParser ??= class {}; // the parsers need a DOMParser only when they parse HTML
+await import('./shared/parsers.js');
+const nice = globalThis.LDParsers.niceName;
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const read = async (p) => readFile(path.join(root, p), 'utf8');
@@ -71,13 +75,13 @@ const summary = leagues.map(({ lg, data }) => {
   return {
     slug: lg.slug, name: lg.name, short: lg.short, theme: lg.theme, categoryId: lg.categoryId,
     teams: data.teams.length, played: played.length, total: data.games.filter((g) => !g.cancelled).length,
-    top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ name: t.name, pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
-    scorer: scorer && scorer.p > 0 ? { name: scorer.name, p: scorer.p } : null,
+    top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ name: nice(t.name), pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
+    scorer: scorer && scorer.p > 0 ? { name: nice(scorer.name), p: scorer.p } : null,
     upcoming: data.games.filter((g) => !(g.as != null && g.hs != null) && !g.cancelled).map((g) => ({ date: g.date, time: g.time, away: teamName[g.away]?.abb, home: teamName[g.home]?.abb })),
     fetchedAt: data.meta.fetchedAt
   };
 });
-const hubData = { leagueId: cfg.leagueId, seasonId: cfg.seasonId, season: cfg.seasonName, marks: MARKS, leagues: summary };
+const hubData = { leagueId: cfg.leagueId, seasonId: cfg.seasonId, season: cfg.seasonName, leagues: summary };
 
 // ---- write ----
 const outDirs = [path.join(root, 'dist'), path.join(root, 'dist/artifact')];
@@ -91,7 +95,7 @@ for (const out of outDirs) {
   // The artifact host adds its own <html> wrapper to the main page, so that one is a fragment.
   await writeFile(path.join(out, 'index.html'), isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.' }));
   for (const { lg, data } of leagues) {
-    const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name }, registry, base: '../', marks: MARKS };
+    const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name }, registry, base: '../' };
     const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
     const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.` });
     await mkdir(path.join(out, lg.slug), { recursive: true });

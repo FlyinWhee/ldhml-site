@@ -13,6 +13,30 @@
   var parseHtml = function (html) { return new DOMParser().parseFromString(html, 'text/html'); };
   var all = function (el, sel) { return Array.prototype.slice.call(el.querySelectorAll(sel)); };
 
+  /* ---------- names ----------
+   * The league data mixes "TOP GUN", "Top Gun" and "Groupe BEI". A name that is written in capitals only is turned into
+   * normal case, word by word. A name that already has lower case letters is never changed, except for a letter after a hyphen
+   * ("Jean-pierre" becomes "Jean-Pierre"). Short words that look like an acronym stay in capitals: "GI", "EDB", "TMNT".
+   * A 3 letter word is a real word only if it is consonant-vowel-consonant ("TOP", "GUN"). */
+  var VOWEL = /[aeiouyàâäéèêëîïôöùûüœ]/i;
+  var CVC = /^[bcdfghjklmnpqrstvwxz][aeiouy][bcdfghjklmnpqrstvwxz]$/i;
+  /* 3 letter words that are not consonant-vowel-consonant but are real words (add more here when a team needs it). */
+  var WORDS = /^(joe|les|des|the|and|roi|ice|red|ski|zoo|rue|ami|eau|oie|ail)$/i;
+  var PARTICLE = /^(de|du|la|le|et)$/;
+  function fixWord(w, off) {
+    var lw = w.toLowerCase();
+    if (w.length <= 2) return off > 0 && PARTICLE.test(lw) ? lw : w;
+    if (!VOWEL.test(w)) return w;
+    if (w.length === 3 && !CVC.test(w) && !WORDS.test(w)) return w;
+    return w.charAt(0) + lw.slice(1);
+  }
+  function niceName(name) {
+    var s = clean(name);
+    var letters = s.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, '');
+    if (letters && letters === letters.toUpperCase()) s = s.replace(/[A-Za-zÀ-ÖØ-öø-ÿ]+/g, fixWord);
+    return s.replace(/([A-Za-zÀ-ÖØ-öø-ÿ])-([a-zà-öø-ÿ])/g, function (m, a, b) { return a + '-' + b.toUpperCase(); });
+  }
+
   /* ---------- standings: JSON from /table_data.php ---------- */
   function parseStandings(json) {
     var rows = Object.keys(json).map(function (k) { return json[k]; }).filter(function (v) { return v && Array.isArray(v.values); });
@@ -188,5 +212,5 @@
     };
   }
 
-  root.LDParsers = { parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive };
+  root.LDParsers = { parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive, niceName: niceName };
 })(typeof window !== 'undefined' ? window : globalThis);
