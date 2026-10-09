@@ -121,7 +121,7 @@ button, input, select { font: inherit; color: inherit; }
   .nav a::before { inset: 0 -5px; }
 }
 /* Wide enough for everything on one row. The highlighted item fills the whole height of the bar. */
-@media (min-width: 1300px) {
+@media (min-width: 1200px) {
   .top-in { flex-wrap: nowrap; }
   .tools { margin-left: 0; order: 4; }
   .nav { order: 0; flex: 1; flex-basis: auto; border-top: 0; align-self: stretch; }
@@ -492,39 +492,25 @@ a.chip:hover { filter: brightness(1.12); }
 .lgpick option { background: var(--panel); color: var(--panel-ink); font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; }
 .foot { padding-bottom: 16px; }
 
-.lgpick .thm { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink);
+.lgpick .thm, .lgpick .lgbtn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink);
   box-shadow: var(--shadow); font: 500 17px/1.1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
-.lgpick .thm:hover { border-color: var(--ball); }
+.lgpick .thm:hover, .lgpick .lgbtn:hover { border-color: var(--ball); }
 .lgpick .thm i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ball); background: linear-gradient(90deg, var(--ball) 50%, transparent 50%); }
 .lgpick .thm[aria-pressed="false"] { color: var(--panel-mute); }
 .lgpick .thm[aria-pressed="false"] i { background: transparent; border-color: var(--panel-mute); }
 @media (max-width: 420px) { .lgpick { justify-content: flex-start; } .lgpick select { max-width: 70vw; } }
 
-/* ---------- search box on desktop ---------- */
+/* ---------- search box on desktop: a magnifier that opens wider over the menu when used ---------- */
 @media (min-width: 900px) {
-  .gs { width: 230px; height: 38px; }
-  .gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; font-size: 15px; transition: width .15s ease; }
-  .gs input:focus { box-shadow: var(--shadow); }
-}
-@media (min-width: 1300px) and (max-width: 1459px) { .brand b { font-size: 26px; } .brand { gap: 8px; } .top-in { gap: 0 14px; } }
-/* One-row header: the search box is small at rest and opens wider over the menu when used. */
-@media (min-width: 1300px) {
-  .gs { width: 40px; }
-  .gs input { padding-left: 0; cursor: pointer; }
+  .gs { width: 40px; height: 38px; }
+  .gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; padding-left: 0; font-size: 15px; cursor: pointer; transition: width .15s ease; }
   .gs input::placeholder { color: transparent; }
   .gs svg { z-index: 6; left: 11px; }
-  .gs input:focus { width: 340px; z-index: 5; padding-left: 32px; cursor: text; }
+  .gs input:focus { width: 340px; z-index: 5; padding-left: 32px; cursor: text; box-shadow: var(--shadow); }
   .gs input:focus::placeholder { color: var(--panel-mute); }
   .gs:focus-within svg { left: -289px; }
 }
 @media (min-width: 1360px) { .wrap { max-width: 1320px; } }
-@media (min-width: 1460px) {
-  .gs { width: 130px; }
-  .gs input { padding-left: 32px; cursor: text; }
-  .gs input::placeholder { color: var(--panel-mute); }
-  .gs svg { left: 10px; }
-  .gs:focus-within svg { left: -199px; }
-}
 @media (prefers-reduced-motion: reduce) { .gs input { transition: none; } }
 
 /* ---------- bottom tab bar (below 900px) ---------- */
@@ -561,3 +547,4 @@ a.chip:hover { filter: brightness(1.12); }
   .dgrp .gm-teams { grid-area: teams; }
   .dgrp .gm-end { grid-area: end; flex-direction: row; align-items: center; gap: 10px; }
 }
+@media (min-width: 1200px) and (max-width: 1459px) { .brand b { font-size: 26px; } .brand { gap: 8px; } .top-in { gap: 0 14px; } }

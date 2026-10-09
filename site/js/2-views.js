@@ -542,7 +542,7 @@
     var el = $('#picker');
     if (!el) return;
     var reg = D.registry || [];
-    el.innerHTML = '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
+    el.innerHTML = '<button type="button" class="lgbtn" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + (lang === 'fr' ? 'English' : 'Français') + '</button>' + '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
       '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '">' +
       '<option value="">' + t('allLeagues') + '</option>' +
       reg.map(function (l) { return '<option value="' + esc(l.slug) + '"' + (l.slug === LG.slug ? ' selected' : '') + '>' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
@@ -581,7 +581,7 @@
     $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + (LG.logo ? '<img class="mk-logo" src="' + LG.logo + '" alt="" width="52" height="44">' : BALL) + '<span><b>LDHML <i>' + esc(LG.short) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
       '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('searchPh') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
-      '<button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
+      '</div></div>';
     renderTabbar();
     $('#foot').innerHTML = '<p id="fresh" class="fresh" hidden></p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
     document.documentElement.lang = lang;

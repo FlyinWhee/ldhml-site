@@ -98,9 +98,8 @@ function render() {
   document.documentElement.lang = lang;
   document.documentElement.setAttribute('data-league', 'default');
   $('#top').innerHTML = '';
-  var langBtn = '<button class="lang hub-lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button>';
   var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
-  $('#main').innerHTML = '<div class="arena hero">' + langBtn + '<div class="wrap hub-hero">' +
+  $('#main').innerHTML = '<div class="arena hero"><div class="wrap hub-hero">' +
     (H.logos && H.logos.hero ? '<img class="hero-logo" src="' + H.logos.hero + '" alt="" width="693" height="747">' : '') +
     '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
     '<div class="wrap hub-body">' + nightHtml() + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + H.leagues.map(cardHtml).join('') + '</div></div>';
@@ -112,7 +111,7 @@ function render() {
 
 function renderPicker() {
   var el = $('#picker');
-  el.innerHTML = '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
+  el.innerHTML = '<button type="button" class="lgbtn" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + (lang === 'fr' ? 'English' : 'Français') + '</button>' + '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
     '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '"><option value="" selected>' + t('all') + '</option>' +
     H.leagues.map(function (l) { return '<option value="' + esc(l.slug) + '">' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
   $('#lgsel').addEventListener('change', function (e) { if (e.target.value) location.href = e.target.value + '/'; });
