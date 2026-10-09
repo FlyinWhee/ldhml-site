@@ -121,9 +121,8 @@
     var heroDate = hasToday ? today : (lastDate || nextDate);
     var heroGames = heroDate ? games.filter(function (g) { return g.date === heroDate; }) : [];
     var nextLine = (lastDate && nextDate && nextDate !== heroDate) ? '<p class="nextup">' + t('nextNight') + ': <a href="#schedule">' + esc(fmtDay(nextDate)) + '</a>, ' + plural(games.filter(function (g) { return g.date === nextDate; }).length, 'game', 'games') + '</p>' : '';
-    var band = heroDate ? '<div class="arena"><div class="wrap"><div class="arena-head"><div><h1>' + esc(fmtDay(heroDate)) + '</h1><p class="sub">' +
-      (hasToday ? t('tonight', { n: heroGames.length }) + '. ' : lastDate ? t('finals', { n: heroGames.length }) + '. ' : '') + t('progress', { p: playedGames.length, n: games.filter(function (g) { return !g.cancelled; }).length, g: totalGoals }) +
-      '</p></div>' + nextLine + '</div><div class="sb-grid">' + heroGames.map(sbCard).join('') + '</div></div></div>' : '';
+    var band = heroDate ? '<div class="arena"><div class="wrap"><div class="arena-head"><div><h1>' + esc(fmtDay(heroDate)) + '</h1>' + (hasToday ? '<p class="sub">' + t('tonight', { n: heroGames.length }) + '</p>' : '') +
+      '</div>' + nextLine + '</div><div class="sb-grid">' + heroGames.map(sbCard).join('') + '</div></div></div>' : '';
 
     var nextGames = nextDate && nextDate !== heroDate ? games.filter(function (g) { return g.date === nextDate && !played(g); }) : [];
     var nextHtml = nextGames.length ? '<section class="sec"><div class="sec-h"><h2>' + t('nextGames') + '</h2><a href="#schedule">' + t('fullSchedule') + '</a></div><h3 class="day">' + esc(fmtDay(nextDate)) + '</h3><div class="gms">' + nextGames.map(function (g) { return gameBlock(g); }).join('') + '</div></section>' : '';
