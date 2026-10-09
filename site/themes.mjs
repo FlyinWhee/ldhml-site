@@ -31,32 +31,25 @@ export const THEMES = {
   },
 
   vintage: {
-    // Old wool sweaters and a wooden scoreboard: parchment, walnut, burgundy, brass.
+    // Old hockey programme: faded paper, navy and brick red. Only the league name keeps the serif face.
     mark: ['#B88A2E', '#F2D8A0'],
     brand: 'linear-gradient(180deg, #F0D58C 10%, #C99A3A 90%)',
-    font: "'Playfair Display', 'Georgia', 'Times New Roman', serif",
+    brandFont: "'Playfair Display', 'Georgia', 'Times New Roman', serif",
     light: {
-      bg: '#EFE6D2', surface: '#FBF7EC', ink: '#2A1D14', muted: '#6E5D4C', line: '#DACBAE', hover: '#F5EEDC',
-      panel: '#2A1B12', 'panel-2': '#36251A', 'panel-line': '#5A4230', 'panel-ink': '#F6EDD8', 'panel-mute': '#BFA98A',
-      'led-on': '#E9B949', 'led-off': '#3A281B', ball: '#B88A2E', 'on-ball': '#1E1305', 'accent-text': '#8E2430', focus: '#8E2430',
-      blue: '#1F3A5F', red: '#8E2430', good: '#2F6B3A', bad: '#8E2430',
-      'stripe-a': '#8E2430', 'stripe-b': '#D9B45A', 'stripe-c': '#8E2430',
-      shadow: '0 10px 28px rgba(42, 27, 18, .28)'
+      bg: '#F2F0EA', surface: '#FFFFFF', ink: '#1F2933', muted: '#5F6B76', line: '#DDD9CE', hover: '#F7F5F0',
+      panel: '#1E2A3A', 'panel-2': '#283749', 'panel-line': '#3C4D63', 'panel-ink': '#F4F2EC', 'panel-mute': '#A9B4C2',
+      'led-on': '#E9B949', 'led-off': '#2B3A4E', ball: '#B88A2E', 'on-ball': '#1E1305', 'accent-text': '#9A3B32', focus: '#9A3B32',
+      blue: '#2F4B73', red: '#A4443A', good: '#2F6B3A', bad: '#A4443A',
+      'stripe-a': '#A4443A', 'stripe-b': '#D9C9A0', 'stripe-c': '#A4443A',
+      shadow: '0 10px 28px rgba(30, 42, 58, .22)'
     },
     dark: {
-      bg: '#15100B', surface: '#1E1710', ink: '#F0E6D2', muted: '#B5A388', line: '#3A2D20', hover: '#261C13',
-      panel: '#100B07', 'panel-2': '#1A130C', 'panel-line': '#46341F', 'accent-text': '#E0707B', focus: '#E0B35C',
-      blue: '#7FA3D6', red: '#E0707B', good: '#7BBF88', bad: '#E0707B', shadow: '0 10px 28px rgba(0, 0, 0, .6)'
+      bg: '#0F1620', surface: '#17212D', ink: '#ECEAE3', muted: '#A2AEBB', line: '#273444', hover: '#1C2735',
+      panel: '#0B111A', 'panel-2': '#131C28', 'panel-line': '#2D3C50', 'accent-text': '#E58A80', focus: '#E0B35C',
+      blue: '#8FB0DC', red: '#E58A80', good: '#7BBF88', bad: '#E58A80', shadow: '0 10px 28px rgba(0, 0, 0, .55)'
     },
     decor: `
-{T} .arena > .wrap { position: relative; z-index: 1; }
-{T} .arena::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(217, 180, 90, .09) 0 2px, transparent 2px 14px);
-  border-bottom: 3px double rgba(217, 180, 90, .55); }
-{T} .brand b, {T} .arena h1, {T} .ph { font-weight: 800; letter-spacing: .02em; }
-{T} .arena h1 { font-size: clamp(34px, 6.4vw, 78px); }
-{T} .nav a { font-weight: 600; letter-spacing: 0; font-size: 15px; }
-{T} .brand b { font-size: 26px; }`
+{T} .brand b { font-size: 25px; }`
   },
 
   draft: {
@@ -155,7 +148,7 @@ export function themeCss() {
   let css = '';
   for (const [name, th] of Object.entries(THEMES)) {
     const T = `:root[data-league="${name}"]`;
-    const light = { ...th.light, 'mark-a': th.mark[0], 'mark-b': th.mark[1], ...(th.font ? { 'f-display': th.font } : {}) };
+    const light = { ...th.light, 'mark-a': th.mark[0], 'mark-b': th.mark[1], ...(th.brandFont ? { 'f-brand': th.brandFont } : {}) };
     css += `/* theme: ${name} */\n${T} { ${tokens(light)} }\n`;
     css += `@media (prefers-color-scheme: dark) { ${T}:not([data-theme="light"]) { ${tokens(th.dark)} } }\n`;
     css += `${T}[data-theme="dark"] { ${tokens(th.dark)} }\n`;
@@ -173,7 +166,7 @@ export function cardCss() {
   for (const [name, th] of Object.entries(THEMES)) {
     const t = {};
     for (const k of keys) if (th.light[k]) t[k] = th.light[k];
-    if (th.font) t['f-display'] = th.font;
+    if (th.brandFont) t['f-brand'] = th.brandFont;
     t['mark-a'] = th.mark[0]; t['mark-b'] = th.mark[1];
     t.brand = th.brand;
     css += `[data-t="${name}"] { ${tokens(t)} }\n`;

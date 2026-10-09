@@ -88,6 +88,7 @@ button, input, select { font: inherit; color: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; padding-bottom: 6px; }
 .brand b { display: block; font: 600 34px/.9 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
 .brand b i { font-style: normal; color: var(--ball); }
+.brand b, .lcard-head h2 i { font-family: var(--f-brand, var(--f-display)); }
 .brand small { display: block; font: 500 12.5px/1.2 var(--f-text); color: var(--panel-mute); margin-top: 3px; }
 .tools { display: flex; align-items: center; gap: 8px; margin-left: auto; padding-bottom: 6px; }
 .nav { display: flex; gap: 0; overflow-x: auto; flex-basis: 100%; order: 3; scrollbar-width: none; padding-bottom: 6px; }
@@ -474,7 +475,7 @@ a.chip:hover { filter: brightness(1.12); }
 .tcard-top1 b { margin-left: auto; font: 600 20px/1 var(--f-display); }
 
 /* ---------- league picker (bottom right of every page) ---------- */
-.lgpick { display: flex; align-items: center; gap: 8px; position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 40; }
+.lgpick { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; max-width: 1180px; margin: 0 auto; padding: 0 16px max(28px, env(safe-area-inset-bottom, 0px)); }
 .lgpick label { display: block; position: relative; }
 .lgpick select { appearance: none; -webkit-appearance: none; cursor: pointer; max-width: min(72vw, 260px); padding: 10px 38px 10px 16px; border-radius: 999px;
   border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink); box-shadow: var(--shadow);
@@ -482,7 +483,7 @@ a.chip:hover { filter: brightness(1.12); }
 .lgpick select:hover { border-color: var(--ball); }
 .lgpick label::after { content: ""; position: absolute; right: 16px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--ball); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; }
 .lgpick option { background: var(--panel); color: var(--panel-ink); font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; }
-.foot { padding-bottom: 84px; }
+.foot { padding-bottom: 16px; }
 
 .lgpick .thm { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--panel-ink);
   box-shadow: var(--shadow); font: 500 17px/1.1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
@@ -490,4 +491,4 @@ a.chip:hover { filter: brightness(1.12); }
 .lgpick .thm i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ball); background: linear-gradient(90deg, var(--ball) 50%, transparent 50%); }
 .lgpick .thm[aria-pressed="false"] { color: var(--panel-mute); }
 .lgpick .thm[aria-pressed="false"] i { background: transparent; border-color: var(--panel-mute); }
-@media (max-width: 420px) { .lgpick .thm { padding-inline: 11px; } .lgpick select { max-width: 52vw; } }
+@media (max-width: 420px) { .lgpick { justify-content: flex-start; } .lgpick select { max-width: 70vw; } }

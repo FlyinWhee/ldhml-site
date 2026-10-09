@@ -43,7 +43,7 @@ main#main { padding-block: 0; }
 .lcard-top b { text-align: right; font: 600 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .lcard-none { padding-inline: 18px; color: var(--muted); font-size: 14px; }
 .lcard-sc { margin-inline: 18px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: 8px; font-size: 14px; min-width: 0; }
-.lcard-sc small { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.lcard-sc small { flex: none; white-space: nowrap; font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .lcard-sc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcard-sc b { margin-left: auto; font: 600 18px/1 var(--f-display); white-space: nowrap; }
 
