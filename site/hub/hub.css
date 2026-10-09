@@ -84,3 +84,5 @@ main#main { padding-block: 0; }
 #top:empty { display: none; }
 .hub-lang { position: absolute; z-index: 3; top: 14px; right: max(16px, calc((100vw - 1180px) / 2 + 16px)); background: rgba(10, 18, 24, .55); backdrop-filter: blur(4px); }
 @media (max-width: 899px) { .arena.hero > .wrap { padding-block: 402px 26px; } }
+
+.hub-season { margin: 0 0 10px; font: 600 clamp(26px, 5vw, 38px)/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--panel-ink); text-shadow: 0 2px 12px rgba(0,0,0,.8); }
