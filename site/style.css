@@ -444,8 +444,8 @@ a.chip:hover { filter: brightness(1.12); }
 .scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 14px 0 0; }
 .scope-l { font: 500 16px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .scope-n { flex-basis: 100%; margin: 0; }
-.also { display: inline-flex; gap: 4px; align-items: center; margin-left: 8px; color: var(--muted); font-size: 12.5px; }
-.also .abbs { opacity: .75; }
+.also { display: inline-flex; gap: 5px; align-items: center; margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); color: var(--muted); font: 500 13px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.also .abbs { opacity: .9; }
 .pteams a.is-main { outline: 2px solid var(--ball); outline-offset: 2px; border-radius: 3px; }
 .maintag { font-style: normal; margin-left: 8px; padding: 1px 6px; border-radius: 2px; background: var(--ink); color: var(--bg); font: 500 12px/1.4 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
 @media (min-width: 900px) and (max-width: 1240px) { .gs input { width: 100px; } .nav a { font-size: 15px; padding-inline: 3px; letter-spacing: .02em; } .brand b { font-size: 26px; } .brand { gap: 6px; } .top-in { gap: 2px 8px; } }

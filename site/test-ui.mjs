@@ -154,7 +154,7 @@ const rowOf = (name) => [...w.document.querySelectorAll('.tbl tbody tr')].find((
 const cells = (tr) => [...tr.children].map((c) => c.textContent.trim());
 assert.ok(w.document.querySelector('.scope [data-scope="main"][aria-pressed="true"]'), 'main team is the default scope');
 const pil = rowOf('Tommy Pilotte');
-assert.ok(/TOP/.test(cells(pil)[2]) && /aussi|also/.test(cells(pil)[2]), 'main team shown first, other team tagged');
+assert.ok(/TOP/.test(cells(pil)[2]) && /rempl|sub/i.test(cells(pil)[2]), 'main team shown first, other team tagged');
 assert.equal(cells(pil)[3], '4', 'Pilotte: 4 games with his main team');
 assert.equal(cells(pil)[4], '3', 'Pilotte: 3 goals with his main team');
 w.document.querySelector('[data-scope="all"]').click(); await wait();

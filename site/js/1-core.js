@@ -33,7 +33,7 @@
       leadersLede: 'Top 10 in each category. Per-game and goalie leaders need at least 2 games played.',
       skaters: 'Skaters', record: 'Record', pts: 'Points', gf: 'Goals for', ga: 'Goals against', diff: 'Goal difference', gfpg: 'Goals per game',
       leagueRank: 'League rank', last5: 'Last 5 games', scheduleResults: 'Schedule and results', officialTeam: 'Official team page',
-      alsoPlayed: 'Also played for', rating: 'Rating', skaterStats: 'Skater stats', goalieStats: 'Goalie stats', combined: 'Stats combine every team this person played for this season.',
+      alsoPlayed: 'Subbed for', rating: 'Rating', skaterStats: 'Skater stats', goalieStats: 'Goalie stats', combined: 'Stats combine every team this person played for this season.',
       notFound: 'Page not found', notFoundText: 'This page does not exist in the current snapshot.', backHome: 'Back to the home page',
       noGames: 'No games match these filters.', noPlayers: 'No players match these filters.', noData: 'No data yet.',
       footUpdated: 'Data updated: {t}', footSource: 'Unofficial preview. All numbers come from the public NBHPA league data.',
@@ -53,7 +53,7 @@
       scopeMain: 'Main team', scopeAll: 'All teams', scopeLabel: 'Stats shown',
       scopeNoteMain: 'Each player counts only what he did for his main team (the team he played most games for). Substitute games for other teams are left out.',
       scopeNoteAll: 'Each player counts every game he played in this league, for all teams, substitute games included. This matches the totals on the official site.',
-      alsoShort: 'also', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
+      alsoShort: 'SUB:', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
       teamsLede: 'All {n} teams in standings order. Open a team for its roster, substitutes and schedule.',
       shotsLive: 'Shots on goal', pickLabel: 'League', assistsLabel: 'Assists:', themeLabel: 'Theme', themeTipOff: 'Switch off the league theme (default look)', themeTipOn: 'Switch the league theme on', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page'
     },
@@ -73,7 +73,7 @@
       leadersLede: 'Les 10 meilleurs de chaque catégorie. Les moyennes par match et les gardiens exigent au moins 2 matchs joués.',
       skaters: 'Joueurs', record: 'Fiche', pts: 'Points', gf: 'Buts pour', ga: 'Buts contre', diff: 'Différentiel', gfpg: 'Buts par match',
       leagueRank: 'Rang dans la ligue', last5: '5 derniers matchs', scheduleResults: 'Calendrier et résultats', officialTeam: 'Page officielle de l’équipe',
-      alsoPlayed: 'A aussi joué pour', rating: 'Cote', skaterStats: 'Statistiques de joueur', goalieStats: 'Statistiques de gardien', combined: 'Les statistiques additionnent toutes les équipes pour lesquelles cette personne a joué cette saison.',
+      alsoPlayed: 'Remplaçant pour', rating: 'Cote', skaterStats: 'Statistiques de joueur', goalieStats: 'Statistiques de gardien', combined: 'Les statistiques additionnent toutes les équipes pour lesquelles cette personne a joué cette saison.',
       notFound: 'Page introuvable', notFoundText: 'Cette page n’existe pas dans les données actuelles.', backHome: 'Retour à l’accueil',
       noGames: 'Aucun match ne correspond à ces filtres.', noPlayers: 'Aucun joueur ne correspond à ces filtres.', noData: 'Aucune donnée pour le moment.',
       footUpdated: 'Données mises à jour : {t}', footSource: 'Aperçu non officiel. Tous les chiffres viennent des données publiques de la ligue (NBHPA).',
@@ -93,7 +93,7 @@
       scopeMain: 'Équipe principale', scopeAll: 'Toutes les équipes', scopeLabel: 'Statistiques affichées',
       scopeNoteMain: 'Chaque joueur compte seulement ce qu’il a fait pour son équipe principale (celle pour qui il a joué le plus de matchs). Les matchs de remplacement pour d’autres équipes sont exclus.',
       scopeNoteAll: 'Chaque joueur compte tous ses matchs dans cette ligue, pour toutes les équipes, remplacements inclus. C’est ce que montre le site officiel.',
-      alsoShort: 'aussi', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
+      alsoShort: 'REMPL. :', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
       teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
       shotsLive: 'Tirs au but', pickLabel: 'Ligue', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match'
     }
