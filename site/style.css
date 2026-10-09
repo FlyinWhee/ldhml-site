@@ -503,15 +503,13 @@ a.chip:hover { filter: brightness(1.12); }
 @media (max-width: 420px) { .lgpick { justify-content: flex-start; } .lgpick select { max-width: 70vw; } }
 
 /* ---------- search box on desktop: a magnifier that opens wider over the menu when used ---------- */
-@media (min-width: 900px) {
-  .gs { width: 40px; height: 38px; }
-  .gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; padding-left: 0; font-size: 15px; cursor: pointer; transition: width .15s ease; }
-  .gs input::placeholder { color: transparent; }
-  .gs svg { z-index: 6; left: 11px; }
-  .gs input:focus { width: 340px; z-index: 5; padding-left: 32px; cursor: text; box-shadow: var(--shadow); }
-  .gs input:focus::placeholder { color: var(--panel-mute); }
-  .gs:focus-within svg { left: -289px; }
-}
+.gs { --gsw: min(340px, calc(100vw - 32px)); width: 40px; height: 38px; }
+.gs input { position: absolute; right: 0; top: 0; width: 100%; height: 100%; max-width: none; padding-left: 0; font-size: 16px; cursor: pointer; transition: width .15s ease; }
+.gs input::placeholder { color: transparent; }
+.gs svg { z-index: 6; left: 11px; }
+.gs input:focus { background: var(--panel); width: var(--gsw); z-index: 5; padding-left: 32px; cursor: text; box-shadow: var(--shadow); }
+.gs input:focus::placeholder { color: var(--panel-mute); }
+.gs:focus-within svg { left: calc(51px - var(--gsw)); }
 @media (min-width: 1360px) { .wrap { max-width: 1320px; } }
 @media (prefers-reduced-motion: reduce) { .gs input { transition: none; } }
 
@@ -549,3 +547,17 @@ a.chip:hover { filter: brightness(1.12); }
   .dgrp .gm-teams { grid-area: teams; }
   .dgrp .gm-end { grid-area: end; flex-direction: row; align-items: center; gap: 10px; }
 }
+
+/* ---------- phone header: logo, name and magnifier on one row ---------- */
+@media (max-width: 899px) {
+  .top-in { flex-wrap: nowrap; gap: 0 10px; }
+  .brand { flex: 1 1 auto; min-width: 0; }
+  .brand b { font-size: clamp(24px, 7.4vw, 34px); }
+  .brand > span, .brand > div { min-width: 0; }
+  .tools { margin-left: 0; flex: none; }
+}
+/* ---------- schedule: date headings stay on one line; days are spaced apart ---------- */
+.dgrp { margin-top: 30px; }
+.dgrp:first-of-type { margin-top: 0; }
+.day { white-space: nowrap; overflow: hidden; min-width: 0; }
+@media (min-width: 900px) { .dgrp { margin-top: 26px; } .dgrp:first-of-type { margin-top: 0; } }

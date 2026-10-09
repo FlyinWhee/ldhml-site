@@ -52,8 +52,7 @@
       if (g.date !== cur) {
         if (cur !== null) out += '</div></section>';
         cur = g.date;
-        var n = list.filter(function (x) { return x.date === cur; }).length;
-        out += '<section class="dgrp"><h3 class="day">' + esc(fmtDay(cur)) + '<small>' + plural(n, 'game', 'games') + '</small></h3><div class="gms">';
+        out += '<section class="dgrp"><h3 class="day">' + esc(fmtDay(cur)) + '</h3><div class="gms">';
       }
       out += gameBlock(g);
     });
