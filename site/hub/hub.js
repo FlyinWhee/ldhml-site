@@ -97,7 +97,7 @@ function cardHtml(l) {
 function render() {
   document.documentElement.lang = lang;
   document.documentElement.setAttribute('data-league', 'default');
-  $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="./">' + BALL + '<span><b>LDHML</b><small>' + esc(season()) + '</small></span></a>' +
+  $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="./"><span><b>LDHML</b><small>' + esc(season()) + '</small></span></a>' +
     '<div class="tools hub-tools"><button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
   var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
   $('#main').innerHTML = '<div class="arena hero"><div class="wrap hub-hero">' +
