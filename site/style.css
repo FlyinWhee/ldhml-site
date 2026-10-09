@@ -448,7 +448,7 @@ a.chip:hover { filter: brightness(1.12); }
 .also .abbs { opacity: .9; }
 .pteams a.is-main { outline: 2px solid var(--ball); outline-offset: 2px; border-radius: 3px; }
 .maintag { font-style: normal; margin-left: 8px; padding: 1px 6px; border-radius: 2px; background: var(--ink); color: var(--bg); font: 500 12px/1.4 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
-@media (min-width: 900px) and (max-width: 1240px) { .gs input { width: 100px; } .nav a { font-size: 15px; padding-inline: 3px; letter-spacing: .02em; } .brand b { font-size: 26px; } .brand { gap: 6px; } .top-in { gap: 2px 8px; } }
+@media (min-width: 900px) and (max-width: 1400px) { .gs input { width: 100px; } .nav a { font-size: 15px; padding-inline: 3px; letter-spacing: .02em; } .brand b { font-size: 26px; } .brand { gap: 6px; } .top-in { gap: 2px 8px; } }
 @media (min-width: 900px) and (max-width: 1080px) { .top-in { flex-wrap: wrap; padding-top: 10px; } .nav { flex-basis: 100%; order: 3; padding-bottom: 6px; } .tools { margin-left: auto; order: 0; padding-bottom: 6px; } .brand { padding: 0 0 6px; } .brand b { font-size: 30px; } }
 
 /* Themes for the sub-leagues are generated from site/themes.mjs and added after this file. */
@@ -530,3 +530,17 @@ a.chip:hover { filter: brightness(1.12); }
 /* ---------- league logo in the header (shown with or without the theme) ---------- */
 .mk-logo { display: block; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
 @media (max-width: 899px) { .mk-logo { height: 40px; } }
+
+/* ---------- schedule on wide screens: the date on the left, the games in columns on the right ---------- */
+@media (min-width: 900px) {
+  .dgrp { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 0 24px; align-items: start; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .dgrp:first-of-type { border-top: 0; padding-top: 0; }
+  .dgrp .day { position: sticky; top: 110px; margin: 0; font-size: 30px; line-height: 1.02; }
+  .dgrp .day small { display: block; margin: 8px 0 0; }
+  .dgrp .gms { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+  .dgrp .gm { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when end" "teams teams"; align-content: start; gap: 10px 14px; padding: 12px 14px; }
+  .dgrp .gm-when { grid-area: when; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .dgrp .gm-when b { display: inline; }
+  .dgrp .gm-teams { grid-area: teams; }
+  .dgrp .gm-end { grid-area: end; flex-direction: row; align-items: center; gap: 10px; }
+}

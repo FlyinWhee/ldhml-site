@@ -383,7 +383,7 @@
   function plural(n, one, many) { return n + ' ' + (n === 1 ? t(one) : t(many)); }
 
   /* ================= sortable tables ================= */
-  var ui = { sort: {}, players: { q: '', team: '', sex: '' }, goalies: { team: '' }, sched: { mode: 'all', team: '' } };
+  var ui = { sort: {}, players: { q: '', team: '', sex: '' }, goalies: { team: '' }, sched: { mode: '', team: '' } };
 
   function dataTable(id, cols, rows, def, opts) {
     opts = opts || {};

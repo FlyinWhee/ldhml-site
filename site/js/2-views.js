@@ -50,14 +50,14 @@
     var out = '', cur = null;
     list.forEach(function (g) {
       if (g.date !== cur) {
-        if (cur !== null) out += '</div>';
+        if (cur !== null) out += '</div></section>';
         cur = g.date;
         var n = list.filter(function (x) { return x.date === cur; }).length;
-        out += '<h3 class="day">' + esc(fmtDay(cur)) + '<small>' + plural(n, 'game', 'games') + '</small></h3><div class="gms">';
+        out += '<section class="dgrp"><h3 class="day">' + esc(fmtDay(cur)) + '<small>' + plural(n, 'game', 'games') + '</small></h3><div class="gms">';
       }
       out += gameBlock(g);
     });
-    return out + '</div>';
+    return out + '</div></section>';
   }
 
   /* ================= scoreboard card (home) ================= */
@@ -145,6 +145,7 @@
 
   function viewSchedule() {
     var f = ui.sched;
+    if (!f.mode) f.mode = games.some(function (g) { return !played(g) && !g.cancelled; }) ? 'upcoming' : 'results';
     var list = games.filter(function (g) {
       if (f.team && g.away !== f.team && g.home !== f.team) return false;
       if (f.mode === 'results') return played(g);
@@ -152,7 +153,7 @@
       return true;
     });
     if (f.mode === 'results') list = list.slice().reverse();
-    var modes = [['all', t('all')], ['results', t('results')], ['upcoming', t('upcoming')]];
+    var modes = [['upcoming', t('upcoming')], ['results', t('results')], ['all', t('all')]];
     var seg = '<div class="seg" role="group">' + modes.map(function (m) { return '<button type="button" data-set="sched.mode=' + m[0] + '" aria-pressed="' + (f.mode === m[0]) + '">' + m[1] + '</button>'; }).join('') + '</div>';
     var sel = '<select id="sched-team" class="ctl" data-bind="sched.team" aria-label="' + t('team') + '"><option value="">' + t('allTeams') + '</option>' +
       teams.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return '<option value="' + x.id + '"' + (f.team === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
