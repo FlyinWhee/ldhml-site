@@ -71,12 +71,16 @@ main#main { padding-block: 0; }
 .hub-stats b { font-size: 40px; }
 @media (prefers-reduced-motion: reduce) { .hero-logo { animation: none; } }
 @media (min-width: 900px) {
-  .arena.hero { min-height: 330px; align-items: center; }
+  .arena.hero { min-height: 380px; align-items: center; }
   .arena.hero > .wrap { padding-block: 44px; }
-  .hero-logo { left: 47%; top: 50%; right: auto; width: clamp(560px, 64vw, 840px); max-width: none; transform: translateY(-50%) rotate(8deg); }
+  .hero-logo { left: 47%; top: 50%; right: auto; width: clamp(420px, 48vw, 630px); max-width: none; transform: translateY(-50%) rotate(8deg); }
   .hub-hero .sub { font-size: 24px; max-width: 26ch; }
   .hub-stats { margin-top: 18px; }
   .hub-stats b { font-size: 64px; }
   @keyframes shield-in { from { opacity: 0; transform: translateY(-50%) rotate(16deg) scale(.88); } }
   .hub-stats { gap: 8px 36px; }
 }
+
+#top:empty { display: none; }
+.hub-lang { position: absolute; z-index: 3; top: 14px; right: max(16px, calc((100vw - 1180px) / 2 + 16px)); background: rgba(10, 18, 24, .55); backdrop-filter: blur(4px); }
+@media (max-width: 899px) { .arena.hero > .wrap { padding-block: 372px 26px; } }

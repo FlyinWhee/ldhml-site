@@ -97,10 +97,10 @@ function cardHtml(l) {
 function render() {
   document.documentElement.lang = lang;
   document.documentElement.setAttribute('data-league', 'default');
-  $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="./"><span><b>LDHML</b><small>' + esc(season()) + '</small></span></a>' +
-    '<div class="tools hub-tools"><button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
+  $('#top').innerHTML = '';
+  var langBtn = '<button class="lang hub-lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button>';
   var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
-  $('#main').innerHTML = '<div class="arena hero"><div class="wrap hub-hero">' +
+  $('#main').innerHTML = '<div class="arena hero">' + langBtn + '<div class="wrap hub-hero">' +
     (H.logos && H.logos.hero ? '<img class="hero-logo" src="' + H.logos.hero + '" alt="" width="520" height="554">' : '') +
     '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><p class="sub">' + t('lead', { s: esc(season()) }) + '</p>' +
     '<ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
