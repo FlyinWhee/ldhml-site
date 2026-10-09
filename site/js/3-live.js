@@ -206,14 +206,13 @@
     if (s < 5) return t('justNow');
     return s < 90 ? t('ago', { n: s }) : t('agoMin', { n: Math.round(s / 60) });
   };
+  /* The footer says something only when live data is not available. Otherwise visitors have nothing to read there. */
   function updateFresh() {
     var el = document.getElementById('fresh'); if (!el) return;
-    var txt, cls = '';
-    if (LIVE.net === 'offline' || (typeof fetch !== 'function')) txt = t('liveOffline', { t: fmtStamp(D.meta.fetchedAt) });
-    else if (!LIVE.lastOk) txt = t('liveChecking');
-    else { txt = t('liveFresh', { a: agoText(Date.now() - LIVE.lastOk) }); cls = ' on'; }
-    el.className = 'fresh' + cls;
-    el.textContent = txt;
+    var offline = LIVE.net === 'offline' || (typeof fetch !== 'function');
+    el.hidden = !offline;
+    el.className = 'fresh';
+    el.textContent = offline ? t('liveOffline', { t: fmtStamp(D.meta.fetchedAt) }) : '';
   }
 
   function tick() {

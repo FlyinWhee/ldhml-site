@@ -544,7 +544,7 @@
       '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('search') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
       '<button class="lang" type="button" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + t('lang') + '</button></div></div>';
-    $('#foot').innerHTML = '<p id="fresh" class="fresh"></p><p>' + t('footUpdated', { t: esc(fmtStamp(D.meta.fetchedAt)) }) + '</p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
+    $('#foot').innerHTML = '<p id="fresh" class="fresh" hidden></p><p>' + t('footSource') + '</p><p><a href="' + (D.base || './') + '">' + t('footHub') + '</a></p>';
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-league', THEME_ON ? LG.theme : 'default');
     renderPicker();

@@ -104,7 +104,7 @@ function render() {
     '<ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div>' +
     '<div class="wrap hub-body">' + nightHtml() + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + H.leagues.map(cardHtml).join('') + '</div></div>';
   var stamp = H.leagues.reduce(function (m, l) { return l.fetchedAt > m ? l.fetchedAt : m; }, '');
-  $('#foot').innerHTML = '<p>' + t('footUpdated', { t: esc(fmtStamp(stamp)) }) + '</p><p>' + t('footSource') + '</p>';
+  $('#foot').innerHTML = '<p>' + t('footSource') + '</p>';
   document.title = 'LDHML | ' + season();
   renderPicker();
 }
