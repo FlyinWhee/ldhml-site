@@ -549,7 +549,7 @@
     leaders: '<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/>',
     more: '<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>'
   };
-  var TAB_MAIN = ['live', 'standings', 'teams', 'schedule', 'players'], TAB_MORE = ['goalies', 'leaders'];
+  var TAB_MAIN = ['live', 'standings', 'teams', 'schedule', 'leaders'], TAB_MORE = ['players', 'goalies'];
   function tabIcon(k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; }
   function renderTabbar() {
     var bar = $('#tabbar'), more = $('#more');
