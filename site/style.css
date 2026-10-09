@@ -532,3 +532,8 @@ a.chip:hover { filter: brightness(1.12); }
 :root:not([data-league="default"]) .brand .mk-logo { display: block; }
 :root:not([data-league="default"]) .brand .mk-logo + svg { display: none; }
 @media (max-width: 899px) { .mk-logo { height: 40px; } }
+
+.mk-generic { display: none; flex: none; height: 48px; width: auto; max-width: 62px; object-fit: contain; }
+:root[data-league="default"] .brand .mk-generic { display: block; }
+.brand .mk-logo.both { display: block; }
+@media (max-width: 899px) { .mk-generic { height: 40px; } }
