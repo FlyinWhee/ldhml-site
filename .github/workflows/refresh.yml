@@ -42,6 +42,11 @@ jobs:
         run: |
           base="${LDHML_API:-https://admin.nbhpa.com}"
           code=$(curl -s -o /dev/null -w '%{http_code}' -A 'ldhml-stats-poc/0.2' "$base/livegame_json/1" || true)
+          q='order=pts_tiebreak%20DESC&group=team_id&league_id=10&filters[][league_id]=10&filters[][season_id]=4307&category_id=6796&filters[][category_id]=6796&public_site=1&class=Standings&fields[]=team_id&fields[]=team_name&page=1'
+          for ua in 'curl/8' 'ldhml-stats-poc/0.2'; do
+            curl -sg -m 30 -A "$ua" -D /tmp/h.txt -o /tmp/b.txt "$base/table_data.php?$q" || true
+            echo "::notice::UA $ua -> $(head -1 /tmp/h.txt | tr -d '\r') | server: $(grep -i '^server:' /tmp/h.txt | tr -d '\r') | cf-ray: $(grep -i '^cf-ray:' /tmp/h.txt | tr -d '\r') | body: $(head -c 160 /tmp/b.txt | tr '\n' ' ')"
+          done
           echo "::notice::Server address: $base (variable set: $([ -n "$LDHML_API" ] && echo yes || echo no)). Test answer: HTTP $code"
 
       - name: Fetch the latest data
