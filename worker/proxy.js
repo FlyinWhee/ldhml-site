@@ -43,6 +43,14 @@ export default {
     }
     return withCors(res);
   },
+
+  // Diagnostic: a scheduled run has no outside caller. This logs what the league server answers to the Worker itself.
+  async scheduled(event, env, ctx) {
+    const q = 'order=pts_tiebreak%20DESC&group=team_id&league_id=10&filters[][league_id]=10&filters[][season_id]=4307&category_id=6796&filters[][category_id]=6796&public_site=1&class=Standings&fields[]=team_id&fields[]=team_name&page=1';
+    const r = await fetch(ORIGIN + '/table_data.php?' + q, { headers: { 'User-Agent': 'ldhml-stats-proxy/0.1 (cron test)' } });
+    const body = await r.text();
+    console.log('CRON-TEST status=' + r.status + ' mitigated=' + (r.headers.get('cf-mitigated') || '-') + ' body=' + body.slice(0, 120).replace(/\s+/g, ' '));
+  },
 };
 function withCors(res) {
   const r = new Response(res.body, res);
