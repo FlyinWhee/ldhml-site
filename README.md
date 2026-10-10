@@ -47,7 +47,7 @@ Open `dist/index.html` in a browser to see the site.
 
 ## Refresh from your own computer
 
-GitHub's servers get HTTP 403 from admin.nbhpa.com, so the scheduled workflow keeps the last saved data. Visitors still get live data, because their browsers read the API.
+The league server challenges requests from data centers (GitHub's runners, Cloudflare Workers, even a Worker cron), so no server-side job can fetch data. Only browsers on normal connections pass. Visitors still get live data, because their browsers read the API.
 To refresh the saved data, run `npm run fetch:force` on your own computer, then commit and push `data/`.
 
 ## Data source

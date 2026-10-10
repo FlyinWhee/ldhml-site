@@ -1,23 +1,16 @@
-# Refresh the league data and publish the site to GitHub Pages.
-# NOT TESTED YET. Enable Pages (Settings > Pages > Source: GitHub Actions) before the first run.
-#
-# Schedule (UTC): once a day. The page itself refreshes live data in each visitor's browser.
-# The league server may refuse requests from GitHub's servers (HTTP 403). The fetch step then
-# fails softly: the site is still built and deployed with the last saved data.
+# Build the site and publish it to GitHub Pages (on every push to main, or by hand).
+# The league server challenges requests from data centers (GitHub, Cloudflare), so this job cannot fetch data.
+# Refresh the saved snapshot from your own computer: npm run fetch:force, then commit and push data/.
+# Visitors' browsers read the live data themselves.
 name: Refresh and publish
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-  schedule:
-    - cron: '15 10 * * *'
-    # Game nights (Sunday and Wednesday, evening in Quebec = UTC late evening and early morning): once an hour.
-    - cron: '5 20-23 * * 0,3'
-    - cron: '5 0-4 * * 1,4'
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -35,37 +28,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Check the way to the league server
-        continue-on-error: true
-        env:
-          LDHML_API: ${{ vars.LDHML_API }}
-        run: |
-          base="${LDHML_API:-https://admin.nbhpa.com}"
-          code=$(curl -s -o /dev/null -w '%{http_code}' -A 'ldhml-stats-poc/0.2' "$base/livegame_json/1" || true)
-          q='order=pts_tiebreak%20DESC&group=team_id&league_id=10&filters[][league_id]=10&filters[][season_id]=4307&category_id=6796&filters[][category_id]=6796&public_site=1&class=Standings&fields[]=team_id&fields[]=team_name&page=1'
-          for ua in 'curl/8' 'ldhml-stats-poc/0.2'; do
-            curl -sg -m 30 -A "$ua" -D /tmp/h.txt -o /tmp/b.txt "$base/table_data.php?$q" || true
-            echo "::notice::UA $ua -> $(head -1 /tmp/h.txt | tr -d '\r') | server: $(grep -i '^server:' /tmp/h.txt | tr -d '\r') | cf-mitigated: $(grep -i '^cf-mitigated:' /tmp/h.txt | tr -d '\r') | body: $(head -c 160 /tmp/b.txt | tr '\n' ' ')"
-          done
-          curl -s -m 30 -D /tmp/h2.txt -o /tmp/b2.txt "$base/__ping" || true
-          echo "::notice::PING -> $(head -1 /tmp/h2.txt | tr -d '\r') | body: $(head -c 200 /tmp/b2.txt | tr '\n' ' ')"
-          echo "::notice::Server address: $base (variable set: $([ -n "$LDHML_API" ] && echo yes || echo no)). Test answer: HTTP $code"
-
-      - name: Fetch the latest data
-        continue-on-error: true
-        env:
-          # Repository variable (Settings > Secrets and variables > Actions > Variables): the address of the Cloudflare Worker.
-          LDHML_API: ${{ vars.LDHML_API }}
-        run: node scraper/fetch.mjs 2>&1 | tee /tmp/fetch.log; r=${PIPESTATUS[0]}; grep -E 'fetch failed|HTTP|skipped|teams,' /tmp/fetch.log | head -12 | while read -r l; do echo "::notice::$l"; done; exit $r
-      - name: Save the data snapshot
-        run: |
-          git config user.name "stats-bot"
-          git config user.email "stats-bot@users.noreply.github.com"
-          git add data
-          git diff --cached --quiet || (git commit -m "Update league data" && git push)
       - run: node build.mjs
-        env:
-          LDHML_API: ${{ vars.LDHML_API }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
