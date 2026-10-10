@@ -95,7 +95,7 @@ Unverified until a real game (next one: see the schedule): the `status` text dur
 
 ## Automatic refresh
 
-`.github/workflows/refresh.yml` tries to refresh the data every day, then publishes the site to GitHub Pages. The fetch step is allowed to fail (see above). The publish step always runs.
+`.github/workflows/refresh.yml` builds the site and publishes it to GitHub Pages on every push. It does not fetch data (see above). Refresh `data/` from your own computer with `npm run fetch:force`.
 
 ## Known limits
 
