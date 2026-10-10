@@ -567,3 +567,5 @@ a.chip:hover { filter: brightness(1.12); }
 /* Hover highlight must also work on the losing side (the .lose colour rules are more specific than the plain hover rules). */
 .sbc-row.lose .sbc-team:hover b, .lv-row.lose .sbc-team:hover b { color: var(--ball); }
 .gm-line.lose .tl:hover { color: var(--accent-text); }
+
+.boxload { position: fixed; left: 16px; bottom: 16px; z-index: 30; padding: 7px 12px; border-radius: 999px; font-size: 13px; color: var(--muted); background: var(--panel); border: 1px solid var(--line, rgba(128,128,128,.3)); pointer-events: none; }

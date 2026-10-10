@@ -139,6 +139,41 @@
     });
   }
 
+  /* Which box scores does the current page need, and which of them are not in the cache (or must be read again)? */
+  var BX = { fail: {}, fresh: {}, total: 0 };
+  function boxMissing(g) {
+    if (!played(g) || g.cancelled) return false;
+    if (BX.fresh[g.id]) return false;
+    var b = D.box.games[g.id];
+    if (!b) return true;
+    /* cached before the goal values were kept (older build) */
+    if ((b.goals || []).some(function (go) { return go.length < 6; })) return true;
+    /* scores can be corrected for a few days after the game, as in the scraper */
+    var since = new Date((Date.parse(D.meta.fetchedAt) || 0) - 3 * 86400000).toISOString().slice(0, 10);
+    return g.date >= since;
+  }
+  function boxNeeds(r) {
+    var pl = games.filter(played), id = r.id, set;
+    if (SCOPE === 'main' || r.name === 'standings') set = pl;
+    else if (r.name === 'game') set = pl.filter(function (g) { return g.id === id; });
+    else if (r.name === 'team') set = pl.filter(function (g) { return g.away === id || g.home === id; });
+    else if (r.name === 'player') {
+      var pp = people[id], abbs = pp ? pp.teams : [];
+      set = pl.filter(function (g) { return abbs.indexOf(abbOfTeam(g.away)) >= 0 || abbs.indexOf(abbOfTeam(g.home)) >= 0; });
+    } else if (r.name === 'home' || r.name === 'live') {
+      var last = pl.length ? pl[pl.length - 1].date : '';
+      set = pl.filter(function (g) { return g.date === last || g.date === todayStr(); });
+    } else set = [];
+    /* tonight's games always, so the stats stay right after a final */
+    set = set.concat(pl.filter(function (g) { return g.date === todayStr(); }));
+    return set.filter(function (g, i, l) { return l.indexOf(g) === i && boxMissing(g); });
+  }
+  function boxPill() {
+    var el = document.getElementById('boxload'); if (!el) return;
+    el.hidden = !BX.total || LIVE.net === 'offline';
+    if (!el.hidden) el.textContent = t('boxLoading', { n: BX.total });
+  }
+
   function run() {
     var steps = [], now = Date.now(), r = route();
     var tonight = games.filter(function (g) { return g.date === todayStr(); });
@@ -174,15 +209,20 @@
         });
       });
     });
-    /* Finished games that have no box score yet. */
-    var missing = tonight.concat(games.filter(function (g) { return g.date < todayStr() && played(g) && !D.box.games[g.id]; })).filter(function (g, i, l) { return l.indexOf(g) === i; });
-    missing.slice(0, 40).filter(function (g) { var x = LIVE.games[g.id]; return played(g) && !D.box.games[g.id] && (!x || Date.now() - (x.finalRecapAt || 0) >= 90000); }).slice(0, 2).forEach(function (g) {
-      var x = LIVE.games[g.id] || (LIVE.games[g.id] = { state: 'none', next: 0, fail: 0 });
-      if (played(g) && !D.box.games[g.id] && now - (x.finalRecapAt || 0) >= 90000 && LIVE.net !== 'offline') {
-        steps.push(function () { x.finalRecapAt = Date.now(); return fetchRecap(g).then(function (c) { if (c) LIVE.changed = true; }, function () {}); });
-      }
+    /* Box scores. The build holds a cache of them. The page compares it with the played games of the live schedule and
+     * fetches only the difference, for the games this page needs. A finished box score never changes, so a cached one is kept. */
+    var todo = boxNeeds(r).filter(function (g) { var x = BX.fail[g.id]; return !x || Date.now() >= x; });
+    BX.total = todo.length;
+    if (LIVE.net !== 'offline') todo.slice(0, 3).forEach(function (g) {
+      steps.push(function () {
+        BX.fail[g.id] = Date.now() + 120000;
+        return fetchRecap(g).then(function (c) {
+          delete BX.fail[g.id]; BX.fresh[g.id] = 1;
+          if (c) LIVE.changed = true;
+        }, function () {});
+      });
     });
-    return steps.reduce(function (p, f) { return p.then(f).then(function () { flush(); updateFresh(); }); }, Promise.resolve()).then(function () {
+    return steps.reduce(function (p, f) { return p.then(f).then(function () { flush(); updateFresh(); boxPill(); }); }, Promise.resolve()).then(function () {
       if (LIVE.settleCheck) {
         LIVE.settleCheck = false;
         var open = Object.keys(LIVE.games).some(function (id) { return LIVE.games[id].state === 'over' && gameById[id] && !played(gameById[id]); });
@@ -236,5 +276,5 @@
     setInterval(updateFresh, 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
     window.addEventListener('hashchange', function () { setTimeout(tick, 300); });
-    window.LDHML_TEST = { tick: function () { return new Promise(function (ok) { clearTimeout(liveTimer); liveBusy = false; liveLastEnd = 0; var again = function () {}; run().catch(function () {}).then(function () { flush(); updateFresh(); ok(); }); }); }, state: LIVE };
+    window.LDHML_TEST = { tick: function () { return new Promise(function (ok) { clearTimeout(liveTimer); var go = function () { if (liveBusy) { setTimeout(go, 50); return; } liveBusy = true; run().catch(function () {}).then(function () { liveBusy = false; flush(); updateFresh(); ok(); }); }; go(); }); }, state: LIVE };
   })();

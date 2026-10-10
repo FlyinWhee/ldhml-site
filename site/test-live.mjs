@@ -81,7 +81,7 @@ w.__now += 11 * 60000; await w.LDHML_TEST.tick();
 assert.ok(w.document.querySelectorAll('.tbl tbody tr').length >= 2, 'standings kept after a bad answer');
 
 // 4. politeness: no two requests closer than 300 ms, no request to staff endpoints
-for (let i = 1; i < calls.length; i++) assert.ok(calls[i].at - calls[i - 1].at >= 300, `gap between requests ${i}`);
+for (let i = 1; i < calls.length; i++) assert.ok(calls[i].at - calls[i - 1].at >= 300, `gap between requests ${i}: ${calls[i-1].u} -> ${calls[i].u} ${calls[i].at - calls[i - 1].at}`);
 assert.ok(calls.every((c) => !/socket|admin\/|livegame\/|ajax/.test(c.u)), 'only public pages are requested');
 
 // 5. the game ends: the clock says "over", the page shows the final score
