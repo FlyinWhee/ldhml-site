@@ -9,7 +9,8 @@
 import path from 'node:path';
 import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
 
-const BASE = 'https://admin.nbhpa.com';
+// LDHML_API: optional address of the Cloudflare Worker (worker/proxy.js). The league server refuses GitHub's servers but accepts the Worker.
+const BASE = (process.env.LDHML_API || 'https://admin.nbhpa.com').trim().replace(/\/+$/, '');
 const MIN_AGE_MIN = Number(process.env.MIN_AGE_MIN ?? 15);
 const DELAY = Number(process.env.DELAY_MS ?? 1500);
 const UA = 'ldhml-stats-poc/0.2 (community stats viewer; low-volume; contact: league player)';

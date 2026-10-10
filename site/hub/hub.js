@@ -3,7 +3,7 @@
 var H = JSON.parse(document.getElementById('hub-data').textContent);
 var $ = function (s, r) { return (r || document).querySelector(s); };
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-var API = 'https://admin.nbhpa.com';
+var API = String(window.LDHML_API || 'https://admin.nbhpa.com').replace(/\/+$/, '');
 var THEME_ON = true;
 try { THEME_ON = localStorage.getItem('ldhml-theme') !== 'off'; } catch (e) { /* storage can be blocked */ }
 var themeOf = function (l) { return THEME_ON ? l.theme : 'default'; };

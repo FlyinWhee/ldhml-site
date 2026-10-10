@@ -28,7 +28,11 @@ const baseCss = await read('site/style.css');
 const leagueCss = baseCss + '\n' + themeCss();
 const hubCss = baseCss + '\n' + await read('site/hub/hub.css') + '\n' + cardCss();
 
+// Optional: LDHML_API = address of the Cloudflare Worker that sits in front of the league server (see worker/proxy.js).
+// When it is set, the live requests of every visitor go through the Worker, which caches the answers for 10-60 s.
+const API = (process.env.LDHML_API || '').trim().replace(/\/+$/, '');
 const fill = (tpl, css, js, data) => {
+  if (API) js = `window.LDHML_API = ${JSON.stringify(API)};\n` + js;
   for (const key of ['/*__CSS__*/', '/*__JS__*/', '/*__DATA__*/']) if (!tpl.includes(key)) throw new Error(`Placeholder ${key} missing in template`);
   // Functions as replacements, so that "$" in the code is never read as a replacement pattern.
   return tpl.replace('/*__CSS__*/', () => css).replace('/*__JS__*/', () => js).replace('/*__DATA__*/', () => data);

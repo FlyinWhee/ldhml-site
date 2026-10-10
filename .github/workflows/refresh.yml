@@ -12,6 +12,9 @@ on:
     branches: [main]
   schedule:
     - cron: '15 10 * * *'
+    # Game nights (Sunday and Wednesday, evening in Quebec = UTC late evening and early morning): once an hour.
+    - cron: '5 20-23 * * 0,3'
+    - cron: '5 0-4 * * 1,4'
 
 permissions:
   contents: write
@@ -34,6 +37,9 @@ jobs:
       - run: npm ci
       - name: Fetch the latest data
         continue-on-error: true
+        env:
+          # Repository variable (Settings > Secrets and variables > Actions > Variables): the address of the Cloudflare Worker.
+          LDHML_API: ${{ vars.LDHML_API }}
         run: node scraper/fetch.mjs
       - name: Save the data snapshot
         run: |
@@ -42,6 +48,8 @@ jobs:
           git add data
           git diff --cached --quiet || (git commit -m "Update league data" && git push)
       - run: node build.mjs
+        env:
+          LDHML_API: ${{ vars.LDHML_API }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
