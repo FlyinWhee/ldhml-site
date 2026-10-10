@@ -16,6 +16,8 @@ export default {
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     const url = new URL(req.url);
+    // Diagnostic: answers without calling the league server. Shows where the caller comes from (as Cloudflare sees it).
+    if (url.pathname === '/__ping') return new Response(JSON.stringify({ ok: true, asn: req.cf && req.cf.asn, org: req.cf && req.cf.asOrganization, country: req.cf && req.cf.country, bot: req.cf && req.cf.botManagement && req.cf.botManagement.score }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
     const rule = ALLOW.find((r) => r.re.test(url.pathname));
     if (!rule || (req.method !== 'GET' && req.method !== 'POST')) return new Response('Not allowed', { status: 403, headers: CORS });
 
