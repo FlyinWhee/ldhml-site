@@ -343,6 +343,8 @@ a.chip:hover { filter: brightness(1.12); }
 .timeline .stem { stroke: var(--tc); stroke-width: 2; }
 .timeline .dot { fill: var(--tc); stroke: var(--surface); stroke-width: 2; }
 .timeline .hit { fill: transparent; }
+.timeline .ring { fill: none; stroke: var(--tc); stroke-width: 2.5; }
+.timeline text.num { font: 700 13px var(--f-display); letter-spacing: 0; pointer-events: none; }
 .timeline g.goal { cursor: pointer; }
 .timeline g.goal:hover .dot, .timeline a:focus-visible .dot { stroke: var(--ink); stroke-width: 3; }
 .timeline a:focus-visible { outline: none; }

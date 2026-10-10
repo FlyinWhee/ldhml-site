@@ -373,7 +373,13 @@
   /* ---- game page ---- */
   function timelineHtml(g, b) {
     var nP = periodCount(b), W = 720, pad = 18, per = 720;
-    var scale = (W - 2 * pad) / (nP * per), axis = 74, H = 150;
+    /* Black or white text, whichever reads better on the team colour. */
+    var inkOn = function (hex) {
+      var m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff';
+      var v = parseInt(m[1], 16), r = v >> 16, g2 = (v >> 8) & 255, b2 = v & 255;
+      return (0.299 * r + 0.587 * g2 + 0.114 * b2) > 150 ? '#111' : '#fff';
+    };
+    var scale = (W - 2 * pad) / (nP * per), axis = 92, H = 196;
     var X = function (s) { return pad + s * scale; };
     var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t('timeline')) + '">';
     for (var k = 0; k <= nP; k++) svg += '<line class="pb" x1="' + X(k * per) + '" y1="22" x2="' + X(k * per) + '" y2="' + (H - 22) + '"/>';
@@ -384,25 +390,25 @@
     b.goals.slice().sort(function (x, y) { return ((x[0] - 1) * per + per - clockSec(x[1])) - ((y[0] - 1) * per + per - clockSec(y[1])); }).forEach(function (go) {
       var side = go[2] === awayAbb ? 0 : 1;
       var x = X((go[0] - 1) * per + per - Math.min(per, clockSec(go[1])));
-      level[side] = (x - last[side] < 17) ? Math.min(2, level[side] + 1) : 0;
+      level[side] = (x - last[side] < 25) ? Math.min(2, level[side] + 1) : 0;
       last[side] = x;
       /* A goal counts for 2 when a woman scores in the mixed leagues. go[6] holds the value; a team goal has no known value. */
       var val = go[6] == null ? 1 : go[6];
       if (go[6] == null && b.amb && b.amb.indexOf(go[2]) >= 0) approx[side] = true;
       tally[side] += val;
-      var y = side === 0 ? axis - 20 - level[side] * 17 : axis + 20 + level[side] * 17;
+      var y = side === 0 ? axis - 26 - level[side] * 25 : axis + 26 + level[side] * 25;
       var who = (go[3] ? nameOf(go[3]) : t('teamGoal')) + (val > 1 ? ' ×' + val : '');
       var assists = (go[4] || []).map(nameOf).filter(Boolean).join(', ');
       /* The tooltip is built from these data attributes (see showTip). */
       var tipAttrs = ' data-tip-time="' + esc(go[1] + ' · ' + perLabel(go[0] - 1)) + '" data-tip-who="' + esc(who) + '" data-tip-ast="' + esc(assists) + '"' +
         ' data-tip-team="' + esc(go[2]) + '" data-tip-score="' + esc(awayAbb + ' ' + tally[0] + (approx[0] ? '+' : '') + ' - ' + tally[1] + (approx[1] ? '+' : '') + ' ' + homeAbb) + '"';
-      var inner = '<line class="stem" x1="' + x + '" y1="' + axis + '" x2="' + x + '" y2="' + y + '"/><circle class="dot" cx="' + x + '" cy="' + y + '" r="7.5"/><circle class="hit" cx="' + x + '" cy="' + y + '" r="13"/>';
+      var inner = '<line class="stem" x1="' + x + '" y1="' + axis + '" x2="' + x + '" y2="' + y + '"/>' + (val > 1 ? '<circle class="ring" cx="' + x + '" cy="' + y + '" r="15.5"/>' : '') + '<circle class="dot" cx="' + x + '" cy="' + y + '" r="11.5"/><text class="num" x="' + x + '" y="' + (y + 4.5) + '" text-anchor="middle" style="fill:' + inkOn(colorOf(go[2])) + '">' + tally[side] + (approx[side] ? '+' : '') + '</text><circle class="hit" cx="' + x + '" cy="' + y + '" r="16"/>';
       var wrap = '<g class="goal" style="--tc:' + colorOf(go[2]) + '"' + tipAttrs + '>' + inner + '</g>';
       svg += (go[3] && people[go[3]]) ? '<a href="#player-' + go[3] + '" aria-label="' + esc(go[1] + ' ' + go[2] + ' ' + who) + '">' + wrap + '</a>' : wrap;
     });
     svg += '</svg>';
     var lg = function (id) { var tm = T[id]; return '<span class="tcell">' + crest(tm.abb, 'sm') + esc(tm.name) + '</span>'; };
-    return '<div class="timeline">' + svg + '<div class="legend">' + lg(g.away) + lg(g.home) + '</div>' + (b.amb ? '<p class="note">' + t('ambNote') + '</p>' : '') + '</div>';
+    return '<div class="timeline">' + svg + '<div class="legend">' + lg(g.away) + (b.goals.some(function (x) { return x[6] > 1; }) ? '<span>' + t('dblLegend') + '</span>' : '') + lg(g.home) + '</div>' + (b.amb ? '<p class="note">' + t('ambNote') + '</p>' : '') + '</div>';
   }
   function goalsHtml(g, b) {
     var out = '', cur = 0;
