@@ -561,3 +561,7 @@ a.chip:hover { filter: brightness(1.12); }
 .dgrp:first-of-type { margin-top: 0; }
 .day { white-space: nowrap; overflow: hidden; min-width: 0; }
 @media (min-width: 900px) { .dgrp { margin-top: 26px; } .dgrp:first-of-type { margin-top: 0; } }
+
+/* Hover highlight must also work on the losing side (the .lose colour rules are more specific than the plain hover rules). */
+.sbc-row.lose .sbc-team:hover b, .lv-row.lose .sbc-team:hover b { color: var(--ball); }
+.gm-line.lose .tl:hover { color: var(--accent-text); }
