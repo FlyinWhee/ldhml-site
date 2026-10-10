@@ -475,7 +475,7 @@
     var board = '<section class="gboard"><div class="gboard-meta"><span><b>' + esc(fmtDay(g.date)) + '</b> · ' + esc(g.time) + '</span><span>' + esc(venueLine(g)) + ' · ' + status + '</span></div>' +
       head + row(g.away, g.as, g.hs, t('away')) + row(g.home, g.hs, g.as, t('home')) + shots + '</section>';
 
-    var out = '<p class="note" style="margin:0 0 14px"><a class="more" href="#schedule">' + t('schedule') + '</a></p>' + board + (lv ? liveOnIce(g, lv) : '');
+    var out = '<p class="note" style="margin:0 0 14px"><a class="more" href="#schedule">' + t('schedule') + '</a>' + feedLink(g) + '</p>' + board + (lv ? liveOnIce(g, lv) : '');
     if (!hasBox) {
       out += '<p class="note">' + (lv ? t('detailsSoon') : pl ? t('noBox') : '') + '</p>';
       return out;
@@ -511,6 +511,11 @@
     }).join('');
     return '<div class="rg"><h4>' + t('recentGoals') + '</h4><ul>' + items + '</ul></div>';
   }
+  /* Link to the official NBHPA live page of a game. Only for games on today's date (the page is empty otherwise). */
+  function feedLink(g) {
+    if (g.date !== todayStr() || g.cancelled) return '';
+    return ' <a class="more ext" href="https://admin.nbhpa.com/livegame/' + esc(g.id) + '" target="_blank" rel="noopener">' + t('officialFeed') + ' ↗</a>';
+  }
   function liveCard(g0) {
     var g = eff(g0), lv = g._live ? liveOf(g.id) : null, x = LIVE.games[g.id];
     var pl = played(g), over = pl && !lv;
@@ -525,7 +530,7 @@
     return '<article class="lv' + (lv ? ' is-live' : '') + '"><div class="lv-top"><span>' + state + '</span><span class="lv-venue">' + esc(g.time) + ' · ' + esc(venueLine(g)) + '</span></div>' + clock +
       row(g.away, g.as, g.hs, lv ? lv.sv : null) + row(g.home, g.hs, g.as, lv ? lv.sh : null) +
       (lv ? liveOnIce(g, lv) : '') + recentGoalsHtml(g) +
-      '<div class="lv-foot"><a class="more" href="#game-' + esc(g.id) + '">' + t('openGame') + '</a></div></article>';
+      '<div class="lv-foot"><a class="more" href="#game-' + esc(g.id) + '">' + t('openGame') + '</a>' + feedLink(g) + '</div></article>';
   }
   function viewLive() {
     var today = todayStr();

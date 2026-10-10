@@ -45,16 +45,6 @@ npm test                      # parser tests, build, click-through test of every
 
 Open `dist/index.html` in a browser to see the site.
 
-## Refresh from a home server (Unraid)
-
-`scripts/unraid-refresh.sh` pulls the repo, runs `node scraper/fetch.mjs` in a Node container, and pushes `data/` if it changed. The push triggers the Pages deploy.
-
-1. Clone the repo on the server (for example `/mnt/user/appdata/ldhml-site`) with a deploy key that has write access (GitHub > repo > Settings > Deploy keys > "Allow write access").
-2. In the User Scripts plugin, add the script and use a cron schedule such as `45 23 * * *`.
-3. Run it once by hand and check the log.
-
-If the server is down, nothing breaks. The site compares its cache with the live schedule and fetches the missing box scores in the visitor's browser.
-
 ## Refresh from your own computer
 
 The league server challenges requests from data centers (GitHub's runners, Cloudflare Workers, even a Worker cron), so no server-side job can fetch data. Only browsers on normal connections pass. Visitors still get live data, because their browsers read the API.

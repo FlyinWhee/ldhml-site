@@ -12,8 +12,8 @@
   })();
   var LEAGUE_ID = String(D.meta.leagueId || '10');
   var POLL = {
-    tickMs: 5000, live: 15000, pre: 45000, none: 60000, recap: 60000, timeout: 12000, gap: 1200, gapSmall: 400,
-    ttl: { standings: [300000, 120000], schedule: [600000, 180000], players: [600000, 300000], goalies: [600000, 300000] }
+    tickMs: 5000, live: 30000, pre: 90000, none: 120000, recap: 120000, timeout: 12000, gap: 1200, gapSmall: 400,
+    ttl: { standings: [600000, 300000], schedule: [900000, 300000], players: [900000, 600000], goalies: [900000, 600000] }
   };
   var NEED = {
     home: ['standings', 'schedule'], standings: ['standings', 'schedule'], schedule: ['schedule'], players: ['players'], goalies: ['goalies'],
