@@ -215,5 +215,48 @@
     };
   }
 
-  root.LDParsers = { parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive, niceName: niceName };
+
+  /* Value of each goal (goal[6]). The recap shows each scorer's running goal total, and a goal by a woman adds 2 to it
+   * in the mixed leagues, so the value of a goal is the step from the scorer's previous total. Nothing is guessed from
+   * the player's sex unless the step is not 1 or 2 (a missing earlier recap). A team goal (no scorer) has no value (null).
+   * game.amb lists the teams whose known values do not add up to the final score, so the page can mark the score as approximate. */
+  function weighGoals(box, games, teams, players) {
+    var abbOf = {}, sexOf = {}, gameOf = {};
+    teams.forEach(function (t) { abbOf[t.id] = t.abb; });
+    players.forEach(function (p) { sexOf[p.id] = p.sex; });
+    games.forEach(function (g) { gameOf[g.id] = g; });
+    var ids = Object.keys(box.games).filter(function (id) { return gameOf[id]; }).sort(function (a, b) {
+      var x = gameOf[a], y = gameOf[b];
+      return (x.date + x.time + a).localeCompare(y.date + y.time + b);
+    });
+    var last = {};
+    ids.forEach(function (id) {
+      var bg = box.games[id], g = gameOf[id], mine = {};
+      bg.goals.forEach(function (go) { if (go[3] && go[5] > 0) (mine[go[3]] = mine[go[3]] || []).push(go); });
+      Object.keys(mine).forEach(function (pid) {
+        var list = mine[pid].sort(function (a, b) { return a[5] - b[5]; }), prev = last[pid] || 0;
+        list.forEach(function (go) {
+          var step = go[5] - prev;
+          go[6] = step === 1 || step === 2 ? step : (sexOf[pid] === 'f' ? 2 : 1);
+          prev = go[5];
+        });
+        last[pid] = prev;
+      });
+      bg.goals.forEach(function (go) { if (!go[3] || !(go[5] > 0)) go[6] = null; });
+      delete bg.amb;
+      var amb = [];
+      if (bg.goals.every(function (go) { return go.length > 5; })) {
+        [['as', g.away], ['hs', g.home]].forEach(function (s) {
+          if (g[s[0]] == null) return;
+          var own = bg.goals.filter(function (go) { return go[2] === abbOf[s[1]]; });
+          var known = own.reduce(function (n, go) { return n + (go[6] == null ? 0 : go[6]); }, 0);
+          var unk = own.filter(function (go) { return go[6] == null; }).length;
+          if (known + unk !== g[s[0]]) amb.push(abbOf[s[1]]);
+        });
+      }
+      if (amb.length) bg.amb = amb;
+    });
+  }
+
+  root.LDParsers = { weighGoals: weighGoals, parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive, niceName: niceName };
 })(typeof window !== 'undefined' ? window : globalThis);

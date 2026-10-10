@@ -94,6 +94,9 @@
       var r = LDParsers.parseRecap(html);
       if (r.game.t.length !== 2) return false;
       Object.assign(D.box.names, r.names);
+      /* Work out the value of each goal (a goal by a woman counts for 2) from the other games' running totals. */
+      var wbox = { games: Object.assign({}, D.box.games) }; wbox.games[g.id] = r.game;
+      LDParsers.weighGoals(wbox, D.games, D.teams, D.players);
       var final = played(gameById[g.id] || g);
       var before = JSON.stringify(final ? D.box.games[g.id] : (LIVE.recap[g.id] || {}).game);
       if (before === JSON.stringify(r.game)) return false;
