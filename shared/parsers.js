@@ -126,7 +126,7 @@
    *   t[i].sk = [playerId, number, G, A, PIM(min), PPG, PPA, SHG, SHA, GWG, OTG]
    *   t[i].gk = [playerId, W, L, T, shotsAgainst, saves, goalsAgainst, SO, G, A, PIM(min)]
    *   sh = shots per team, pg = goals per period per team (same team order as t)
-   *   goals = [period, "mm:ss", teamAbb, scorerId|null, [assistIds]]   (null scorer = team goal)
+   *   goals = [period, "mm:ss", teamAbb, scorerId|null, [assistIds], scorer's running goal total (0 = team goal), goal value (added by the build; 1 or 2)]   (null scorer = team goal)
    *   pens  = [period, "mm:ss", teamAbb, playerId|null, kind]
    * A recap of a game that has not started has no team blocks: t is empty. */
   function parseRecap(html) {
@@ -178,7 +178,10 @@
       var sid = idOf(who, 'joueur');
       note(sid, who ? clean(who.textContent) : '');
       var ast = all(el, '.assists a').map(function (a) { var id = idOf(a, 'joueur'); note(id, clean(a.textContent)); return id; }).filter(Boolean);
-      game.goals.push([period, parts[0], parts[1], sid, ast]);
+      /* The "(n)" after the scorer is the scorer's running goal total, where a goal by a woman counts for 2.
+         It is kept (6th item) so the value of each goal can be worked out later. 0 for a team goal. */
+      var tallyM = who && who.parentNode ? /\((\d+)\)/.exec(who.parentNode.textContent.replace(who.textContent, '')) : null;
+      game.goals.push([period, parts[0], parts[1], sid, ast, tallyM ? Number(tallyM[1]) : 0]);
     });
 
     var pper = 0;

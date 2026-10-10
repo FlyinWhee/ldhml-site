@@ -18,6 +18,48 @@ export const loadLeagues = async () => JSON.parse(await readFile(path.join(ROOT,
 
 /** Turn raw responses of one league into the snapshot files. Returns { problems, out }.
  *  raw = { standings: object, players: html, goalies: html, schedule: html, recaps: { gameId: html } } */
+/* Value of each goal (goal[6]). The recap shows each scorer's running goal total, and a goal by a woman adds 2 to it
+ * in the mixed leagues, so the value of a goal is the step from the scorer's previous total. Nothing is guessed from
+ * the player's sex unless the step is not 1 or 2 (a missing earlier recap). A team goal (no scorer) has no value (null):
+ * game.amb lists the teams whose known values do not add up to the final score, so the page can mark the score as approximate. */
+export function weighGoals(box, games, teams, players) {
+  const abbOf = Object.fromEntries(teams.map((t) => [t.id, t.abb]));
+  const sexOf = Object.fromEntries(players.map((p) => [p.id, p.sex]));
+  const gameOf = Object.fromEntries(games.map((g) => [g.id, g]));
+  const ids = Object.keys(box.games).filter((id) => gameOf[id]).sort((a, b) => {
+    const x = gameOf[a], y = gameOf[b];
+    return (x.date + x.time + a).localeCompare(y.date + y.time + b);
+  });
+  const last = {};
+  for (const id of ids) {
+    const bg = box.games[id], g = gameOf[id];
+    const mine = {};
+    bg.goals.forEach((go) => { if (go[3] && go[5] > 0) (mine[go[3]] ??= []).push(go); });
+    for (const [pid, list] of Object.entries(mine)) {
+      list.sort((a, b) => a[5] - b[5]);
+      let prev = last[pid] ?? 0;
+      for (const go of list) {
+        const step = go[5] - prev;
+        go[6] = step === 1 || step === 2 ? step : (sexOf[pid] === 'f' ? 2 : 1);
+        prev = go[5];
+      }
+      last[pid] = prev;
+    }
+    bg.goals.forEach((go) => { if (!go[3] || !(go[5] > 0)) go[6] = null; });
+    delete bg.amb;
+    const amb = [];
+    if (bg.goals.every((go) => go.length > 5)) {
+      for (const [side, tid] of [['as', g.away], ['hs', g.home]]) {
+        if (g[side] == null) continue;
+        const own = bg.goals.filter((go) => go[2] === abbOf[tid]);
+        const known = own.reduce((n, go) => n + (go[6] ?? 0), 0), unk = own.filter((go) => go[6] == null).length;
+        if (known + unk !== g[side]) amb.push(abbOf[tid]);
+      }
+    }
+    if (amb.length) bg.amb = amb;
+  }
+}
+
 export function assemble(raw, lg, cfg, oldBox) {
   const teams = parseStandings(typeof raw.standings === 'string' ? JSON.parse(raw.standings) : raw.standings);
   const players = parsePlayers(raw.players);
@@ -41,6 +83,7 @@ export function assemble(raw, lg, cfg, oldBox) {
       boxSaved++;
     } catch (e) { console.warn(`  box score ${id} skipped: ${e.message}`); }
   }
+  weighGoals(box, games, teams, players);
   const meta = {
     league: 'LDHML', category: lg.short, slug: lg.slug, name: lg.name, season: cfg.seasonName,
     leagueId: cfg.leagueId, seasonId: cfg.seasonId, categoryId: lg.categoryId,

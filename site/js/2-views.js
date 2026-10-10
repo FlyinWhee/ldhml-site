@@ -379,27 +379,30 @@
     for (var k = 0; k <= nP; k++) svg += '<line class="pb" x1="' + X(k * per) + '" y1="22" x2="' + X(k * per) + '" y2="' + (H - 22) + '"/>';
     svg += '<line class="axis" x1="' + X(0) + '" y1="' + axis + '" x2="' + X(nP * per) + '" y2="' + axis + '"/>';
     for (var i = 0; i < nP; i++) svg += '<text x="' + X(i * per + per / 2) + '" y="' + (H - 4) + '" text-anchor="middle">' + perLabel(i) + '</text>';
-    var awayAbb = abbOfTeam(g.away), homeAbb = abbOfTeam(g.home), last = [-99, -99], level = [0, 0], tally = [0, 0];
+    var awayAbb = abbOfTeam(g.away), homeAbb = abbOfTeam(g.home), last = [-99, -99], level = [0, 0], tally = [0, 0], approx = [false, false];
     var nameOf = function (id) { return (people[id] || {}).name || BOX.names[id] || ''; };
     b.goals.slice().sort(function (x, y) { return ((x[0] - 1) * per + per - clockSec(x[1])) - ((y[0] - 1) * per + per - clockSec(y[1])); }).forEach(function (go) {
       var side = go[2] === awayAbb ? 0 : 1;
       var x = X((go[0] - 1) * per + per - Math.min(per, clockSec(go[1])));
       level[side] = (x - last[side] < 17) ? Math.min(2, level[side] + 1) : 0;
       last[side] = x;
-      tally[side]++;
+      /* A goal counts for 2 when a woman scores in the mixed leagues. go[6] holds the value; a team goal has no known value. */
+      var val = go[6] == null ? 1 : go[6];
+      if (go[6] == null && b.amb && b.amb.indexOf(go[2]) >= 0) approx[side] = true;
+      tally[side] += val;
       var y = side === 0 ? axis - 20 - level[side] * 17 : axis + 20 + level[side] * 17;
-      var who = go[3] ? nameOf(go[3]) : t('teamGoal');
+      var who = (go[3] ? nameOf(go[3]) : t('teamGoal')) + (val > 1 ? ' ×' + val : '');
       var assists = (go[4] || []).map(nameOf).filter(Boolean).join(', ');
       /* The tooltip is built from these data attributes (see showTip). */
       var tipAttrs = ' data-tip-time="' + esc(go[1] + ' · ' + perLabel(go[0] - 1)) + '" data-tip-who="' + esc(who) + '" data-tip-ast="' + esc(assists) + '"' +
-        ' data-tip-team="' + esc(go[2]) + '" data-tip-score="' + esc(awayAbb + ' ' + tally[0] + ' - ' + tally[1] + ' ' + homeAbb) + '"';
+        ' data-tip-team="' + esc(go[2]) + '" data-tip-score="' + esc(awayAbb + ' ' + tally[0] + (approx[0] ? '+' : '') + ' - ' + tally[1] + (approx[1] ? '+' : '') + ' ' + homeAbb) + '"';
       var inner = '<line class="stem" x1="' + x + '" y1="' + axis + '" x2="' + x + '" y2="' + y + '"/><circle class="dot" cx="' + x + '" cy="' + y + '" r="7.5"/><circle class="hit" cx="' + x + '" cy="' + y + '" r="13"/>';
       var wrap = '<g class="goal" style="--tc:' + colorOf(go[2]) + '"' + tipAttrs + '>' + inner + '</g>';
       svg += (go[3] && people[go[3]]) ? '<a href="#player-' + go[3] + '" aria-label="' + esc(go[1] + ' ' + go[2] + ' ' + who) + '">' + wrap + '</a>' : wrap;
     });
     svg += '</svg>';
     var lg = function (id) { var tm = T[id]; return '<span class="tcell">' + crest(tm.abb, 'sm') + esc(tm.name) + '</span>'; };
-    return '<div class="timeline">' + svg + '<div class="legend">' + lg(g.away) + lg(g.home) + '</div></div>';
+    return '<div class="timeline">' + svg + '<div class="legend">' + lg(g.away) + lg(g.home) + '</div>' + (b.amb ? '<p class="note">' + t('ambNote') + '</p>' : '') + '</div>';
   }
   function goalsHtml(g, b) {
     var out = '', cur = 0;

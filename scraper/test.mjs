@@ -113,7 +113,7 @@ assert.deepEqual(rc.game.t[1].gk[0], ['637992', 1, 0, 0, 23, 16, 7, 0, 0, 0, 0])
 assert.deepEqual(rc.game.t[0].gk, []);
 assert.deepEqual(rc.game.pg, [[1, 5, 1], [1, 4, 5]]);
 assert.deepEqual(rc.game.sh, [23, 16]);
-assert.deepEqual(rc.game.goals, [[1, '07:30', 'TOP', '296745', []], [2, '10:00', 'FLI', '310215', ['544401']], [2, '02:22', 'TOP', null, []]]);
+assert.deepEqual(rc.game.goals, [[1, '07:30', 'TOP', '296745', [], 1], [2, '10:00', 'FLI', '310215', ['544401'], 2], [2, '02:22', 'TOP', null, [], 0]]);
 assert.deepEqual(rc.game.pens, [[2, '11:05', 'FLI', '544401', 'mineure'], [2, '01:11', 'TOP', null, 'mineure']]);
 assert.equal(rc.names['310215'], 'M. JOBIN');
 
