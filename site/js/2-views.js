@@ -530,7 +530,7 @@
     return '<article class="lv' + (lv ? ' is-live' : '') + '"><div class="lv-top"><span>' + state + '</span><span class="lv-venue">' + esc(g.time) + ' · ' + esc(venueLine(g)) + '</span></div>' + clock +
       row(g.away, g.as, g.hs, lv ? lv.sv : null) + row(g.home, g.hs, g.as, lv ? lv.sh : null) +
       (lv ? liveOnIce(g, lv) : '') + recentGoalsHtml(g) +
-      '<div class="lv-foot"><a class="more" href="#game-' + esc(g.id) + '">' + t('openGame') + '</a>' + feedLink(g) + '</div></article>';
+      '<div class="lv-foot"><a class="more lv-open" href="#game-' + esc(g.id) + '">' + (lv ? t('liveBox') : t('openGame')) + '</a>' + feedLink(g) + '</div></article>';
   }
   function viewLive() {
     var today = todayStr();
