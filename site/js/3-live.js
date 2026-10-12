@@ -97,7 +97,7 @@
       /* Work out the value of each goal (a goal by a woman counts for 2) from the other games' running totals. */
       var wbox = { games: Object.assign({}, D.box.games) }; wbox.games[g.id] = r.game;
       LDParsers.weighGoals(wbox, D.games, D.teams, D.players);
-      var final = played(gameById[g.id] || g);
+      var final = played(gameById[g.id] || g) && !liveOf(g.id);
       var before = JSON.stringify(final ? D.box.games[g.id] : (LIVE.recap[g.id] || {}).game);
       if (before === JSON.stringify(r.game)) return false;
       if (final) { D.box.games[g.id] = r.game; delete LIVE.recap[g.id]; LIVE.modelDirty = true; }
@@ -142,7 +142,7 @@
   /* Which box scores does the current page need, and which of them are not in the cache (or must be read again)? */
   var BX = { fail: {}, fresh: {}, total: 0 };
   function boxMissing(g) {
-    if (!played(g) || g.cancelled) return false;
+    if (!played(g) || g.cancelled || liveOf(g.id)) return false;
     if (BX.fresh[g.id]) return false;
     var b = D.box.games[g.id];
     if (!b) return true;
@@ -217,7 +217,7 @@
       steps.push(function () {
         BX.fail[g.id] = Date.now() + 120000;
         return fetchRecap(g).then(function (c) {
-          delete BX.fail[g.id]; BX.fresh[g.id] = 1;
+          delete BX.fail[g.id]; if (!liveOf(g.id)) BX.fresh[g.id] = 1;
           if (c) LIVE.changed = true;
         }, function () {});
       });
@@ -276,5 +276,5 @@
     setInterval(updateFresh, 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
     window.addEventListener('hashchange', function () { setTimeout(tick, 300); });
-    window.LDHML_TEST = { tick: function () { return new Promise(function (ok) { clearTimeout(liveTimer); var go = function () { if (liveBusy) { setTimeout(go, 50); return; } liveBusy = true; run().catch(function () {}).then(function () { liveBusy = false; flush(); updateFresh(); ok(); }); }; go(); }); }, state: LIVE };
+    window.LDHML_TEST = { tick: function () { return new Promise(function (ok) { clearTimeout(liveTimer); var go = function () { if (liveBusy) { setTimeout(go, 50); return; } liveBusy = true; run().catch(function () {}).then(function () { liveBusy = false; flush(); updateFresh(); ok(); }); }; go(); }); }, state: LIVE, data: D };
   })();

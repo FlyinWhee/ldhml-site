@@ -295,9 +295,11 @@
   var liveOf = function (id) { var x = LIVE.games[id]; return x && x.state === 'live' ? x.lv : null; };
   /* eff(g): the game with the live score, when the schedule has no final score yet. */
   var eff = function (g) {
-    if (played(g)) return g;
     var x = liveRec(g.id);
-    return x ? Object.assign({}, g, { as: x.lv.gv, hs: x.lv.gh, _live: x.state === 'live' }) : g;
+    /* The league schedule already lists the running score of a game in progress. The clock decides: a game with a live clock is not final. */
+    if (x && x.state === 'live') return Object.assign({}, g, { as: x.lv.gv, hs: x.lv.gh, _live: true });
+    if (played(g)) return g;
+    return x ? Object.assign({}, g, { as: x.lv.gv, hs: x.lv.gh, _live: false }) : g;
   };
   var boxOf = function (id) {
     var b = BOX.games[id] || (LIVE.recap[id] && LIVE.recap[id].game) || null;

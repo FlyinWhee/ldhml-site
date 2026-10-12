@@ -69,6 +69,18 @@ assert.match(main(), /Gab Home/, 'goalie name cleaned from "#30 - " prefix');
 assert.match(main(), /Vic Away/, 'goalie name cleaned from "# - " prefix');
 assert.equal(w.LDHML_TEST.state.games[gid].lv.gv, 3);
 
+// 1b. the league schedule lists the running score of a game in progress: the game must stay LIVE, never FINAL
+{
+  const g = w.LDHML_TEST.data.games.find((x) => x.id === gid);
+  g.as = 3; g.hs = 2;
+  w.LDHML_TEST.state.modelDirty = true; w.LDHML_TEST.state.changed = true;
+  await w.LDHML_TEST.tick();
+  assert.ok(w.document.querySelector('.lv.is-live'), 'a game with a live clock stays live when the schedule lists a score');
+  assert.ok(!w.document.querySelector('.lv.is-live .fin'), 'no FINAL label on a live game');
+  g.as = null; g.hs = null;
+  w.LDHML_TEST.state.modelDirty = true; await w.LDHML_TEST.tick();
+}
+
 // 2. the game page uses the live score
 w.location.hash = '#game-' + gid; await wait(20);
 assert.ok(w.document.querySelector('.gboard .led'), 'scoreboard on the game page');
