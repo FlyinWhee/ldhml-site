@@ -588,3 +588,7 @@ a.chip:hover { filter: brightness(1.12); }
 .lv-done { margin-top: 22px; }
 .lv-done > summary { cursor: pointer; padding: 12px 0; font: 600 15px var(--f-text); color: var(--accent-text); list-style-position: inside; }
 .lv-done[open] > summary { margin-bottom: 10px; }
+
+/* Live game page: red frame around the screen, same signal as the live cards */
+body.live-frame::after { content: ""; position: fixed; inset: 0; z-index: 90; pointer-events: none; border: 3px solid #E5253B; box-shadow: inset 0 0 18px rgba(229, 37, 59, .35); }
+.gboard:has(.livebadge) { border-color: #E5253B; box-shadow: 0 0 0 1px #E5253B; }

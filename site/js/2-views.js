@@ -644,6 +644,8 @@
     if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | ' + LG.name;
     if (r.name === 'game' && gameById[r.id]) { var gg = gameById[r.id]; title = abbOfTeam(gg.away) + (played(gg) ? ' ' + gg.as + '-' + gg.hs + ' ' : ' @ ') + abbOfTeam(gg.home) + ' | ' + LG.name; }
     document.title = title;
+    /* a red frame around the whole screen while the game on the page is being played */
+    document.body.classList.toggle('live-frame', r.name === 'game' && !!liveOf(r.id));
     if (!keepScroll) window.scrollTo(0, 0);
   }
 
