@@ -584,3 +584,7 @@ a.chip:hover { filter: brightness(1.12); }
 .lv-head, .sbc-head { display: block; color: inherit; text-decoration: none; cursor: pointer; }
 .lv-head:hover .lv-top, .sbc-head:hover .sbc-meta { background: rgba(255, 91, 20, .10); }
 .lv-head:focus-visible, .sbc-head:focus-visible { outline: 2px solid var(--ball); outline-offset: -2px; }
+
+.lv-done { margin-top: 22px; }
+.lv-done > summary { cursor: pointer; padding: 12px 0; font: 600 15px var(--f-text); color: var(--accent-text); list-style-position: inside; }
+.lv-done[open] > summary { margin-bottom: 10px; }

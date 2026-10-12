@@ -542,7 +542,12 @@
       return intro + '<p class="empty">' + t('noGameToday', { d: nx ? esc(fmtDay(nx.date)) : '-' }) + '</p>' +
         (nx ? '<div class="sec"><div class="gms">' + games.filter(function (g) { return g.date === nx.date; }).map(function (g) { return gameBlock(g); }).join('') + '</div></div>' : '');
     }
-    return intro + '<h3 class="day">' + esc(fmtDay(today)) + '<small>' + plural(list.length, 'game', 'games') + '</small></h3><div class="lvs">' + list.map(liveCard).join('') + '</div>';
+    /* Finished games step aside once something is still to play or on the ice. They stay one tap away. */
+    var isDone = function (g) { var e = eff(g); return played(e) && !e._live; };
+    var open = list.filter(function (g) { return !isDone(g); }), done = list.filter(isDone);
+    if (!open.length || !done.length) return intro + '<h3 class="day">' + esc(fmtDay(today)) + '<small>' + plural(list.length, 'game', 'games') + '</small></h3><div class="lvs">' + list.map(liveCard).join('') + '</div>';
+    return intro + '<h3 class="day">' + esc(fmtDay(today)) + '<small>' + plural(open.length, 'game', 'games') + '</small></h3><div class="lvs">' + open.map(liveCard).join('') + '</div>' +
+      '<details class="lv-done" id="lvdone"' + (LIVE.doneOpen ? ' open' : '') + '><summary>' + t('doneGames', { n: done.length }) + '</summary><div class="lvs">' + done.map(liveCard).join('') + '</div></details>';
   }
 
   function viewNotFound() {
@@ -705,6 +710,7 @@
 
   /* ================= events ================= */
   function setPath(p, v) { var a = p.split('.'); ui[a[0]][a[1]] = v; }
+  document.addEventListener('toggle', function (e) { if (e.target && e.target.id === 'lvdone') LIVE.doneOpen = e.target.open; }, true);
   document.addEventListener('click', function (e) {
     var mt = e.target.closest ? e.target.closest('[data-more]') : null;
     if (mt) { setMore(mt.getAttribute('aria-expanded') !== 'true'); return; }
