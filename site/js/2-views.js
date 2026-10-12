@@ -497,8 +497,9 @@
       var jerseys = pens.length ? pens.map(function (p) { return '<span class="pbx">' + jersey(tm.abb, p.no, 'sm') + '<b>' + esc(p.left) + '</b></span>'; }).join('') : '<span class="pbx-none">-</span>';
       return '<div class="oi" style="--tc:' + colorOf(tm.abb) + '"><div class="oi-h">' + crest(tm.abb, 'sm') + '<a href="#team-' + tm.id + '">' + esc(tm.name) + '</a></div>' +
         '<div class="oi-r"><span>' + t('goalieOn') + '</span><b>' + (goalie ? esc(goalie) : '-') + '</b></div>' +
-        '<div class="oi-r"><span>' + t('inBox') + '</span><div class="pbxs">' + jerseys + '</div></div></div>';
+        (pens.length ? '<div class="oi-r"><span>' + t('inBox') + '</span><div class="pbxs">' + jerseys + '</div></div>' : '') + '</div>';
     };
+    if (!lv.penV.length && !lv.penH.length && !lv.goalieV && !lv.goalieH) return '';
     return '<section class="onice">' + side(g.away, lv.penV, lv.goalieV) + side(g.home, lv.penH, lv.goalieH) + '</section>';
   }
   function recentGoalsHtml(g) {
