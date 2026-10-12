@@ -76,9 +76,9 @@
         '<a class="sbc-team" href="#team-' + tm.id + '"><b>' + esc(tm.abb) + '</b><span>' + esc(tm.name) + '</span></a>' + pers +
         (pl ? led(sc, lose ? 'dim' : 'glow') : '<span></span>') + '</div>';
     };
-    return '<article class="sbc' + (lv ? ' is-live' : '') + '"><div class="sbc-meta"><span>' + (lv ? liveBadge(lv) : pl ? t('final') : esc(g.time)) + '</span><span>' + (g.court ? esc(t('surface', { n: g.court })) : '') + '</span></div>' +
+    return '<article class="sbc' + (lv ? ' is-live' : '') + '"><a class="sbc-head" href="#game-' + esc(g.id) + '" aria-label="' + esc(t('boxScore')) + '"><div class="sbc-meta"><span>' + (lv ? liveBadge(lv) : pl ? t('final') : esc(g.time)) + '</span><span>' + (g.court ? esc(t('surface', { n: g.court })) : '') + '</span></div></a>' +
       head + row(g.away, g.as, g.hs) + row(g.home, g.hs, g.as) +
-      '<div class="sbc-foot"><span>' + esc(g.time) + ' · ' + esc(venueName(g)) + '</span><a href="#game-' + esc(g.id) + '">' + t('boxScore') + '</a></div></article>';
+      '<div class="sbc-foot"><span>' + esc(g.time) + ' · ' + esc(venueName(g)) + '</span><a href="#game-' + esc(g.id) + '">' + (lv ? t('liveBox') : t('boxScore')) + '</a></div></article>';
   }
 
   /* ================= leaders ================= */
@@ -528,7 +528,7 @@
         (pl ? led(sc, lose ? 'dim' : 'glow') : '<span></span>') + '</div>';
     };
     var clock = lv ? '<div class="lv-clock"><small>' + t('clockLabel') + '</small>' + led(lv.clock, 'glow', 26) + '<span>' + esc(clockLabel(lv).split(' ')[0]) + '</span></div>' : '';
-    return '<article class="lv' + (lv ? ' is-live' : '') + '"><div class="lv-top"><span>' + state + '</span><span class="lv-venue">' + esc(g.time) + ' · ' + esc(venueLine(g)) + '</span></div>' + clock +
+    return '<article class="lv' + (lv ? ' is-live' : '') + '"><a class="lv-head" href="#game-' + esc(g.id) + '" aria-label="' + esc(lv ? t('liveBox') : t('openGame')) + '"><div class="lv-top"><span>' + state + '</span><span class="lv-venue">' + esc(g.time) + ' · ' + esc(venueLine(g)) + '</span></div>' + clock + '</a>' +
       row(g.away, g.as, g.hs, lv ? lv.sv : null) + row(g.home, g.hs, g.as, lv ? lv.sh : null) +
       (lv ? liveOnIce(g, lv) : '') + recentGoalsHtml(g) +
       '<div class="lv-foot"><a class="more lv-open" href="#game-' + esc(g.id) + '">' + (lv ? t('liveBox') : t('openGame')) + '</a>' + feedLink(g) + '</div></article>';
