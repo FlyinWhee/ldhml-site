@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { themeCss, cardCss } from './site/themes.mjs';
 
 globalThis.DOMParser ??= class {}; // the parsers need a DOMParser only when they parse HTML
@@ -41,23 +42,66 @@ const splitTitle = (fragment) => ({
   title: (fragment.match(/<title>(.*?)<\/title>/s) ?? [, 'LDHML'])[1],
   body: fragment.replace(/<title>.*?<\/title>\s*/s, '')
 });
-const page = (fragment, { title, theme, description, icon }) => {
+const page = (fragment, { title, theme, description, icon, pwa }) => {
   const { body } = splitTitle(fragment);
+  const pwaHead = pwa ? `
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0A1218">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="${pwa.shortName}">
+<link rel="apple-touch-icon" href="${pwa.up}icons/${pwa.icon}-192.png">` : '';
+  const pwaScript = pwa ? `\n<script>if('serviceWorker' in navigator&&location.protocol==='https:'){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>` : '';
   return `<!doctype html>
 <html lang="fr" data-league="${theme}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${title}</title>
-<meta name="description" content="${description}">${icon ? `\n<link rel="icon" href="${icon}">` : ''}
+<meta name="description" content="${description}">${icon ? `\n<link rel="icon" href="${icon}">` : ''}${pwaHead}
 <style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-${body}
+${body}${pwaScript}
 </body>
 </html>
 `;
 };
+
+
+// ---- installable app (PWA): manifest, icons and a small service worker per page ----
+const manifestOf = ({ name, shortName, icon, description }) => JSON.stringify({
+  id: './', name, short_name: shortName, description, lang: 'fr', dir: 'ltr',
+  start_url: './', scope: './', display: 'standalone', orientation: 'any',
+  background_color: '#0A1218', theme_color: '#0A1218',
+  icons: [
+    { src: `${icon.up}icons/${icon.key}-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: `${icon.up}icons/${icon.key}-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: `${icon.up}icons/${icon.key}-maskable.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+  ]
+}, null, 2);
+// Pages: network first (a new release shows at once), the stored copy only when offline. Fonts: stored after first use.
+// Calls to the league server are never intercepted, so live data always comes from the network.
+const swOf = (version) => `// LDHML service worker ${version}
+const CACHE = 'ldhml-${version}';
+self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.add(new Request('./', { cache: 'reload' })).catch(() => {})).then(() => self.skipWaiting())); });
+self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('ldhml-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('fetch', (e) => {
+  const r = e.request, u = new URL(r.url);
+  if (r.method !== 'GET') return;
+  if (u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com') {
+    e.respondWith(caches.open(CACHE).then((c) => c.match(r).then((hit) => { const net = fetch(r).then((res) => { c.put(r, res.clone()); return res; }).catch(() => hit); return hit || net; })));
+    return;
+  }
+  if (u.origin !== location.origin) return;
+  if (r.mode === 'navigate') {
+    e.respondWith(fetch(r).then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(new Request('./'), copy)); return res; })
+      .catch(() => caches.open(CACHE).then((c) => c.match('./', { ignoreSearch: true }))));
+    return;
+  }
+  e.respondWith(caches.open(CACHE).then((c) => c.match(r).then((hit) => hit || fetch(r).then((res) => { if (res.ok) c.put(r, res.clone()); return res; }))));
+});
+`;
 
 // ---- load the data of every league ----
 const names = ['meta', 'teams', 'games', 'players', 'goalies', 'box'];
@@ -106,13 +150,24 @@ for (const out of outDirs) {
   await mkdir(out, { recursive: true });
   const isArtifact = out.endsWith('artifact');
   // The artifact host adds its own <html> wrapper to the main page, so that one is a fragment.
-  await writeFile(path.join(out, 'index.html'), isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.' }));
+  const hubHtml = isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.', pwa: { up: '', icon: 'hub', shortName: 'LDHML' } });
+  await writeFile(path.join(out, 'index.html'), hubHtml);
+  if (!isArtifact) {
+    await mkdir(path.join(out, 'icons'), { recursive: true });
+    for (const f of await readdir(path.join(root, 'assets/pwa'))) await writeFile(path.join(out, 'icons', f), await readFile(path.join(root, 'assets/pwa', f)));
+    await writeFile(path.join(out, 'manifest.webmanifest'), manifestOf({ name: 'LDHML', shortName: 'LDHML', description: 'Ligues LDHML, hockey balle', icon: { up: '', key: 'hub' } }));
+    await writeFile(path.join(out, 'sw.js'), swOf(createHash('sha1').update(hubHtml).digest('hex').slice(0, 10)));
+  }
   for (const { lg, data } of leagues) {
     const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null }, registry, base: '../' };
     const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
-    const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.` });
+    const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../', icon: lg.logo || 'hub', shortName: lg.short } });
     await mkdir(path.join(out, lg.slug), { recursive: true });
     await writeFile(path.join(out, lg.slug, 'index.html'), html);
+    if (!isArtifact) {
+      await writeFile(path.join(out, lg.slug, 'manifest.webmanifest'), manifestOf({ name: lg.name, shortName: lg.short, description: `${lg.name}, ${cfg.seasonName}`, icon: { up: '../', key: lg.logo || 'hub' } }));
+      await writeFile(path.join(out, lg.slug, 'sw.js'), swOf(createHash('sha1').update(html).digest('hex').slice(0, 10)));
+    }
     total += html.length;
   }
 }

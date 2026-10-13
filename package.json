@@ -9,7 +9,7 @@
     "fetch:force": "node scraper/fetch.mjs --force",
     "build": "node build.mjs",
     "refresh": "node scraper/fetch.mjs && node build.mjs",
-    "test": "node scraper/test.mjs && node build.mjs && node site/test-all.mjs && node site/test-hub.mjs && node site/test-live.mjs",
+    "test": "node scraper/test.mjs && node build.mjs && node site/test-all.mjs && node site/test-hub.mjs && node site/test-live.mjs && node site/test-pwa.mjs",
     "import-raw": "node scraper/import-raw.mjs"
   },
   "dependencies": {

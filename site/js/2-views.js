@@ -214,7 +214,9 @@
 
   /* Teams: one card per team, in standings order. */
   function viewTeams() {
-    var cards = teams.map(function (tm) {
+    /* Alphabetical: the standings page already shows the teams by rank. */
+    var byName = teams.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), lang === 'en' ? 'en' : 'fr', { sensitivity: 'base', numeric: true }); });
+    var cards = byName.map(function (tm) {
       var top = skaters.filter(function (p) { return p.teams[0] === tm.abb && p.p > 0; }).sort(function (a, b) { return b.p - a.p || b.g - a.g; })[0];
       return '<div class="tcard" style="--tc:' + colorOf(tm.abb) + '"><span class="tab"></span>' +
         '<span class="tcard-top">' + crest(tm.abb, 'lg') + '<span class="tcard-name"><a class="tcard-link" href="#team-' + tm.id + '"><b>' + esc(tm.name) + '</b></a><small>' + ord(tm.pos) + ' · ' + tm.w + '-' + tm.l + '-' + tm.t + ' · ' + tm.pts + ' ' + L('pts')[0] + '</small></span></span>' +
