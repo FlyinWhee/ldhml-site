@@ -161,11 +161,11 @@ for (const out of outDirs) {
   for (const { lg, data } of leagues) {
     const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null }, registry, base: '../' };
     const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
-    const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../', icon: lg.logo || 'hub', shortName: lg.short } });
+    const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });
     await mkdir(path.join(out, lg.slug), { recursive: true });
     await writeFile(path.join(out, lg.slug, 'index.html'), html);
     if (!isArtifact) {
-      await writeFile(path.join(out, lg.slug, 'manifest.webmanifest'), manifestOf({ name: lg.name, shortName: lg.short, description: `${lg.name}, ${cfg.seasonName}`, icon: { up: '../', key: lg.logo || 'hub' } }));
+      await writeFile(path.join(out, lg.slug, 'manifest.webmanifest'), manifestOf({ name: lg.name.replace(/^LDHML\s+/, 'LDHML - '), shortName: `LDHML - ${lg.short}`, description: `${lg.name}, ${cfg.seasonName}`, icon: { up: '../', key: lg.logo || 'hub' } }));
       await writeFile(path.join(out, lg.slug, 'sw.js'), swOf(createHash('sha1').update(html).digest('hex').slice(0, 10)));
     }
     total += html.length;
