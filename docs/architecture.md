@@ -7,7 +7,8 @@ leagues.json            Sections, league list, league_id, season_id, category id
 build.mjs               Static build. Inlines everything into single-file pages. Also writes PWA files.
 package.json            Scripts. Only dependency: jsdom (scraper and tests).
 shared/parsers.js       Parsers for NBHPA responses. Runs in the browser AND in Node (global LDParsers).
-shared/look.js          How teams look on every page: colours, badges, code chips (global LDLook). See docs/presentation.md.
+shared/look.js          How teams and leagues look on every page: colours, badges, code chips, league badges (global LDLook). See docs/presentation.md.
+shared/ranks.js         Rank scales: which rank is stronger, ranges (global LDRanks). NBHPA scale built in; our own systems give a list.
 scraper/                Node scripts that fill data/ (fetch, import-raw, lib), registry.mjs (our ids), and their tests.
 data/<slug>/*.json      Cache: meta, teams, games, players, goalies, box. Committed to git.
 registry/people.json    Our person ids (L0001) with the NBHPA id as foreign key. Source of truth, NOT a cache. Committed.
@@ -55,7 +56,7 @@ Only Google Fonts load from outside (Hanken Grotesk, Teko, and Playfair Display 
 Team logos load from `admin.nbhpa.com` at runtime (`team.logo` is a relative path on that host).
 
 JS concatenation order (it matters, all files share one scope):
-`shared/parsers.js`, `shared/look.js`, then `site/js/*.js` sorted by file name (`1-core`, `2-views`, `3-live`).
+`shared/parsers.js`, `shared/look.js`, `shared/ranks.js`, then `site/js/*.js` sorted by file name (`1-core`, `2-views`, `3-live`).
 The template wraps the result in `(function(){ 'use strict'; ... })();`. So **a variable declared in
 1-core.js is visible in 2-views.js and 3-live.js**. Names are global to that IIFE; avoid collisions.
 

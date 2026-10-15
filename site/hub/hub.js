@@ -26,11 +26,11 @@ var STR = {
     allOf: 'Toutes les ligues {s}', hubName: 'Accueil LDHML', home: 'Ligues', players: 'Joueurs', people: 'joueurs',
     playersLede: 'Toutes les personnes qui jouent dans les ligues {s} cette saison. Ouvrez un nom pour son profil.',
     filter: 'Filtrer par nom', nShown: '{n} joueurs', noPlayers: 'Aucun joueur ne correspond.', player: 'Joueur',
-    rating: 'Cote', ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', ratingSShort: 'Cote J', ratingGShort: 'Cote G', ratingNote: 'La cote vient de la NBHPA. Elle existe séparément pour joueur et pour gardien.',
+    rating: 'Cote', ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', ratingSShort: 'Cote J', ratingGShort: 'Cote G', ratingNote: 'La cote vient de la NBHPA. Elle existe séparément pour joueur et pour gardien. Plus le chiffre est petit, plus la cote est forte (H8 est plus forte que H12). Un intervalle de cotes reste dans une seule échelle (H, W ou J).',
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
-    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', allRanks: 'Toutes les cotes', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
+    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', rankFrom: 'De…', rankTo: 'À…', otherRanks: 'Autres', rankOrder: 'Plus le chiffre est petit, plus la cote est forte : H8 est plus forte que H12. W7+ est entre W6 et W7. H, W et J sont des échelles séparées.', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
     inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', subShort: 'SUB:', subFor: 'Remplaçant pour', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
@@ -45,11 +45,11 @@ var STR = {
     allOf: 'All {s} leagues', hubName: 'LDHML home', home: 'Leagues', players: 'Players', people: 'players',
     playersLede: 'Everybody who plays in the {s} leagues this season. Open a name for the profile.',
     filter: 'Filter by name', nShown: '{n} players', noPlayers: 'No player matches.', player: 'Player',
-    rating: 'Rating', ratingS: 'Skater rating', ratingG: 'Goalie rating', ratingSShort: 'Rtg S', ratingGShort: 'Rtg G', ratingNote: 'The rating comes from NBHPA. A skater rating and a goalie rating are separate.',
+    rating: 'Rating', ratingS: 'Skater rating', ratingG: 'Goalie rating', ratingSShort: 'Rtg S', ratingGShort: 'Rtg G', ratingNote: 'The rating comes from NBHPA. A skater rating and a goalie rating are separate. A lower number is a stronger rating (H8 is stronger than H12). A rating range stays inside one scale (H, W or J).',
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
-    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', allRanks: 'All ratings', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
+    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', rankFrom: 'From…', rankTo: 'To…', otherRanks: 'Other', rankOrder: 'A lower number is a stronger rating: H8 is stronger than H12. W7+ is between W6 and W7. H, W and J are separate scales.', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
     inLeague: '{p}: stats in {l}', mainTag: 'Main team', subShort: 'SUB:', subFor: 'Subbed for', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
@@ -160,8 +160,11 @@ function renderRoot() {
 
 /* ================= section page ================= */
 var S = H.section;
-/* Player list filters: name, sex (f/m), role (s skater / g goalie), rank (a value, "-" = no rank), league (slug). */
-var ui = { q: '', sex: '', role: '', rank: '', lg: '' };
+/* Player list filters: name, sex (f/m), role (s skater / g goalie), rank range (rFrom = strongest bound, rTo = weakest bound;
+ * a value that is not on the scale, "N/C" or "-" = no rank, is an exact match), league (slug). */
+var FILTERS0 = { q: '', sex: '', role: '', rFrom: '', rTo: '', lg: '' };
+var ui = Object.assign({}, FILTERS0);
+var SCALE = window.LDRanks.nbhpa; // our own rank systems will bring their own scale (LDRanks.scale)
 var PEOPLE = {};
 (H.people || []).forEach(function (p) { PEOPLE[p.id] = p; });
 var leagueBy = {};
@@ -210,19 +213,30 @@ function passes(p, q) {
   if (q && norm(p.name).indexOf(q) < 0) return false;
   if (ui.sex && p.sex !== ui.sex) return false;
   if (ui.role && !pa[ui.role]) return false;
-  if (ui.rank) {
+  if (ui.rFrom || ui.rTo) {
     /* The rank of the selected role, or of every position the person played. */
     var pos = ui.role ? [ui.role] : ['s', 'g'].filter(function (k) { return pa[k]; });
-    if (!pos.some(function (k) { return ui.rank === '-' ? !p.rank[k] : p.rank[k] === ui.rank; })) return false;
+    var exact = ui.rFrom && !SCALE.key(ui.rFrom);
+    var ok = function (r) { return exact ? (ui.rFrom === '-' ? !r : r === ui.rFrom) : SCALE.inRange(r, ui.rFrom, ui.rTo); };
+    if (!pos.some(function (k) { return ok(p.rank[k]); })) return false;
   }
   return true;
 }
-/* Ranks in a stable order: by category letter (H, W, J, then the rest), level, then "+". */
+/* The ranks of this section, strongest first, grouped by scale (H, W, J); values not on the scale last. */
 function rankList() {
   var seen = {};
   H.people.forEach(function (p) { ['s', 'g'].forEach(function (k) { if (p.rank[k]) seen[p.rank[k]] = 1; }); });
-  var key = function (r) { var m = /^([A-Z]+)(\d+)(\+?)$/.exec(r); return m ? [['H', 'W', 'J'].indexOf(m[1]) < 0 ? 9 : ['H', 'W', 'J'].indexOf(m[1]), +m[2], m[3] ? 1 : 0] : [10, 0, 0]; };
-  return Object.keys(seen).sort(function (a, b) { var x = key(a), y = key(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || a.localeCompare(b); });
+  return SCALE.sort(Object.keys(seen));
+}
+/* Range select: an optgroup per scale group. "from" also offers the values off the scale (exact match; "to" is then off). */
+function rankSel(k, id, first, withOther) {
+  var groups = {}, order = [], other = [];
+  rankList().forEach(function (r) { var x = SCALE.key(r); if (!x) { other.push(r); return; } if (!groups[x.cat]) { groups[x.cat] = []; order.push(x.cat); } groups[x.cat].push(r); });
+  var opt = function (v, label) { return '<option value="' + esc(v) + '"' + (ui[k] === v ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+  var off = k === 'rTo' && ui.rFrom && !SCALE.key(ui.rFrom);
+  return '<select id="' + id + '" class="ctl" data-fsel="' + k + '" aria-label="' + esc(first) + '"' + (off ? ' disabled' : '') + '>' + opt('', first) +
+    order.map(function (c) { return '<optgroup label="' + esc(c) + '">' + groups[c].map(function (r) { return opt(r, r); }).join('') + '</optgroup>'; }).join('') +
+    (withOther ? '<optgroup label="' + esc(t('otherRanks')) + '">' + other.map(function (r) { return opt(r, r); }).join('') + opt('-', t('noRank')) + '</optgroup>' : '') + '</select>';
 }
 function filterBar() {
   var seg = function (k, opts) {
@@ -231,11 +245,11 @@ function filterBar() {
   var sel = function (k, id, label, opts) {
     return '<select id="' + id + '" class="ctl" data-fsel="' + k + '" aria-label="' + esc(label) + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (ui[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
   };
-  var any = ui.q || ui.sex || ui.role || ui.rank || ui.lg;
+  var any = ui.q || ui.sex || ui.role || ui.rFrom || ui.rTo || ui.lg;
   return '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off">' +
     seg('sex', [['', t('allSex')], ['f', t('women')], ['m', t('men')]]) +
     seg('role', [['', t('allRoles')], ['s', t('skaters')], ['g', t('goalies')]]) +
-    sel('rank', 'prank', t('rating'), [['', t('allRanks')]].concat(rankList().map(function (r) { return [r, r]; }), [['-', t('noRank')]])) +
+    '<span class="rk-range" title="' + esc(t('rankOrder')) + '"><span class="rk-l">' + t('rating') + '</span>' + rankSel('rFrom', 'prfrom', t('rankFrom'), true) + rankSel('rTo', 'prto', t('rankTo'), false) + '</span>' +
     (H.leagues.length > 1 ? sel('lg', 'plg', t('leagues'), [['', t('allLeaguesF')]].concat(H.leagues.map(function (l) { return [l.slug, l.name]; }))) : '') +
     (any ? '<button type="button" class="lnk clearf" data-fclear>' + t('clearFilters') + '</button>' : '') + '</div>';
 }
@@ -331,7 +345,7 @@ document.addEventListener('click', function (e) {
   /* Player list filters */
   var f = e.target.closest && e.target.closest('[data-f],[data-fclear]');
   if (f) {
-    if (f.hasAttribute('data-fclear')) ui = { q: '', sex: '', role: '', rank: '', lg: '' };
+    if (f.hasAttribute('data-fclear')) ui = Object.assign({}, FILTERS0);
     else { var kv = f.getAttribute('data-f').split('='); ui[kv[0]] = kv[1]; }
     render(true);
     return;

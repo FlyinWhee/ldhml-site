@@ -24,8 +24,8 @@ const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);
 const safe = (o) => JSON.stringify(o).replace(/</g, '\\u003c').split(LS).join('\\u2028').split(PS).join('\\u2029');
 
 const jsParts = (await readdir(path.join(root, 'site/js'))).filter((f) => f.endsWith('.js')).sort();
-// shared/: parsers (data) and look (how teams look). Both go into every page, so every page reads and shows data the same way.
-const parsers = (await read('shared/parsers.js')) + '\n' + (await read('shared/look.js'));
+// shared/: parsers (data), look (how teams and leagues look), ranks (rank scales: which rank is stronger). Both go into every page, so every page reads and shows data the same way.
+const parsers = (await read('shared/parsers.js')) + '\n' + (await read('shared/look.js')) + '\n' + (await read('shared/ranks.js'));
 const leagueJs = [parsers, ...(await Promise.all(jsParts.map((f) => read(`site/js/${f}`))))].join('\n');
 const hubJs = [parsers, await read('site/hub/hub.js')].join('\n');
 const baseCss = await read('site/style.css');

@@ -87,10 +87,14 @@ for (const s of cfg.sections) {
   await click('[data-f="role=g"]');
   assert.equal(rows(), H.people.filter((p) => p.sex === 'f' && played(p, 'g')).length, `${s.key}: women goalies`);
   await click('[data-fclear]'); await click('[data-f="role=s"]');
-  const rk = H.people.find((p) => p.rank.s && played(p, 's')).rank.s;
-  await pick('prank', rk);
-  assert.equal(rows(), H.people.filter((p) => played(p, 's') && p.rank.s === rk).length, `${s.key}: skaters rated ${rk}`);
-  await pick('prank', '-');
+  // rating range: lower number = stronger; computed here without the page code
+  const lv = (r) => { const m = /^H(\d+)$/.exec(r || ''); return m ? Number(m[1]) : null; };
+  await pick('prfrom', 'H10'); await pick('prto', 'H11');
+  assert.equal(rows(), H.people.filter((p) => played(p, 's') && lv(p.rank.s) != null && lv(p.rank.s) >= 10 && lv(p.rank.s) <= 11).length, `${s.key}: skaters rated H10 to H11`);
+  await pick('prto', '');
+  assert.equal(rows(), H.people.filter((p) => played(p, 's') && lv(p.rank.s) != null && lv(p.rank.s) >= 10).length, `${s.key}: skaters rated H10 or weaker`);
+  await pick('prfrom', '-');
+  assert.ok(d.getElementById('prto').disabled, `${s.key}: "to" is off for an exact value`);
   assert.equal(rows(), H.people.filter((p) => played(p, 's') && !p.rank.s).length, `${s.key}: skaters without a rating`);
   await click('[data-fclear]');
   if (mine.length > 1) {

@@ -31,7 +31,8 @@ Not used on purpose: `https://admin.nbhpa.com/livegame/<id>` (official live page
 (the draft league has `path: "ldhml"`, so `/draft/ldhml/`). Renaming a `path` changes URLs only, not data.
 
 `rankSystems` (empty for now) declares **our own** rank systems. Planned shape:
-`{ key, section, leagues?: [slug], name: { fr, en } }`. A system belongs to one section (and optionally to some of its leagues).
+`{ key, section, leagues?: [slug], name: { fr, en }, values: [strongest ... weakest] }`. A system belongs to one section (and optionally to some of its leagues).
+`values` gives the order of the scale (`LDRanks.scale(values)` in `shared/ranks.js`), so range filters and, later, sub validation work the same way as for NBHPA ranks.
 The values are in the registry: `people[].ranks[key] = { s, g }` (a value per position). `site/people.mjs` copies them into the
 person’s instance of that section; the section page shows them. Example use: a draft "salary" per player, with a salary cap per team (cap rule not built).
 
@@ -44,7 +45,9 @@ One person per line. `id` is ours and never changes. `nid` is the NBHPA person i
 
 ## Ranks
 A rank exists **per position**: `s` (skater, from `players.json`) and `g` (goalie, from `goalies.json`). Checked on 2026-10-15: the NBHPA rank of a
-person for one position is the same in every league. Values seen: `H8`..`H12`, `W5`..`W8`, `W6+`, `W7+`, `J5`, `N/C`, `""` and `null` (no rank).
+person for one position is the same in every league.
+**Order (confirmed by the owner, 2026-10-15): a lower number is stronger** (H8 is stronger than H12). Assumed, not confirmed: `+` is half a level stronger (W7+ is between W6 and W7); H, W and J are separate scales (a range never mixes them); `N/C` and no rank are off the scale. Code: `LDRanks.nbhpa` in `shared/ranks.js`.
+Values seen: `H8`..`H12`, `W5`..`W8`, `W6+`, `W7+`, `J5`, `N/C`, `""` and `null` (no rank).
 
 ## `data/<slug>/meta.json`
 `{ league:"LDHML", category, slug, name, season, leagueId, seasonId, categoryId, fetchedAt (ISO UTC), source }`.

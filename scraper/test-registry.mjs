@@ -81,6 +81,24 @@ assert.deepEqual(m.in.teams.ranks, {}, '... and not to the other section');
 assert.deepEqual(missing, ['555'], 'a person missing from the registry is reported');
 assert.ok(people.n555 && people.n555.rank.s === null && people.n555.rank.g === 'H9', 'and gets a temporary id');
 
+// ---- rank scales (shared/ranks.js): lower level = stronger, "+" half a level stronger, one scale per letter ----
+await import('../shared/ranks.js');
+const { nbhpa, scale } = globalThis.LDRanks;
+assert.ok(nbhpa.key('H8').s < nbhpa.key('H12').s, 'H8 is stronger than H12');
+assert.ok(nbhpa.key('W6').s < nbhpa.key('W7+').s && nbhpa.key('W7+').s < nbhpa.key('W7').s, 'W7+ is between W6 and W7');
+assert.equal(nbhpa.key('N/C'), null); assert.equal(nbhpa.key(''), null); assert.equal(nbhpa.key(null), null);
+assert.deepEqual(nbhpa.sort(['H12', 'W7', 'N/C', 'H8', 'W7+', 'J5', 'W6', 'H10']), ['H8', 'H10', 'H12', 'W6', 'W7+', 'W7', 'J5', 'N/C'], 'sorted by scale, strongest first, off-scale last');
+assert.ok(nbhpa.inRange('H10', 'H9', 'H11') && nbhpa.inRange('H9', 'H9', 'H11') && nbhpa.inRange('H11', 'H9', 'H11'), 'range is inclusive');
+assert.ok(!nbhpa.inRange('H12', 'H9', 'H11') && !nbhpa.inRange('H8', 'H9', 'H11'), 'outside the range');
+assert.ok(nbhpa.inRange('H10', 'H11', 'H9'), 'bounds given in the wrong order still work');
+assert.ok(!nbhpa.inRange('W7', 'H9', 'H11'), 'a range stays inside one scale');
+assert.ok(nbhpa.inRange('H12', 'H10', '') && !nbhpa.inRange('H9', 'H10', ''), '"from" only: that rank or weaker');
+assert.ok(nbhpa.inRange('H8', '', 'H10') && !nbhpa.inRange('H11', '', 'H10'), '"to" only: that rank or stronger');
+assert.ok(!nbhpa.inRange('N/C', 'H8', 'H12') && !nbhpa.inRange(null, 'H8', ''), 'off-scale values are never in a range');
+const own = scale(['A', 'B', 'C', 'D']); // our own rank system: a list, strongest first
+assert.ok(own.inRange('B', 'A', 'C') && !own.inRange('D', 'A', 'C') && own.key('Z') === null, 'a homegrown scale works the same way');
+assert.deepEqual(own.sort(['C', 'A', 'Z', 'B']), ['A', 'B', 'C', 'Z']);
+
 // ---- the committed registry covers every person of data/ ----
 const real = await loadRegistry();
 const known = new Set(real.people.map((p) => p.nid));

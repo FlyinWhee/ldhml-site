@@ -2,6 +2,8 @@
 
 `look.js` (`LDLook`) holds how teams look on every page: colours, badges, code chips. ES5, browser only (inlined into every page), returns HTML strings. Read `../docs/presentation.md`. A change here changes every page.
 
+`ranks.js` (`LDRanks`) holds rank scales: which rank is stronger, sorting, ranges. A lower NBHPA number is stronger. Browser and Node (`scraper/test-registry.mjs` tests it). Sub validation will use it.
+
 `parsers.js` runs in two places: the browser (inlined into every page) and Node (`scraper/lib.mjs`, `build.mjs`). It exports `LDParsers` on `globalThis`/`window`.
 
 Rules:

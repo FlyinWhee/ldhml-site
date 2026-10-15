@@ -115,3 +115,6 @@ main#main { padding-block: 0; }
 .pl-teams li.also { margin-left: 0; }
 .pl-count { margin: 0 0 10px; }
 .clearf { background: none; border: 0; padding: 4px 2px; cursor: pointer; font: inherit; }
+/* Rating range filter: "Rating  From… To…" (strongest bound first). */
+.rk-range { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rk-l { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
