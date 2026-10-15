@@ -8,14 +8,14 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cfg = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8'));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-async function open(rel) {
+async function open(rel, answer) {
   const html = await readFile(path.join(root, 'dist', rel, 'index.html'), 'utf8');
   const errors = [], calls = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
   const dom = new JSDOM(html, {
     runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' + (rel ? rel + '/' : ''),
-    beforeParse(win) { win.LDHML_NOW = '2026-10-09T10:00:00'; win.scrollTo = () => {}; win.fetch = async (u) => { calls.push(String(u)); return { ok: false, status: 403 }; }; }
+    beforeParse(win) { win.LDHML_NOW = '2026-10-09T10:00:00'; win.scrollTo = () => {}; win.fetch = async (u) => { calls.push(String(u)); return answer ? answer(String(u)) : { ok: false, status: 403 }; }; }
   });
   await wait(300);
   const d = dom.window.document;
@@ -167,6 +167,28 @@ for (const s of cfg.sections) {
   w.close();
 }
 assert.ok(nights >= 1, 'next game nights listed');
+
+// ---- live standings (what a real browser gets): the cards take the fresh numbers, and the page can leave home and come back ----
+{
+  const s = cfg.sections[0];
+  const mine = cfg.leagues.filter((l) => l.section === s.key);
+  const byCat = {};
+  for (const l of mine) byCat[l.categoryId] = JSON.parse(await readFile(path.join(root, 'data', l.slug, 'teams.json'), 'utf8'));
+  const standingsJson = (teams) => Object.fromEntries(teams.map((t, i) => [i, { values: Object.entries({ team_id: t.id, team_name: t.name, team_abb: t.abb, team_pic: t.logo, position: t.pos, gp: t.gp,
+    wins_tot: t.w, losses: t.l, ot: t.t, ot_loss: t.otl, pts: t.pos === 1 ? 99 : t.pts, gf: t.gf, ga: t.ga, diff: t.diff, pts_gp: t.ppg }).map(([key, val]) => ({ key, val })) }]));
+  const answer = (u) => { const cat = new URL(u).searchParams.get('category_id'); return { ok: true, status: 200, json: async () => standingsJson(byCat[cat]) }; };
+  const { w, d, errors } = await open(s.path, answer);
+  await wait(600 + 1300 * mine.length);
+  const leaders = [...d.querySelectorAll('.lcard-top li:first-child b')].map((b) => b.textContent);
+  assert.ok(leaders.length === mine.length && leaders.every((x) => x === '99'), `${s.key}: the cards show the live standings (${leaders.join(', ')})`);
+  w.location.hash = '#players'; await wait(30);
+  w.location.hash = '#home'; await wait(30);
+  assert.ok(d.querySelector('.lcards') && d.querySelectorAll('.lcard').length === mine.length, `${s.key}: back to the leagues after live standings`);
+  w.history.back(); await wait(60);
+  assert.ok(d.querySelector('.tbl') || d.querySelector('.lcards'), `${s.key}: the back button works`);
+  assert.deepEqual(errors, [], `${s.key}: page errors with live standings:\n` + errors.join('\n'));
+  w.close();
+}
 // a person who plays in both sections keeps one id of ours in both
 const both = Object.entries(seenIn).filter(([, v]) => v.length > 1);
 assert.ok(both.length > 0, 'some people play in both sections (same id in both)');

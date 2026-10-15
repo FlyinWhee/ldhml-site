@@ -89,7 +89,9 @@ var teamName = function (l, tm) { var href = teamHref(l, tm); return href ? '<a 
 
 var live = {}; // slug -> fresher standings, once read from the API
 
-function standingsOf(l) { return live[l.slug] || l.top; }
+/* live[slug] = { played, top }: fresher numbers from the API. (Bug until 2026-10-15: this returned the whole object, so the
+ * live refresh of the cards crashed, silently; with routes, coming back to #home then crashed the page.) */
+function standingsOf(l) { return live[l.slug] ? live[l.slug].top : l.top; }
 function playedOf(l) { return live[l.slug] ? live[l.slug].played : l.played; }
 
 /* Next game date of each league, soonest first. */
@@ -462,14 +464,16 @@ function refreshStandings() {
     if (document.hidden) { setTimeout(step, 4000); return; }
     var l = queue.shift();
     if (!l) return;
-    fetch(API + '/table_data.php?' + qs(l)).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (j) {
-      var rows = window.LDParsers.parseStandings(j);
-      if (rows.length >= 2) {
+    /* Only the request and the parsing count as a failure. A drawing error is NOT swallowed: it must show in the console and in tests. */
+    fetch(API + '/table_data.php?' + qs(l)).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) { try { return window.LDParsers.parseStandings(j); } catch (e) { return null; } }, function () { return null; })
+      .then(function (rows) {
+        if (!rows || rows.length < 2) { failures++; return; }
         live[l.slug] = { played: Math.round(rows.reduce(function (a, r) { return a + r.gp; }, 0) / 2), top: rows.slice().sort(function (a, b) { return a.pos - b.pos; }).slice(0, 3) };
         var ex = $('.lcard[data-slug="' + l.slug + '"]');
         if (ex) ex.outerHTML = cardHtml(l);
-      }
-    }).catch(function () { failures++; }).then(function () { if (failures < 2) setTimeout(step, 1200); });
+      })
+      .then(function () { if (failures < 2) setTimeout(step, 1200); }, function (e) { setTimeout(function () { throw e; }); });
   }
   step();
 }
