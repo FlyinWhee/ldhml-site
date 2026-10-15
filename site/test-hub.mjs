@@ -104,6 +104,31 @@ for (const s of cfg.sections) {
     assert.equal(rows(), H.people.filter((p) => p.lg[mine[0].slug] && p.lg[mine[0].slug].g).length, `${s.key}: goalies of one league`);
   }
   await click('[data-fclear]');
+  // sorting: name (A-Z default), ratings (strongest first; N/C weakest; no rating always last), number of leagues
+  const col = (i) => [...d.querySelectorAll('.tbl tbody tr')].map((tr) => tr.children[i].textContent.trim());
+  const names = () => [...d.querySelectorAll('.tbl tbody tr td:first-child a')].map((a) => a.textContent);
+  const az = H.people.map((p) => p.name).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  assert.equal(names()[0], az[0], `${s.key}: A-Z by default`);
+  await click('[data-psort="name"]');
+  assert.equal(names()[0], az[az.length - 1], `${s.key}: Z-A on a second click`);
+  const strength = (r) => { const m = /^([HWJ])(\d+)(\+?)$/.exec(r); return m ? 'HWJ'.indexOf(m[1]) * 1000 + Number(m[2]) * 2 - (m[3] ? 1 : 0) : 1e9; }; // off the scale = weakest
+  const ordered = (vals, dir) => {
+    const rated = vals.filter((v) => v !== '-'), firstDash = vals.indexOf('-');
+    assert.ok(firstDash < 0 || vals.slice(firstDash).every((v) => v === '-'), `${s.key}: no rating stays last (${dir})`);
+    for (let i = 1; i < rated.length; i++) assert.ok(dir === 'asc' ? strength(rated[i - 1]) <= strength(rated[i]) : strength(rated[i - 1]) >= strength(rated[i]), `${s.key}: rating order ${dir}: ${rated[i - 1]} then ${rated[i]}`);
+  };
+  await click('[data-psort="rs"]'); ordered(col(1), 'asc');
+  await click('[data-psort="rs"]'); ordered(col(1), 'desc');
+  await click('[data-psort="rg"]'); ordered(col(2), 'asc');
+  assert.equal(d.querySelector('th[aria-sort]').querySelector('[data-psort]').getAttribute('data-psort'), 'rg', `${s.key}: the sorted column is marked`);
+  await click('[data-psort="lg"]');
+  const nl = [...d.querySelectorAll('.tbl tbody tr .pl-lgcol')].map((td) => td.querySelectorAll('.lgb').length);
+  assert.ok(nl.every((v, i) => i === 0 || nl[i - 1] >= v), `${s.key}: most leagues first`);
+  await click('[data-f="sex=f"]');
+  assert.ok(d.querySelector('th[aria-sort] [data-psort="lg"]'), `${s.key}: sorting stays when filtering`);
+  await click('[data-fclear]');
+  assert.ok(d.querySelector('th[aria-sort] [data-psort="lg"]'), `${s.key}: "Clear filters" keeps the sort`);
+  await click('[data-psort="name"]');
   // phones: the filters open in a side panel; the same controls, a count, Escape closes it
   await click('[data-fpanel]');
   assert.ok(d.querySelector('.fbar.fp-on') && d.documentElement.classList.contains('fp-open'), `${s.key}: filter panel opens`);

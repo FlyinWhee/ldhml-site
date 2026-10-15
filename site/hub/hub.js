@@ -30,7 +30,7 @@ var STR = {
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
-    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', filters: 'Filtres', close: 'Fermer', sexLabel: 'Sexe', roleLabel: 'Rôle', showN: 'Voir {n} joueurs', rankFrom: 'De…', rankTo: 'À…', otherRanks: 'Autres', rankOrder: 'Plus le chiffre est petit, plus la cote est forte : H8 est plus forte que H12. W7+ est entre W6 et W7. H, W et J sont des échelles séparées.', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
+    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', sortRank: 'Cliquez pour trier : la plus forte d’abord, puis la plus faible.', filters: 'Filtres', close: 'Fermer', sexLabel: 'Sexe', roleLabel: 'Rôle', showN: 'Voir {n} joueurs', rankFrom: 'De…', rankTo: 'À…', otherRanks: 'Autres', rankOrder: 'Plus le chiffre est petit, plus la cote est forte : H8 est plus forte que H12. W7+ est entre W6 et W7. H, W et J sont des échelles séparées.', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
     inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', subShort: 'SUB:', subFor: 'Remplaçant pour', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
@@ -49,7 +49,7 @@ var STR = {
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
-    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', filters: 'Filters', close: 'Close', sexLabel: 'Sex', roleLabel: 'Role', showN: 'Show {n} players', rankFrom: 'From…', rankTo: 'To…', otherRanks: 'Other', rankOrder: 'A lower number is a stronger rating: H8 is stronger than H12. W7+ is between W6 and W7. H, W and J are separate scales.', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
+    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', sortRank: 'Click to sort: strongest first, then weakest first.', filters: 'Filters', close: 'Close', sexLabel: 'Sex', roleLabel: 'Role', showN: 'Show {n} players', rankFrom: 'From…', rankTo: 'To…', otherRanks: 'Other', rankOrder: 'A lower number is a stronger rating: H8 is stronger than H12. W7+ is between W6 and W7. H, W and J are separate scales.', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
     inLeague: '{p}: stats in {l}', mainTag: 'Main team', subShort: 'SUB:', subFor: 'Subbed for', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
@@ -263,10 +263,35 @@ function filterBar(n) {
     '<div class="fp-foot"><button type="button" class="lnk clearf" data-fclear' + (any ? '' : ' disabled') + '>' + t('clearFilters') + '</button><button type="button" class="fp-go" data-fpanel-close>' + esc(t('showN', { n: n })) + '</button></div>' +
     '</div></div>';
 }
+/* Sorting of the player list (kept apart from the filters: "Clear filters" does not reset it).
+ * Columns: name; rs / rg = skater / goalie rating, "asc" = strongest first (shared rank scale); lg = number of leagues.
+ * A missing rating always goes last, in both directions. */
+var SORT = { k: 'name', dir: 'asc' };
+var SORT_DEF = { name: 'asc', rs: 'asc', rg: 'asc', lg: 'desc' };
+function sortPeople(list) {
+  var byName = function (a, b) { return a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'fr', { sensitivity: 'base' }); };
+  var sign = SORT.dir === 'asc' ? 1 : -1;
+  var rankCmp = function (pos) {
+    return function (a, b) {
+      var ra = a.rank[pos], rb = b.rank[pos];
+      if (!ra || !rb) return ra ? -1 : rb ? 1 : 0;              // no rating: last, whatever the direction
+      var ka = SCALE.key(ra), kb = SCALE.key(rb);
+      if (!ka || !kb) return ka ? -sign : kb ? sign : 0;          // off the scale (N/C): after the scale
+      return (ka.g - kb.g || ka.s - kb.s) * sign;
+    };
+  };
+  var cmp = { name: function (a, b) { return byName(a, b) * sign; }, rs: rankCmp('s'), rg: rankCmp('g'),
+    lg: function (a, b) { return (Object.keys(a.lg).length - Object.keys(b.lg).length) * sign; } }[SORT.k];
+  return list.slice().sort(function (a, b) { return cmp(a, b) || byName(a, b); });
+}
+function sortTh(k, label, title, cls) {
+  var on = SORT.k === k;
+  return '<th scope="col" class="' + (cls || '') + '"' + (on ? ' aria-sort="' + (SORT.dir === 'asc' ? 'ascending' : 'descending') + '"' : '') + (title ? ' title="' + esc(title) + '"' : '') + '>' +
+    '<button type="button" data-psort="' + k + '">' + esc(label) + '</button></th>';
+}
 function viewPlayers() {
   var q = norm(ui.q.trim());
-  var list = H.people.filter(function (p) { return passes(p, q); })
-    .sort(function (a, b) { return a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'fr', { sensitivity: 'base' }); });
+  var list = sortPeople(H.people.filter(function (p) { return passes(p, q); }));
   var rows = list.map(function (p) {
     /* The badges are in their own column; on phones they move under the name (CSS .pl-under / .pl-lgcol). */
     var chips = leagueChips(p);
@@ -274,7 +299,7 @@ function viewPlayers() {
   }).join('');
   return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
     filterBar(list.length) + '<p class="count pl-count">' + t('nShown', { n: list.length }) + '</p>' +
-    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col" class="pl-lgcol">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
+    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr>' + sortTh('name', t('player'), '', 'stick') + sortTh('rs', t('ratingSShort'), t('ratingS') + '. ' + t('sortRank'), 'num') + sortTh('rg', t('ratingGShort'), t('ratingG') + '. ' + t('sortRank'), 'num') + sortTh('lg', t('leaguesTeams'), '', 'pl-lgcol') + '</tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
     '<p class="note">' + t('ratingNote') + '</p></div>';
 }
 function lineTable(head, cells) {
@@ -357,6 +382,16 @@ document.addEventListener('click', function (e) {
   /* Filter panel (phones): open, close */
   var fp = e.target.closest && e.target.closest('[data-fpanel],[data-fpanel-close]');
   if (fp) { setPanel(fp.hasAttribute('data-fpanel')); return; }
+  /* Player list sorting: the same column again flips the direction */
+  var ps = e.target.closest && e.target.closest('[data-psort]');
+  if (ps) {
+    var k = ps.getAttribute('data-psort');
+    SORT = SORT.k === k ? { k: k, dir: SORT.dir === 'asc' ? 'desc' : 'asc' } : { k: k, dir: SORT_DEF[k] };
+    render(true);
+    var back = document.querySelector('[data-psort="' + k + '"]');
+    if (back) back.focus();
+    return;
+  }
   /* Player list filters */
   var f = e.target.closest && e.target.closest('[data-f],[data-fclear]');
   if (f) {
