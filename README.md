@@ -58,7 +58,7 @@ If the server is down, nothing breaks. The site compares its cache with the live
 ## Refresh from your own computer
 
 The league server challenges requests from data centers (GitHub's runners, Cloudflare Workers, even a Worker cron), so no server-side job can fetch data. Only browsers on normal connections pass. Visitors still get live data, because their browsers read the API.
-To refresh the saved data, run `npm run fetch:force` on your own computer, then commit and push `data/`.
+To refresh the saved data on Windows, double-click `scripts\refresh.bat` (or run it from a terminal). It pulls `main`, runs `node scraper/fetch.mjs --force`, then commits and pushes `data/`. Needs git and Node. Elsewhere, run `npm run fetch:force`, then commit and push `data/`.
 
 ## Data source
 
