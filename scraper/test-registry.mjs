@@ -49,8 +49,17 @@ const cfg = {
 };
 const sk = (id, nid, rank, teams, gp, g) => ({ id, nid, name: 'MARCO NORMANDIN', sex: 'm', rank, teams, gp, g, a: 1, p: g + 1, pim: 0 });
 const gk = (id, nid, rank, teams, gp) => ({ id, nid, name: 'MARCO NORMANDIN', sex: 'm', rank, teams, gp, w: 1, l: 0, t: 0, sa: 20, sv: 18, ga: 2, so: 0 });
+// box scores: player_id 2 played 2 games for MAS, player_id 3 played 2 for TMN, TMN later: a tie goes to the latest game
+const row = (pid) => [pid, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const game = (id, date, pid, team) => [{ id, date }, { t: [{ id: team, sk: [row(pid)], gk: [] }, { id: 'X', sk: [], gk: [] }] }];
+const bx = [game('g1', '2026-09-01', '2', 'T1'), game('g2', '2026-09-08', '2', 'T1'), game('g3', '2026-09-15', '3', 'T2'), game('g4', '2026-09-22', '3', 'T2')];
+const retroData = {
+  players: [sk('2', '800', 'H10', ['MAS'], 5, 6), sk('3', '800', 'H10', ['TMN'], 1, 0)], goalies: [],
+  teams: [{ id: 'T1', abb: 'MAS' }, { id: 'T2', abb: 'TMN' }, { id: 'X', abb: 'XXX' }],
+  games: bx.map((x) => x[0]), box: { names: {}, games: Object.fromEntries(bx.map((x) => [x[0].id, x[1]])) }
+};
 const leagues = [
-  { lg: { slug: 'retro', section: 'teams' }, data: { players: [sk('2', '800', 'H10', ['MAS'], 5, 6), sk('3', '800', 'H10', ['TMN'], 1, 0)], goalies: [] } },
+  { lg: { slug: 'retro', section: 'teams' }, data: retroData },
   { lg: { slug: 'draft', section: 'draft' }, data: { players: [], goalies: [gk('3', '800', 'H11', ['DDG'], 2), gk('50', '555', 'H9', ['DOL'], 1)] } }
 ];
 const reg = { next: 2, people: [{ id: 'L0001', nid: '800', name: 'Marco Normandin', sex: 'm', pids: ['2', '3'], ranks: { salary: { s: 4, g: 6 } } }] };
@@ -60,7 +69,10 @@ assert.ok(m, 'the person has our id');
 assert.equal(m.name, 'marco normandin', 'the name comes from the registry, cleaned');
 assert.deepEqual(m.rank, { s: 'H10', g: 'H11' }, 'a rank per position');
 assert.deepEqual(Object.keys(m.in).sort(), ['draft', 'teams'], 'one instance per section');
-assert.deepEqual(m.in.teams.leagues.retro.teams, ['MAS', 'TMN']);
+assert.deepEqual(m.in.teams.leagues.retro.teams, ['TMN', 'MAS'], 'main team first');
+assert.equal(m.in.teams.leagues.retro.main, 'TMN', 'main team: most games, a tie goes to the latest game (same rule as the league page)');
+assert.deepEqual(m.in.teams.leagues.retro.gpBy, { TMN: 2, MAS: 2 }, 'games per team from the box scores, both player_id together');
+assert.equal(m.in.draft.leagues.draft.main, null, 'no main team with one team');
 assert.equal(m.in.teams.leagues.retro.s.gp, 6, 'two player_id rows of one person add up');
 assert.equal(m.in.teams.leagues.retro.g, null, 'no goalie line where the person did not play goal');
 assert.equal(m.in.draft.leagues.draft.g.sv, 18);

@@ -101,3 +101,18 @@ main#main { padding-block: 0; }
 .pl-lg .tbl-wrap + .tbl-wrap { margin-top: 10px; }
 /* Section pages have no bottom tab bar: keep their short menu visible on phones. */
 @media (max-width: 899px) { .sec-top { flex-wrap: wrap; } .sec-top .nav { display: flex; flex-basis: 100%; } }
+
+/* ---------- teams and leagues on section pages: same badges, colours and names as the league pages (docs/presentation.md) ---------- */
+.lcard-top .nm a, .lcard-sc a { position: relative; z-index: 1; }  /* above the link that covers the card */
+.lcard-top .nm .tl { overflow: hidden; text-overflow: ellipsis; }
+.lcard-sc span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.pl-lg-name { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; border-radius: 3px; background: var(--panel); color: var(--panel-ink); text-decoration: none; }
+.pl-lg-name .mk-logo { height: 34px; }
+.pl-lg-name span { font: 600 26px/1 var(--f-display); letter-spacing: .03em; text-transform: uppercase; }
+.pl-lg-name i { font-style: normal; font-family: var(--f-brand, var(--f-display)); background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pl-teams { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 0 12px; }
+.pl-teams li { display: inline-flex; align-items: center; gap: 8px; }
+.pl-teams small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.pl-teams .maintag { margin-left: 0; }
+.pl-lgs { display: inline-flex; align-items: center; gap: 6px; margin: 2px 14px 2px 0; }
+.sec-h .pl-lg-name, .sec-h .pl-lg-name span { color: var(--panel-mute); text-decoration: none; }

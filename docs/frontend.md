@@ -1,10 +1,12 @@
 # Front end
 
+Read `presentation.md` first: it says how every league, team, person and number must look and link.
+
 No framework. Plain ES5-style JavaScript (`var`, `function`) in one shared scope, HTML built as strings, `innerHTML` render.
 Keep this style: do not add `import`, `class`, a bundler or a library. Files are concatenated by `build.mjs`.
 
 ## Files and roles
-- `1-core.js`: `D`, helpers (`esc`, `norm`, date formatters), `STR` (fr/en texts) and `COLS` (table column labels), `lang`/`t()`/`L()`, `buildModel()`, team colors, `LIVE` state and `eff/boxOf/liveOf/startMs/todayStr`, small components (`BALL`, `GLYPH`, link helpers `pLink(id, fallback, cls)` for people, `abbLinks` for team abbreviations, `crest(abb)` for team logos (`LOGO_BASE` + `team.logo`; a logo that fails to load is removed)), sortable table engine (`ui`, `numCol`, `idxCol`).
+- `1-core.js`: `D`, helpers (`esc`, `norm`, date formatters), `STR` (fr/en texts) and `COLS` (table column labels), `lang`/`t()`/`L()`, `buildModel()`, team colors, `LIVE` state and `eff/boxOf/liveOf/startMs/todayStr`, small components (`BALL`, `GLYPH`, link helpers `pLink(id, fallback, cls)` for people, `abbLinks` for team abbreviations, `crest(abb)` for team badges (built by `LDLook.crest` in `shared/look.js`; a logo that fails to load is removed)), sortable table engine (`ui`, `numCol`, `idxCol`).
 - `2-views.js`: view functions, header (`renderChrome`, `renderPicker`, `renderTabbar`, `fitNav`), `VIEWS` map, `parseRoute`, `render`, global search, tooltips, event delegation (bottom of file).
 - `3-live.js`: see `live-engine.md`.
 
@@ -39,7 +41,7 @@ Appended sections at the end of the file hold the live UI rules; keep related ru
 ### Themes (`site/themes.mjs`)
 Each theme: `mark` (ball icon colors), `brand` (gradient of the league name), optional `brandFont`, `light`/`dark` token overrides (without `--`), optional `decor` CSS (`{T}` = theme selector).
 `themeCss()` builds the three blocks per theme. `cardCss()` builds the hub card styles per theme.
-Team colors: Retro uses a fixed table (`COLORS` in 1-core.js, from the artwork); other leagues use `hashColor(abb)` (stable).
+Team colors: `shared/look.js` (`LDLook`), the same on every page. Retro uses a fixed table (`COLORS` there, from the artwork); other leagues use a stable colour made from the code.
 
 ## Entry page and section pages (`site/hub/`)
 Separate, small: `hub.html` (shell), `hub.css`, `hub.js` (own `STR` fr/en, same storage keys `ldhml-lang`, `ldhml-theme` as league pages so the choice is shared).

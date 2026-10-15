@@ -1,0 +1,45 @@
+# Presentation guide
+
+## The principle
+**This site is for data nerds.** Nobody else reads the stats site of a recreational ball hockey league. So:
+- Show the data in full. Give the context a stats reader needs: denominators ("12 of 30 games"), thresholds ("min. 2 GP"), the date of the data, and what the source does not record.
+- **Every piece of data links to the page that has more detail about it.** A team goes to its team page, a person to their page in that league, a date or a score to the game page, and a league to its home page.
+- **A league, a team or a person looks the same on every page.** The same logo, colors, badge and name, everywhere on the platform (league pages, section pages, entry page, and the tools to come).
+- A summary page (section, entry, a future captain tool) always links to the page where the full data is. Example: a section profile has a "Full stats" link to the person's page in each league.
+
+## Identity pieces (use these; do not draw them again)
+
+| Thing | How it looks | Code (league pages) | Code (entry and section pages) |
+|---|---|---|---|
+| League | Logo (`assets/logos/<key>.webp`, `.mk-logo`) + "LDHML" + short name in the theme's brand gradient (`--brand`, `--f-brand`). Theme tokens: `data-league` on the page, `data-t` on a card or block. Dot in `--ball` on chips (`.lcard-mini`). Three-stripe bar (`--stripe-a/b/c`). | `renderChrome()` brand | `logoImg()`, `.lcard-head`, `.pl-lg-name` |
+| Team colour | `LDLook.teamColor(slug, abb)`: Retro uses its artwork table, other leagues a stable colour from the code. Set with `style="--tc:" + colorVar` (sets `--tc` and the ink `--tx`). | `colorOf(abb)` | `LDLook.colorVar(l.slug, abb)` |
+| Team badge (crest) | Team colour with the code; the NBHPA team logo on top once it loads. Sizes `sm`, default, `lg`. | `crest(abb, size)` | `crestOf(l, abb)` |
+| Team, full | Badge + full name, a link to the team page (`.tcell`, `a.tl.strong`). | `teamCell(id)` | `crestOf` + `teamName(l, tm)` |
+| Team, compact | Code chip in the team colour, a link; the full name is in `title` (`.abbs a`). For dense table cells. | `abbLinks([abb])` | `teamChips(l, [abb])` |
+| Person | Name, a link (`a.tl`, `strong` in tables). In a league: their page in the league. Across leagues: the section profile. Box rows hold an NBHPA `player_id`: go through `pLink` / `U()`. | `pLink(id)` | `<a class="tl strong" href="<league>/#player-<id>">` |
+| A person's teams | Badge + full name + games + "Main team" tag (`.maintag`); other teams are substitute teams (`SUB:` in tables, `.also`). | `byTeamHtml`, `teamsHtml` | `.pl-teams` |
+| Player hero | Jersey in the main team colour with the most used number (`jersey()`), name, team links, ranks per position, LED readout. | `viewPlayer` | `.pl-hero` |
+| Numbers | Tabular figures (`.num`). Column labels are short with the long name in `title` (`COLS` fr/en `[short, long]`). Sortable tables use `dataTable`. Big numbers in heroes use LED digits (`led()`). | `COLS`, `dataTable`, `readout` | `.tbl` |
+| Game, date, score | A link to the game page (`#game-<id>`). Result chips V/D/N link to the opponent (`chip`). | `gameBlock`, `chipFor` | - |
+
+All team visuals come from `shared/look.js` (`LDLook`). It is inlined into every page. A new page type uses it; it does not make its own colours or badges.
+
+## Choosing the form
+- A row or a block about one team: badge + full name.
+- A dense table cell (many columns, several teams): code chips. The full name is in the tooltip.
+- A team in a hero: large badge (`crest-lg`).
+- A person: always the name as a link, never only a code or an id.
+- A league outside its own pages: its logo and its themed name, never plain text only.
+
+## Context for the numbers
+- Say what a number covers: main team or all teams (`scopeBar`), the snapshot date on pages without live data ("Numbers of 15 October"), the season.
+- Say what the source does not record: team goals without a scorer, goals worth 2, missing goalies (see `ambNote`, `unscored`, `logGap`). Never hide a gap; add a note.
+- Show thresholds next to the list ("min. 2 GP").
+
+## Checklist for a new view
+1. Every team, person, league, game and date is a link to its most detailed page.
+2. Teams use `LDLook` (through the helpers above): colour, badge, full name or chip.
+3. Leagues show their logo and themed name.
+4. Numbers are tabular, the labels have a long form in `title`, both in `fr` and `en`.
+5. A summary links to the full data.
+6. Look at it at desktop width and at 400 px (see `testing.md`), in light and dark mode.

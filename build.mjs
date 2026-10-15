@@ -24,7 +24,8 @@ const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);
 const safe = (o) => JSON.stringify(o).replace(/</g, '\\u003c').split(LS).join('\\u2028').split(PS).join('\\u2029');
 
 const jsParts = (await readdir(path.join(root, 'site/js'))).filter((f) => f.endsWith('.js')).sort();
-const parsers = await read('shared/parsers.js');
+// shared/: parsers (data) and look (how teams look). Both go into every page, so every page reads and shows data the same way.
+const parsers = (await read('shared/parsers.js')) + '\n' + (await read('shared/look.js'));
 const leagueJs = [parsers, ...(await Promise.all(jsParts.map((f) => read(`site/js/${f}`))))].join('\n');
 const hubJs = [parsers, await read('site/hub/hub.js')].join('\n');
 const baseCss = await read('site/style.css');
@@ -130,8 +131,10 @@ const sectionLinks = Object.fromEntries(cfg.sections.map((s) => [s.key, { path: 
 const reg = JSON.parse(await read('registry/people.json').catch(() => '{"next":1,"people":[]}'));
 const { people, missing } = peopleIndex(cfg, leagues, reg, nice);
 if (missing.length) console.warn(`${missing.length} people are not in registry/people.json yet (temporary ids). Run "npm run registry".`);
+const personByNid = new Map(Object.values(people).map((p) => [p.nid, p]));
 
 // ---- home page data: a small summary of each league ----
+// Teams carry id, code, name and logo, so every page can show the badge, the colour and a link (docs/presentation.md).
 const summary = leagues.map(({ lg, data }) => {
   const played = data.games.filter((g) => g.as != null && g.hs != null && !g.cancelled);
   const teamName = Object.fromEntries(data.teams.map((t) => [t.id, t]));
@@ -139,8 +142,9 @@ const summary = leagues.map(({ lg, data }) => {
   return {
     slug: lg.slug, path: pathOf(lg), section: lg.section, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo, categoryId: lg.categoryId,
     teams: data.teams.length, played: played.length, total: data.games.filter((g) => !g.cancelled).length,
-    top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ name: nice(t.name), pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
-    scorer: scorer && scorer.p > 0 ? { name: nice(scorer.name), p: scorer.p } : null,
+    teamList: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })),
+    top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
+    scorer: scorer && scorer.p > 0 ? { id: personByNid.get(scorer.nid)?.id, name: nice(scorer.name), abb: scorer.teams[0], p: scorer.p } : null,
     upcoming: data.games.filter((g) => !(g.as != null && g.hs != null) && !g.cancelled).map((g) => ({ date: g.date, time: g.time, away: teamName[g.away]?.abb, home: teamName[g.home]?.abb })),
     fetchedAt: data.meta.fetchedAt
   };
@@ -160,7 +164,6 @@ const sectionData = (s) => ({
   }))
 });
 // League page: maps from NBHPA ids to our ids, and where else each person plays.
-const personByNid = new Map(Object.values(people).map((p) => [p.nid, p]));
 const leagueIds = (lg, data) => {
   const ids = { pids: {}, nids: {}, who: {} };
   for (const row of [...data.players, ...data.goalies]) {

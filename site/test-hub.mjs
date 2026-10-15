@@ -53,6 +53,10 @@ for (const s of cfg.sections) {
   for (const l of mine) assert.ok(d.querySelector(`.lcard a[href="${l.path || l.slug}/"]`), `${s.key}: card links to ${l.slug}`);
   assert.ok(H.leagues.every((l) => l.section === s.key), `${s.key}: no league of another section`);
   nights += d.querySelectorAll('.night li').length;
+  // presentation (docs/presentation.md): teams have a badge and a link, people are links
+  assert.ok(d.querySelectorAll('.lcard-top li').length > 0, `${s.key}: standings on the cards`);
+  assert.ok([...d.querySelectorAll('.lcard-top li')].every((li) => li.querySelector('.crest') && li.querySelector('a[href*="/#team-"]')), `${s.key}: card standings rows have a team badge and a team link`);
+  assert.ok([...d.querySelectorAll('.lcard-sc')].every((x) => x.querySelector('a[href*="/#player-"]') && x.querySelector('.abbs a[href*="/#team-"]')), `${s.key}: the top scorer and the team are links`);
   assert.equal(d.querySelectorAll('#lgsel option').length, mine.length + 2, `${s.key}: picker lists the section, its leagues and the entry page`);
   assert.ok(d.querySelector('#foot a[href="../"]'), `${s.key}: footer links to the entry page`);
 
@@ -66,6 +70,7 @@ for (const s of cfg.sections) {
   }
   w.location.hash = '#players'; await wait(20);
   assert.equal(d.querySelectorAll('.tbl tbody tr').length, H.people.length, `${s.key}: player list has everybody`);
+  assert.ok([...d.querySelectorAll('.tbl tbody tr')].every((tr) => tr.querySelector('a[href*="/#player-"]') && tr.querySelector('.abbs a[href*="/#team-"]')), `${s.key}: player list links each league page and each team`);
   const one = H.people[0], q = d.getElementById('pq');
   q.value = one.name; q.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
   assert.ok([...d.querySelectorAll('.tbl tbody tr')].some((tr) => tr.textContent.includes(one.name)), `${s.key}: name filter`);
@@ -75,6 +80,11 @@ for (const s of cfg.sections) {
     for (const slug of Object.keys(p.lg)) {
       const l = mine.find((x) => x.slug === slug);
       assert.ok(d.querySelector(`a[href="${l.path || l.slug}/#player-${p.id}"]`), `${s.key}: ${p.name} links to the league page`);
+      const hl = H.leagues.find((x) => x.slug === slug);
+      for (const abb of p.lg[slug].teams) {
+        const tm = hl.teamList.find((x) => x.abb === abb);
+        if (tm) assert.ok(d.querySelector(`.pl-teams a[href="${hl.path}/#team-${tm.id}"]`) && d.querySelector(`.pl-teams .crest`), `${s.key}: ${p.name}: team ${abb} has a badge, its full name and a link`);
+      }
     }
     for (const k of p.xs) assert.ok(d.querySelector(`.pxl a[href="../${cfg.sections.find((x) => x.key === k).path}/#player-${p.id}"]`), `${s.key}: ${p.name} links to the other section`);
   }

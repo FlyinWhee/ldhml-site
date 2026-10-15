@@ -39,6 +39,33 @@ export function peopleIndex(cfg, leagues, reg, nice = (s) => s) {
       }
     }
   }
+  // Games per team, from the box scores. Same rule as the league page (mainTeam in site/js/1-core.js):
+  // the main team is the team with the most games (skater + goalie); a tie goes to the team of the latest game.
+  for (const { lg, data } of leagues) {
+    const games = Object.fromEntries((data.games ?? []).map((g) => [g.id, g]));
+    const abbOf = Object.fromEntries((data.teams ?? []).map((t) => [t.id, t.abb]));
+    const byPid = {};
+    for (const [gid, b] of Object.entries(data.box?.games ?? {})) {
+      if (!games[gid] || !b.t || b.t.length !== 2) continue;
+      for (const side of b.t) for (const r of [...side.sk, ...side.gk]) {
+        if (!r[0]) continue;
+        const z = ((byPid[r[0]] ??= {})[abbOf[side.id]] ??= { gp: 0, last: '' });
+        z.gp++; if (games[gid].date > z.last) z.last = games[gid].date;
+      }
+    }
+    for (const p of Object.values(people)) {
+      const m = p.in[lg.section]?.leagues[lg.slug];
+      if (!m) continue;
+      const per = {};
+      for (const pid of p.pids) for (const [abb, z] of Object.entries(byPid[pid] ?? {})) {
+        const o = (per[abb] ??= { gp: 0, last: '' }); o.gp += z.gp; if (z.last > o.last) o.last = z.last;
+      }
+      const rank = (a) => [per[a]?.gp ?? 0, per[a]?.last ?? ''];
+      m.teams.sort((a, b) => rank(b)[0] - rank(a)[0] || rank(b)[1].localeCompare(rank(a)[1]));
+      m.main = m.teams.length > 1 && per[m.teams[0]] ? m.teams[0] : null;
+      m.gpBy = Object.fromEntries(m.teams.filter((a) => per[a]).map((a) => [a, per[a].gp]));
+    }
+  }
   for (const id of Object.keys(people)) {
     const p = people[id];
     p.rank = { s: mostCommon(ranks[id].s), g: mostCommon(ranks[id].g) };

@@ -25,11 +25,12 @@ var STR = {
     sections: 'Sections', nLeagues: '{n} ligues', nLeague: '{n} ligue', nTeams: '{n} équipes', nPeople: '{n} joueurs', openSection: 'Ouvrir la section {s}',
     allOf: 'Toutes les ligues {s}', hubName: 'Accueil LDHML', home: 'Ligues', players: 'Joueurs', people: 'joueurs',
     playersLede: 'Toutes les personnes qui jouent dans les ligues {s} cette saison. Ouvrez un nom pour son profil.',
-    filter: 'Filtrer par nom', nShown: '{n} joueurs', noPlayers: 'Aucun joueur ne correspond.', player: 'Joueur', inLeagues: 'Ligues',
+    filter: 'Filtrer par nom', nShown: '{n} joueurs', noPlayers: 'Aucun joueur ne correspond.', player: 'Joueur',
     rating: 'Cote', ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', ratingSShort: 'Cote J', ratingGShort: 'Cote G', ratingNote: 'La cote vient de la NBHPA. Elle existe séparément pour joueur et pour gardien.',
-    skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', leaguePage: 'Page dans la ligue', otherSection: 'Joue aussi dans la section {s} :',
+    skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
+    fullStats: 'Statistiques complètes →', mainTag: 'Équipe principale', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
   en: {
@@ -42,11 +43,12 @@ var STR = {
     sections: 'Sections', nLeagues: '{n} leagues', nLeague: '{n} league', nTeams: '{n} teams', nPeople: '{n} players', openSection: 'Open the {s} section',
     allOf: 'All {s} leagues', hubName: 'LDHML home', home: 'Leagues', players: 'Players', people: 'players',
     playersLede: 'Everybody who plays in the {s} leagues this season. Open a name for the profile.',
-    filter: 'Filter by name', nShown: '{n} players', noPlayers: 'No player matches.', player: 'Player', inLeagues: 'Leagues',
+    filter: 'Filter by name', nShown: '{n} players', noPlayers: 'No player matches.', player: 'Player',
     rating: 'Rating', ratingS: 'Skater rating', ratingG: 'Goalie rating', ratingSShort: 'Rtg S', ratingGShort: 'Rtg G', ratingNote: 'The rating comes from NBHPA. A skater rating and a goalie rating are separate.',
-    skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', leaguePage: 'Page in the league', otherSection: 'Also plays in the {s} section:',
+    skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
+    fullStats: 'Full stats →', mainTag: 'Main team', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
 };
@@ -73,6 +75,14 @@ var fmtShort = function (d) {
 
 var BALL = '<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" style="fill:var(--mark-a)"/><path d="M6 11a15 15 0 0 1 10-7" fill="none" style="stroke:var(--mark-b)" stroke-width="2" stroke-linecap="round" opacity=".7"/><g fill="#0A1218"><circle cx="18" cy="8" r="2.1"/><circle cx="18" cy="28" r="2.1"/><circle cx="8" cy="18" r="2.1"/><circle cx="28" cy="18" r="2.1"/><circle cx="11" cy="11" r="2.1"/><circle cx="25" cy="11" r="2.1"/><circle cx="11" cy="25" r="2.1"/><circle cx="25" cy="25" r="2.1"/><circle cx="18" cy="18" r="2.1"/></g></svg>';
 var logoImg = function (key, w, h) { return key && H.logos && H.logos[key] ? '<img class="mk-logo" src="' + H.logos[key] + '" alt="" width="' + w + '" height="' + h + '">' : BALL; };
+
+/* Teams look and link the same as on the league pages (shared/look.js, docs/presentation.md).
+ * Links are relative to a section page: a league is at "<league path>/". */
+var teamOf = function (l, abb) { return (l.teamList || []).filter(function (x) { return x.abb === abb; })[0] || { abb: abb }; };
+var teamHref = function (l, tm) { return tm.id ? l.path + '/#team-' + tm.id : ''; };
+var crestOf = function (l, abb) { return window.LDLook.crest(teamOf(l, abb), l.slug, 'sm'); };
+var teamChips = function (l, abbs) { return '<span class="abbs">' + abbs.map(function (a) { var tm = teamOf(l, a); return window.LDLook.abbLink(tm, l.slug, teamHref(l, tm)); }).join('') + '</span>'; };
+var teamName = function (l, tm) { var href = teamHref(l, tm); return href ? '<a class="tl strong" href="' + esc(href) + '">' + esc(tm.name || tm.abb) + '</a>' : esc(tm.name || tm.abb); };
 
 var live = {}; // slug -> fresher standings, once read from the API
 
@@ -107,14 +117,17 @@ function cardHtml(l) {
   var top = standingsOf(l), pl = playedOf(l);
   var pct = l.total ? Math.min(100, Math.round(pl / l.total * 100)) : 0;
   var rows = top.slice(0, 3).map(function (r, i) {
-    return '<li><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(window.LDParsers.niceName(r.name)) + '</span><span class="rec">' + r.w + '-' + r.l + '-' + r.t + '</span><b>' + r.pts + '</b></li>';
+    var tm = Object.assign({}, teamOf(l, r.abb), { id: r.id || teamOf(l, r.abb).id, name: window.LDParsers.niceName(r.name) });
+    return '<li><span class="rk">' + (i + 1) + '</span><span class="nm tcell">' + crestOf(l, r.abb) + teamName(l, tm) + '</span><span class="rec">' + r.w + '-' + r.l + '-' + r.t + '</span><b>' + r.pts + '</b></li>';
   }).join('');
+  var sc = l.scorer;
+  var scorer = sc && sc.id ? '<a class="tl strong" href="' + esc(l.path) + '/#player-' + esc(sc.id) + '">' + esc(sc.name) + '</a> ' + teamChips(l, [sc.abb]) : sc ? esc(sc.name) : '';
   return '<article class="lcard" data-slug="' + esc(l.slug) + '" data-t="' + esc(themeOf(l)) + '"><div class="lcard-head">' + logoImg(l.logo, 60, 52) +
     '<h2><a class="lcard-link" href="' + esc(l.path) + '/"><span>LDHML</span> <i>' + esc(l.short) + '</i></a></h2></div>' +
     '<p class="lcard-meta">' + l.teams + ' ' + t('teams') + ' · ' + pl + ' ' + t('of') + ' ' + l.total + ' ' + t('games') + '</p>' +
     '<div class="bar" role="img" aria-label="' + pl + ' / ' + l.total + '"><i style="width:' + pct + '%"></i></div>' +
     (pl ? '<ol class="lcard-top" aria-label="' + t('leader') + '">' + rows + '</ol>' : '<p class="lcard-none">' + t('noGames') + '</p>') +
-    (l.scorer && pl ? '<p class="lcard-sc"><small>' + t('scorer') + '</small><span>' + esc(l.scorer.name) + '</span><b>' + l.scorer.p + ' ' + t('pointsShort') + '</b></p>' : '') +
+    (l.scorer && pl ? '<p class="lcard-sc"><small>' + t('scorer') + '</small><span>' + scorer + '</span><b>' + l.scorer.p + ' ' + t('pointsShort') + '</b></p>' : '') +
     '</article>';
 }
 
@@ -173,8 +186,11 @@ function viewSectionHome() {
   return '<div class="arena sec-arena"><div class="wrap"><h1>LDHML ' + esc(nameOf(S)) + '</h1><ul class="hub-stats"><li><b>' + list.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + H.people.length + '</b><span>' + t('people') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div>' +
     '<div class="wrap hub-body">' + nightHtml(list, '') + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + list.map(cardHtml).join('') + '</div></div>';
 }
+/* Each league of the person: the league (a link to the person's page in it) and the teams (badges in the team colour, links to the team pages). */
 function leagueChips(p) {
-  return '<span class="abbs">' + playedIn(p).map(function (l) { return '<a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + esc(l.short) + '</a>'; }).join('') + '</span>';
+  return playedIn(p).map(function (l) {
+    return '<span class="pl-lgs" data-t="' + esc(themeOf(l)) + '"><a class="lnk" href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + esc(l.short) + '</a>' + teamChips(l, p.lg[l.slug].teams) + '</span>';
+  }).join('');
 }
 function viewPlayers() {
   var q = norm(ui.q.trim());
@@ -185,7 +201,7 @@ function viewPlayers() {
   }).join('');
   return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
     '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off"><span class="count">' + t('nShown', { n: list.length }) + '</span></div>' +
-    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col">' + t('inLeagues') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
+    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
     '<p class="note">' + t('ratingNote') + '</p></div>';
 }
 function lineTable(head, cells) {
@@ -203,11 +219,19 @@ function viewPlayer(r) {
     var v = p.ranks[sys.key];
     return '<span>' + esc(nameOf(sys)) + ': <b>' + [v.s != null ? t('skater') + ' ' + esc(v.s) : '', v.g != null ? t('goalie') + ' ' + esc(v.g) : ''].filter(Boolean).join(' · ') + '</b></span>';
   });
+  /* One block per league: the league (logo, name, link), the teams (badge, full name, link, games, main team), the season lines,
+   * and a link to the person's page in the league, where the full stats are (game log, per-team splits). */
   var cards = playedIn(p).map(function (l) {
-    var m = p.lg[l.slug], out = '';
-    if (m.s) out += lineTable([t('skater'), t('gp'), t('cG'), t('cA'), t('cP'), t('cPim')], [esc(m.teams.join(', ')), m.s.gp, m.s.g, m.s.a, m.s.g + m.s.a, mins(m.s.pim)]);
-    if (m.g) out += lineTable([t('goalie'), t('gp'), t('cW'), t('cL'), t('cT'), t('cSv')], [esc(m.teams.join(', ')), m.g.gp, m.g.w, m.g.l, m.g.t, m.g.sa ? pct3(m.g.sv / m.g.sa) : '-']);
-    return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><div class="sec-h"><h2>' + esc(l.name) + '</h2><a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + t('leaguePage') + '</a></div>' + out + '</section>';
+    var m = p.lg[l.slug], out = '', gpBy = m.gpBy || {};
+    var teams = '<ul class="pl-teams">' + m.teams.map(function (a) {
+      var tm = teamOf(l, a), href = teamHref(l, tm);
+      return '<li style="--tc:' + window.LDLook.colorVar(l.slug, a) + '"><span class="tcell">' + crestOf(l, a) + teamName(l, tm) + '</span>' +
+        (gpBy[a] != null ? '<small>' + gpBy[a] + ' ' + t('gp') + '</small>' : '') + (a === m.main ? '<em class="maintag">' + t('mainTag') + '</em>' : '') + '</li>';
+    }).join('') + '</ul>';
+    if (m.s) out += lineTable([t('skater'), t('gp'), t('cG'), t('cA'), t('cP'), t('cPim')], [teamChips(l, m.teams), m.s.gp, m.s.g, m.s.a, m.s.g + m.s.a, mins(m.s.pim)]);
+    if (m.g) out += lineTable([t('goalie'), t('gp'), t('cW'), t('cL'), t('cT'), t('cSv')], [teamChips(l, m.teams), m.g.gp, m.g.w, m.g.l, m.g.t, m.g.sa ? pct3(m.g.sv / m.g.sa) : '-']);
+    return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><div class="sec-h"><h2><a class="pl-lg-name" href="' + esc(l.path) + '/">' + logoImg(l.logo, 40, 34) + '<span>LDHML <i>' + esc(l.short) + '</i></span></a></h2>' +
+      '<a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + t('fullStats') + '</a></div>' + teams + out + '</section>';
   }).join('');
   var other = (p.xs || []).map(function (k) {
     var s = H.sections[k];
@@ -276,6 +300,9 @@ document.addEventListener('input', function (e) {
   if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* ignore */ } }
 });
 window.addEventListener('hashchange', function () { render(false); });
+/* Team logos (crests): show a logo once it has loaded; remove it if it fails, the team colour and code stay (same as the league pages). */
+document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
+document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
 
 /* ---- fresher standings from the public API, one request at a time (section pages only) ---- */
 function refreshStandings() {

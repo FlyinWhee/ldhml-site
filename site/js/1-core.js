@@ -20,7 +20,6 @@
     });
   };
   var norm = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
-  var LOGO_BASE = 'https://admin.nbhpa.com/';
 
   /* ================= language ================= */
   var STR = {
@@ -137,28 +136,9 @@
   };
 
   /* ================= data model ================= */
-  /* Team colours, taken from the league's own team artwork (season 5, fall 2026).
-   * [colour, ink]: the ink is the text colour used on top of the team colour. */
-  var COLORS = {
-    FLI: ['#F29B0F', '#1A1204'],  // Flintstones: amber
-    CAL: ['#8E44C9', '#FFFFFF'],  // Câlinours: purple
-    GIJ: ['#1D9A7C', '#FFFFFF'],  // GI Joe: teal green
-    GOO: ['#D9B51E', '#1A1604'],  // Goonies: gold
-    GHO: ['#C8202F', '#FFFFFF'],  // Ghostbusters: red
-    JAW: ['#2A9FCF', '#FFFFFF'],  // Jaws: ocean blue
-    MAS: ['#3162E0', '#FFFFFF'],  // Masters of the Universe: royal blue
-    TMN: ['#2FA84F', '#FFFFFF'],  // TMNT: green
-    TRA: ['#EA4A2B', '#FFFFFF'],  // Transformers: Autobot red-orange
-    TOP: ['#66748A', '#FFFFFF']   // Top Gun: steel silver
-  };
-  /* Used inside style="--tc:" + colorOf(abb): it sets the team colour and the ink together. */
-  /* Only the Retro league has artwork colours. Other leagues get a stable colour made from the team code. */
-  var hashColor = function (abb) {
-    var h = 0, i;
-    for (i = 0; i < abb.length; i++) h = (h * 31 + abb.charCodeAt(i)) % 360;
-    return ['hsl(' + h + ', 52%, 38%)', '#FFFFFF'];
-  };
-  var colorOf = function (abb) { var x = (LG.slug === 'retro' && COLORS[abb]) || hashColor(String(abb || '')); return x[0] + ';--tx:' + x[1]; };
+  /* Team colours and badges come from shared/look.js (the same on every page of the site).
+   * Used inside style="--tc:" + colorOf(abb): it sets the team colour and the ink together. */
+  var colorOf = function (abb) { return LDLook.colorVar(LG.slug, abb); };
   /* Scope of the player numbers. "main": only what a player did for his main team in this league.
    * "all": everything he did in this league, for every team (substitutions included). */
   var SCOPE = 'main';
@@ -389,9 +369,7 @@
   var abbOfTeam = function (id) { return T[id] ? T[id].abb : '?'; };
 
   function crest(abb, size) {
-    var tm = TA[abb];
-    var logo = tm && tm.logo ? '<img src="' + LOGO_BASE + esc(tm.logo) + '" alt="" loading="lazy" decoding="async">' : '';
-    return '<span class="crest' + (size ? ' crest-' + size : '') + '" style="--tc:' + colorOf(abb) + '"><span aria-hidden="true">' + esc(abb) + '</span>' + logo + '</span>';
+    return LDLook.crest(TA[abb] || { abb: abb }, LG.slug, size);
   }
   function teamCell(id) {
     var tm = T[id]; if (!tm) return '';

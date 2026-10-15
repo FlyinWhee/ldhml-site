@@ -68,3 +68,6 @@ A rank only exists per position (skater, goalie). The NBHPA rank is one value pe
 
 ## Branch previews on the same Pages site (2026-10-15)
 Pages holds one site per repo. Options were: a second host with per-branch URLs (Cloudflare Pages, Netlify), or building every branch into `/preview/<branch>/` of the one Pages site. Chosen: the Pages subfolder. No new account or service, everything stays in GitHub. Cost: each deploy builds all branches (a few seconds each), and previews are public.
+
+## The site is for data nerds; one look for every entity (2026-10-15)
+The owner's core principle: only people who love data read a recreational league's stats site. So every piece of data links to its most detailed page, and a league, a team or a person looks the same on every page of the platform. The rules are in `presentation.md`. Team colours and badges moved from `1-core.js` to `shared/look.js` (`LDLook`), so the section pages (and the tools to come) draw teams with the same code as the league pages. The section profile now shows the team badges, full names, games per team, the main team (same rule as the league page, computed at build time from the box scores) and a "Full stats" link to each league page.

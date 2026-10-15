@@ -14,7 +14,7 @@ Adding a file: name it `4-xxx.js` (order matters). Add a test.
 Checklist for any change here:
 1. New text? Add it to both `fr` and `en` in `STR` (and `COLS`).
 2. Is a game final or live? Use `eff()`, `liveOf()`. Never `played()` alone.
-3. Is it a name? Use `pLink` / `abbLinks`. Names must stay links.
+3. Is it a name? Use `pLink` / `abbLinks` / `teamCell` / `crest`. Names must stay links. Teams look the same everywhere (`shared/look.js`, `../../docs/presentation.md`).
 4. Is it a content link? Class `lnk`. Never `more`.
 5. Does it change polling? Update `../test-live.mjs` and `../../docs/live-engine.md`.
 6. Run `npm test`.

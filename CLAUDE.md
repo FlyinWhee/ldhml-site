@@ -23,6 +23,10 @@ rank systems later (for example a draft "salary" under a salary cap).
 requests that arrive pre-validated with all the information needed for one-step approval. Goal: fewer admin tasks,
 lean on security and permissions. It needs writes, sign-in and stored state, so it needs a backend: see `docs/open-items.md`.
 
+**Who it is for: data nerds.** Nobody else reads the stats of a recreational ball hockey league. Show the data in full, with its
+context, and link every piece of data to the page that has more detail about it. A league, a team or a person looks the same on every
+page of the platform (logo, colours, badge, full name). Read `docs/presentation.md` before you build or change any view.
+
 - Live site: https://flyinwhee.github.io/ldhml-site/ (GitHub Pages, repo `FlyinWhee/ldhml-site`).
 - The site is French by default, with an English toggle.
 - The owner is Mathieu (RevOps lead, Joliette QC). He is not a developer. Reply to him in
@@ -58,6 +62,8 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 5. **No `cphjoliette.com` links or wording** anywhere on the site. The site is not tied to one team.
 6. **No player photos.** Team logos are fine. (Photos are a permission risk.)
 7. **Every team name and player name is a link** (`#team-<id>`, `#player-<id>`). Use the helpers in `1-core.js`; do not write plain names.
+   A team is shown with its badge and colour and its full name (or its code chip in a dense table), always from `shared/look.js` through the helpers.
+   A summary page links to the page with the full data (for example a section profile links to the person's page in each league). See `docs/presentation.md`.
    A player link uses **our id** (`L0001`), never an NBHPA `player_id`. Box scores hold `player_id` values: map them with `U()` (or pass them to `pLink`, which does it).
 8. **French and English.** Every visible string goes through `STR` in `site/js/1-core.js` (fr and en). Never hard-code a user-facing string in a view.
 9. **Content links use class `lnk`, never `more`.** `.more` is the fixed mobile menu. Using it for a link breaks the mobile layout.
@@ -88,6 +94,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | Entry page, section pages, section player page | `site/hub/hub.js`, `site/hub/hub.css` |
 | People, our ids, ranks per position | `registry/` (data), `scraper/registry.mjs`, `site/people.mjs`, `scraper/test-registry.mjs` |
 | A league look | `site/themes.mjs` |
+| How teams look on every page (colours, badges, chips) | `shared/look.js` (see `docs/presentation.md`) |
 | Add a league, a section or a new season | `leagues.json` (see `docs/operations.md`) |
 | PWA, icons, build output | `build.mjs`, `assets/` (see `docs/build-and-pwa.md`) |
 
@@ -107,6 +114,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | `docs/architecture.md` | You need the big picture: files, build, data flow, page model |
 | `docs/data-formats.md` | You touch `data/*.json`, parsers, or the source endpoints |
 | `docs/live-engine.md` | You touch polling, live games, the box score cache |
+| `docs/presentation.md` | **Always, for any view.** The data-nerd principle; how leagues, teams, people and numbers look and link |
 | `docs/frontend.md` | You touch views, routes, STR, styles, themes, the hub |
 | `docs/build-and-pwa.md` | You touch `build.mjs`, the service worker, icons, the Artifact preview |
 | `docs/testing.md` | You run or write tests. Has the manual regression checklist |
