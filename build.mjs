@@ -29,8 +29,8 @@ const parsers = (await read('shared/parsers.js')) + '\n' + (await read('shared/l
 const leagueJs = [parsers, ...(await Promise.all(jsParts.map((f) => read(`site/js/${f}`))))].join('\n');
 const hubJs = [parsers, await read('site/hub/hub.js')].join('\n');
 const baseCss = await read('site/style.css');
-const leagueCss = baseCss + '\n' + themeCss() + '\n' + cardCss(); // cardCss: [data-t] tokens, for league badges of other leagues
-const hubCss = baseCss + '\n' + await read('site/hub/hub.css') + '\n' + cardCss();
+let leagueCss = baseCss + '\n' + themeCss() + '\n' + cardCss(); // cardCss: [data-t] tokens, for league badges of other leagues
+let hubCss = baseCss + '\n' + await read('site/hub/hub.css') + '\n' + cardCss();
 
 const fill = (tpl, css, js, data) => {
   for (const key of ['/*__CSS__*/', '/*__JS__*/', '/*__DATA__*/']) if (!tpl.includes(key)) throw new Error(`Placeholder ${key} missing in template`);
@@ -119,6 +119,11 @@ for (const k of logoKeys) {
   logos[k] = 'data:image/webp;base64,' + (await readFile(path.join(root, `assets/logos/${k}.webp`))).toString('base64');
   icons[k] = 'data:image/png;base64,' + (await readFile(path.join(root, `assets/logos/${k}-icon.png`))).toString('base64');
 }
+// League logos for the league badges: defined ONCE per page in CSS (.lg-logo-<key>), a badge only names the class.
+// (An inline data URI in every badge made the player list several MB per render.)
+const logoCss = Object.entries(icons).map(([k, v]) => `.lg-logo-${k} { background-image: url("${v}"); }`).join('\n');
+leagueCss += '\n' + logoCss;
+hubCss += '\n' + logoCss;
 const hubIcon = 'data:image/png;base64,' + (await readFile(path.join(root, 'assets/logos/hub-icon.png'))).toString('base64');
 logos.hero = 'data:image/webp;base64,' + (await readFile(path.join(root, 'assets/logos/dek-hero.webp'))).toString('base64');
 // ---- sections: the first level of the site (draft leagues, team leagues). Each league belongs to one. ----
@@ -210,10 +215,9 @@ for (const out of outDirs) {
     // The leagues of this section, with their teams and small logo (64 px tab icon), for the picker and the league badges.
     const registry = s.leagues.map(({ lg, data }) => ({ slug: lg.slug, path: pathOf(lg), name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
       teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name) })) }));
-    const leagueIcons = Object.fromEntries(s.leagues.filter(({ lg }) => lg.logo).map(({ lg }) => [lg.logo, icons[lg.logo]]));
     for (const { lg, data } of s.leagues) {
       const D = { ...data, league: { slug: lg.slug, path: pathOf(lg), theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null },
-        section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, icons: leagueIcons, ids: leagueIds(lg, data), base: '../', root: '../../' };
+        section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, ids: leagueIds(lg, data), base: '../', root: '../../' };
       const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
       const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });
       const ldir = path.join(sdir, pathOf(lg));

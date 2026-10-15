@@ -70,10 +70,36 @@ for (const s of cfg.sections) {
   }
   w.location.hash = '#players'; await wait(20);
   assert.equal(d.querySelectorAll('.tbl tbody tr').length, H.people.length, `${s.key}: player list has everybody`);
+  assert.ok(d.getElementById('main').innerHTML.length < 500000, `${s.key}: player list HTML stays small (no inline logos in badges): ${d.getElementById('main').innerHTML.length} bytes`);
   assert.ok([...d.querySelectorAll('.tbl tbody tr')].every((tr) => tr.querySelector('a[href*="/#player-"]') && tr.querySelector('.abbs a[href*="/#team-"]')), `${s.key}: player list links each league page and each team`);
   const one = H.people[0], q = d.getElementById('pq');
   q.value = one.name; q.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
   assert.ok([...d.querySelectorAll('.tbl tbody tr')].some((tr) => tr.textContent.includes(one.name)), `${s.key}: name filter`);
+  // filters: sex, role, rank, league; each result equals a count made from the data
+  const rows = () => d.querySelectorAll('.tbl tbody tr').length;
+  const click = async (sel) => { d.querySelector(sel).click(); await wait(10); };
+  const pick = async (id, v) => { const el = d.getElementById(id); el.value = v; el.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(10); };
+  const played = (p, k) => Object.values(p.lg).some((m) => m[k]);
+  await click('[data-fclear]');
+  assert.equal(rows(), H.people.length, `${s.key}: clear filters`);
+  await click('[data-f="sex=f"]');
+  assert.equal(rows(), H.people.filter((p) => p.sex === 'f').length, `${s.key}: women filter`);
+  await click('[data-f="role=g"]');
+  assert.equal(rows(), H.people.filter((p) => p.sex === 'f' && played(p, 'g')).length, `${s.key}: women goalies`);
+  await click('[data-fclear]'); await click('[data-f="role=s"]');
+  const rk = H.people.find((p) => p.rank.s && played(p, 's')).rank.s;
+  await pick('prank', rk);
+  assert.equal(rows(), H.people.filter((p) => played(p, 's') && p.rank.s === rk).length, `${s.key}: skaters rated ${rk}`);
+  await pick('prank', '-');
+  assert.equal(rows(), H.people.filter((p) => played(p, 's') && !p.rank.s).length, `${s.key}: skaters without a rating`);
+  await click('[data-fclear]');
+  if (mine.length > 1) {
+    await pick('plg', mine[0].slug);
+    assert.equal(rows(), H.people.filter((p) => p.lg[mine[0].slug]).length, `${s.key}: league filter`);
+    await click('[data-f="role=g"]');
+    assert.equal(rows(), H.people.filter((p) => p.lg[mine[0].slug] && p.lg[mine[0].slug].g).length, `${s.key}: goalies of one league`);
+  }
+  await click('[data-fclear]');
   for (const p of H.people) {
     w.location.hash = '#player-' + p.id; await wait(5);
     assert.ok(main().includes(p.name), `${s.key}: profile of ${p.name}`);

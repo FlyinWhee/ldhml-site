@@ -30,6 +30,7 @@ var STR = {
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
+    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', allRanks: 'Toutes les cotes', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
     inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', subShort: 'SUB:', subFor: 'Remplaçant pour', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
@@ -48,6 +49,7 @@ var STR = {
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
+    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', allRanks: 'All ratings', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
     inLeague: '{p}: stats in {l}', mainTag: 'Main team', subShort: 'SUB:', subFor: 'Subbed for', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
@@ -82,7 +84,7 @@ var teamOf = function (l, abb) { return (l.teamList || []).filter(function (x) {
 var teamHref = function (l, tm) { return tm.id ? l.path + '/#team-' + tm.id : ''; };
 var crestOf = function (l, abb) { return window.LDLook.crest(teamOf(l, abb), l.slug, 'sm'); };
 var teamChips = function (l, abbs) { return '<span class="abbs">' + abbs.map(function (a) { var tm = teamOf(l, a); return window.LDLook.abbLink(tm, l.slug, teamHref(l, tm)); }).join('') + '</span>'; };
-var badgeOf = function (l, o) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: H.logos && H.logos[l.logo] }, Object.assign({ theme: themeOf(l) }, o)); };
+var badgeOf = function (l, o) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, Object.assign({ theme: themeOf(l) }, o)); };
 var teamName = function (l, tm) { var href = teamHref(l, tm); return href ? '<a class="tl strong" href="' + esc(href) + '">' + esc(tm.name || tm.abb) + '</a>' : esc(tm.name || tm.abb); };
 
 var live = {}; // slug -> fresher standings, once read from the API
@@ -158,7 +160,8 @@ function renderRoot() {
 
 /* ================= section page ================= */
 var S = H.section;
-var ui = { q: '' };
+/* Player list filters: name, sex (f/m), role (s skater / g goalie), rank (a value, "-" = no rank), league (slug). */
+var ui = { q: '', sex: '', role: '', rank: '', lg: '' };
 var PEOPLE = {};
 (H.people || []).forEach(function (p) { PEOPLE[p.id] = p; });
 var leagueBy = {};
@@ -196,9 +199,49 @@ function personBadge(p, l, size) {
 function leagueChips(p) {
   return '<span class="lgbs">' + playedIn(p).map(function (l) { return personBadge(p, l); }).join('') + '</span>';
 }
+/* The positions a person played (in the selected league, or in any league of the section), and the ranks for them. */
+function playedAs(p) {
+  var ms = (ui.lg ? [p.lg[ui.lg]] : Object.keys(p.lg).map(function (k) { return p.lg[k]; })).filter(Boolean);
+  return { s: ms.some(function (m) { return m.s; }), g: ms.some(function (m) { return m.g; }), any: ms.length > 0 };
+}
+function passes(p, q) {
+  var pa = playedAs(p);
+  if (!pa.any) return false;
+  if (q && norm(p.name).indexOf(q) < 0) return false;
+  if (ui.sex && p.sex !== ui.sex) return false;
+  if (ui.role && !pa[ui.role]) return false;
+  if (ui.rank) {
+    /* The rank of the selected role, or of every position the person played. */
+    var pos = ui.role ? [ui.role] : ['s', 'g'].filter(function (k) { return pa[k]; });
+    if (!pos.some(function (k) { return ui.rank === '-' ? !p.rank[k] : p.rank[k] === ui.rank; })) return false;
+  }
+  return true;
+}
+/* Ranks in a stable order: by category letter (H, W, J, then the rest), level, then "+". */
+function rankList() {
+  var seen = {};
+  H.people.forEach(function (p) { ['s', 'g'].forEach(function (k) { if (p.rank[k]) seen[p.rank[k]] = 1; }); });
+  var key = function (r) { var m = /^([A-Z]+)(\d+)(\+?)$/.exec(r); return m ? [['H', 'W', 'J'].indexOf(m[1]) < 0 ? 9 : ['H', 'W', 'J'].indexOf(m[1]), +m[2], m[3] ? 1 : 0] : [10, 0, 0]; };
+  return Object.keys(seen).sort(function (a, b) { var x = key(a), y = key(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || a.localeCompare(b); });
+}
+function filterBar() {
+  var seg = function (k, opts) {
+    return '<div class="seg" role="group">' + opts.map(function (o) { return '<button type="button" data-f="' + k + '=' + o[0] + '" aria-pressed="' + (ui[k] === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
+  };
+  var sel = function (k, id, label, opts) {
+    return '<select id="' + id + '" class="ctl" data-fsel="' + k + '" aria-label="' + esc(label) + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (ui[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  };
+  var any = ui.q || ui.sex || ui.role || ui.rank || ui.lg;
+  return '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off">' +
+    seg('sex', [['', t('allSex')], ['f', t('women')], ['m', t('men')]]) +
+    seg('role', [['', t('allRoles')], ['s', t('skaters')], ['g', t('goalies')]]) +
+    sel('rank', 'prank', t('rating'), [['', t('allRanks')]].concat(rankList().map(function (r) { return [r, r]; }), [['-', t('noRank')]])) +
+    (H.leagues.length > 1 ? sel('lg', 'plg', t('leagues'), [['', t('allLeaguesF')]].concat(H.leagues.map(function (l) { return [l.slug, l.name]; }))) : '') +
+    (any ? '<button type="button" class="lnk clearf" data-fclear>' + t('clearFilters') + '</button>' : '') + '</div>';
+}
 function viewPlayers() {
   var q = norm(ui.q.trim());
-  var list = H.people.filter(function (p) { return !q || norm(p.name).indexOf(q) >= 0; })
+  var list = H.people.filter(function (p) { return passes(p, q); })
     .sort(function (a, b) { return a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'fr', { sensitivity: 'base' }); });
   var rows = list.map(function (p) {
     /* The badges are in their own column; on phones they move under the name (CSS .pl-under / .pl-lgcol). */
@@ -206,7 +249,7 @@ function viewPlayers() {
     return '<tr><td class="stick"><a class="tl strong" href="#player-' + esc(p.id) + '">' + esc(p.name) + '</a><div class="pl-under">' + chips + '</div></td><td class="num">' + rankTxt(p.rank.s) + '</td><td class="num">' + rankTxt(p.rank.g) + '</td><td class="pl-lgcol">' + chips + '</td></tr>';
   }).join('');
   return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
-    '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off"><span class="count">' + t('nShown', { n: list.length }) + '</span></div>' +
+    filterBar() + '<p class="count pl-count">' + t('nShown', { n: list.length }) + '</p>' +
     (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col" class="pl-lgcol">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
     '<p class="note">' + t('ratingNote') + '</p></div>';
 }
@@ -285,6 +328,14 @@ function renderPicker() {
 }
 
 document.addEventListener('click', function (e) {
+  /* Player list filters */
+  var f = e.target.closest && e.target.closest('[data-f],[data-fclear]');
+  if (f) {
+    if (f.hasAttribute('data-fclear')) ui = { q: '', sex: '', role: '', rank: '', lg: '' };
+    else { var kv = f.getAttribute('data-f').split('='); ui[kv[0]] = kv[1]; }
+    render(true);
+    return;
+  }
   var th = e.target.closest && e.target.closest('[data-theme-toggle]');
   if (th) {
     THEME_ON = !THEME_ON;
@@ -305,6 +356,14 @@ document.addEventListener('input', function (e) {
   render(true);
   var n = document.getElementById('pq');
   if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* ignore */ } }
+});
+document.addEventListener('change', function (e) {
+  var el = e.target;
+  if (!el.getAttribute || !el.getAttribute('data-fsel')) return;
+  ui[el.getAttribute('data-fsel')] = el.value;
+  render(true);
+  var n = document.getElementById(el.id);
+  if (n) n.focus();
 });
 window.addEventListener('hashchange', function () { render(false); });
 /* Team logos (crests): show a logo once it has loaded; remove it if it fails, the team colour and code stay (same as the league pages). */

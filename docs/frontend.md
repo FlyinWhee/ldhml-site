@@ -45,7 +45,7 @@ Team colors: `shared/look.js` (`LDLook`), the same on every page. Retro uses a f
 
 ## Entry page and section pages (`site/hub/`)
 Separate, small: `hub.html` (shell), `hub.css`, `hub.js` (own `STR` fr/en, same storage keys `ldhml-lang`, `ldhml-theme` as league pages so the choice is shared).
-One app, two kinds (`H.kind`): `root` (cards per section, no API request) and `section` (cards per league, `#players`, `#player-<id>`; reads the standings of its leagues on load, in sequence, stops after failures). The section header reuses the league header classes (`.top-in.sec-top`, `.brand`, `.nav`); on phones its menu stays visible (`.sec-top .nav`) because there is no tab bar. `LDHML_NOW` (string, test only) fakes the date.
+One app, two kinds (`H.kind`): `root` (cards per section, no API request) and `section` (cards per league, `#players` with filters (name, sex, role, rank, league; state in `ui`, buttons `data-f`, selects `data-fsel`, `data-fclear`; the rank filter uses the rank of the chosen role, or of every position the person played), `#player-<id>`; reads the standings of its leagues on load, in sequence, stops after failures). The section header reuses the league header classes (`.top-in.sec-top`, `.brand`, `.nav`); on phones its menu stays visible (`.sec-top .nav`) because there is no tab bar. `LDHML_NOW` (string, test only) fakes the date.
 
 ## Sections in league pages
 The picker lists the section page and the leagues of this section only. The footer links to the section page (`D.base`) and the entry page (`D.root`). The player page ends its hero with `crossLinks(pp)`: the section profile, the other leagues of the section, the profile in the other section (`.pxl`). Ratings: `pp.rank.s` / `pp.rank.g`; both are shown with labels when both exist.

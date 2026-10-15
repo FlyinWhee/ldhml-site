@@ -52,11 +52,12 @@
   /* League badge: the league (logo or dot, short name in its theme) and, inside it, the teams of this context.
    * The league part opens the league IN THE CURRENT CONTEXT (on a person: that person's page in the league;
    * elsewhere: the league home). The team chips inside always open the team pages.
-   *   league = { slug, short, name, theme, logo? (image URL or data URI) }
+   *   league = { slug, short, name, theme, logo? (logo key: the page CSS has .lg-logo-<key>, defined once by build.mjs) }
    *   o = { href, title, theme (theme to use, 'default' when themes are off), teams: [{ abb, name, href }], extra (text after the name), size: '' | 'lg' } */
   function leagueBadge(league, o) {
     o = o || {};
-    var mark = league.logo ? '<img src="' + esc(league.logo) + '" alt="">' : '<i aria-hidden="true"></i>';
+    /* The logo is a CSS class, not an inline image: a list can hold hundreds of badges. */
+    var mark = league.logo ? '<span class="lgb-mk lg-logo-' + esc(league.logo) + '" aria-hidden="true"></span>' : '<i aria-hidden="true"></i>';
     var inner = mark + '<b>' + esc(league.short) + '</b>' + (o.extra ? '<span>' + esc(o.extra) + '</span>' : '');
     var head = o.href ? '<a class="lgb-l" href="' + esc(o.href) + '" title="' + esc(o.title || league.name) + '">' + inner + '</a>' : '<span class="lgb-l" title="' + esc(o.title || league.name) + '">' + inner + '</span>';
     var teams = (o.teams || []).map(function (tm) { return abbLink(tm, league.slug, tm.href); }).join('');

@@ -113,3 +113,5 @@ main#main { padding-block: 0; }
 @media (max-width: 520px) { .pl-teams .tcell .crest { display: inline-grid; } }
 .pl-teams li.is-main { outline: 2px solid var(--ball); outline-offset: 3px; border-radius: 3px; padding-right: 4px; }
 .pl-teams li.also { margin-left: 0; }
+.pl-count { margin: 0 0 10px; }
+.clearf { background: none; border: 0; padding: 4px 2px; cursor: pointer; font: inherit; }

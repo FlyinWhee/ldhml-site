@@ -335,12 +335,12 @@
    * the team chips inside open the team pages there. */
   function crossLinks(pp) {
     var w = IDS.who[pp.id]; if (!w) return '';
-    var reg = D.registry || [], secs = D.sections || {}, base = D.base || '../', top = D.root || '../../', icons = D.icons || {};
+    var reg = D.registry || [], secs = D.sections || {}, base = D.base || '../', top = D.root || '../../';
     var a = function (href, label) { return '<a class="lnk" href="' + esc(href) + '#player-' + esc(pp.id) + '">' + esc(label) + '</a>'; };
     var badges = w.lg.map(function (x) {
       var l = reg.filter(function (r) { return r.slug === x.slug; })[0]; if (!l) return '';
       var home = base + l.path + '/';
-      return LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: icons[l.logo] }, {
+      return LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, {
         href: home + '#player-' + pp.id, title: t('inLeague', { p: pp.name, l: l.name }), theme: THEME_ON ? l.theme : 'default',
         teams: x.teams.map(function (abb) { var tm = (l.teams || []).filter(function (y) { return y.abb === abb; })[0] || { abb: abb }; return { abb: abb, name: tm.name, href: tm.id ? home + '#team-' + tm.id : '' }; })
       });
