@@ -34,6 +34,9 @@ for (const h of ['#home', '#standings', '#schedule', '#players', '#goalies', '#l
   assert.ok(main().length > 200, `${h} rendered too little`);
   hrefs().forEach((x) => seen.add(x));
 }
+// 1b. schedule day headings: weekday and date in two parts (two lines on desktop)
+await go('#schedule');
+assert.ok([...w.document.querySelectorAll('.dgrp .day')].every((h) => h.querySelector('.wd') && h.querySelector('.dm')), 'schedule headings have a weekday and a date part');
 // 2. every team and every person page renders
 for (const t of data.teams) { await go('#team-' + t.id); assert.ok(main().toLowerCase().includes(t.name.toLowerCase()), `team page ${t.name}`); hrefs().forEach((x) => seen.add(x)); }
 // People have our own ids (registry/people.json). One person can have several NBHPA player_id rows: they are one person.
@@ -111,6 +114,7 @@ w.document.querySelector('[data-scope="main"]') && w.document.querySelector('[da
     await go('#player-' + u);
     const main = w.document.querySelector('.pteams a.is-main');
     assert.equal(main && main.getAttribute('href'), '#team-' + ids[0], `main team of ${u} (most games, then latest game)`);
+    assert.ok(w.document.querySelector('.pteams a') === main && main.nextElementSibling && main.nextElementSibling.classList.contains('also'), `main team of ${u} comes first, then "SUB:"`);
   }
 }
 // cross links: the section profile of the person

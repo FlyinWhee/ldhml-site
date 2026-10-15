@@ -30,7 +30,7 @@ var STR = {
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
-    inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', leaguesTeams: 'Ligues et équipes',
+    inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', subShort: 'SUB:', subFor: 'Remplaçant pour', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
   en: {
@@ -48,7 +48,7 @@ var STR = {
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
-    inLeague: '{p}: stats in {l}', mainTag: 'Main team', leaguesTeams: 'Leagues and teams',
+    inLeague: '{p}: stats in {l}', mainTag: 'Main team', subShort: 'SUB:', subFor: 'Subbed for', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
 };
@@ -229,11 +229,13 @@ function viewPlayer(r) {
    * and a link to the person's page in the league, where the full stats are (game log, per-team splits). */
   var cards = playedIn(p).map(function (l) {
     var m = p.lg[l.slug], out = '', gpBy = m.gpBy || {};
-    var teams = '<ul class="pl-teams">' + m.teams.map(function (a) {
-      var tm = teamOf(l, a), href = teamHref(l, tm);
-      return '<li style="--tc:' + window.LDLook.colorVar(l.slug, a) + '"><span class="tcell">' + crestOf(l, a) + teamName(l, tm) + '</span>' +
-        (gpBy[a] != null ? '<small>' + gpBy[a] + ' ' + t('gp') + '</small>' : '') + (a === m.main ? '<em class="maintag">' + t('mainTag') + '</em>' : '') + '</li>';
-    }).join('') + '</ul>';
+    /* Same as the league page: the main team first, in a frame; then "SUB:" and the teams this person subbed for (m.teams is in that order). */
+    var teamLi = function (a) {
+      var tm = teamOf(l, a);
+      return '<li' + (a === m.main ? ' class="is-main" title="' + esc(t('mainTag')) + '"' : '') + '><span class="tcell">' + crestOf(l, a) + teamName(l, tm) + '</span>' +
+        (gpBy[a] != null ? '<small>' + gpBy[a] + ' ' + t('gp') + '</small>' : '') + '</li>';
+    };
+    var teams = '<ul class="pl-teams">' + (m.main ? teamLi(m.main) + '<li class="also" title="' + esc(t('subFor')) + '">' + t('subShort') + '</li>' + m.teams.slice(1).map(teamLi).join('') : m.teams.map(teamLi).join('')) + '</ul>';
     if (m.s) out += lineTable([t('skater'), t('gp'), t('cG'), t('cA'), t('cP'), t('cPim')], [teamChips(l, m.teams), m.s.gp, m.s.g, m.s.a, m.s.g + m.s.a, mins(m.s.pim)]);
     if (m.g) out += lineTable([t('goalie'), t('gp'), t('cW'), t('cL'), t('cT'), t('cSv')], [teamChips(l, m.teams), m.g.gp, m.g.w, m.g.l, m.g.t, m.g.sa ? pct3(m.g.sv / m.g.sa) : '-']);
     return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><h2 class="pl-lg-h">' + personBadge(p, l, 'lg') + '</h2>' + teams + out + '</section>';

@@ -542,6 +542,7 @@ a.chip:hover { filter: brightness(1.12); }
   .dgrp:first-of-type { border-top: 0; padding-top: 0; }
   .dgrp .day { position: sticky; top: 110px; margin: 0; font-size: 30px; line-height: 1.02; }
   .dgrp .day small { display: block; margin: 8px 0 0; }
+  .dgrp .day .wd, .dgrp .day .dm { display: block; overflow: hidden; text-overflow: ellipsis; }
   .dgrp .gms { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
   .dgrp .gm { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when end" "teams teams"; align-content: start; gap: 10px 14px; padding: 12px 14px; }
   .dgrp .gm-when { grid-area: when; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -612,3 +613,7 @@ a.lgb-l:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .lgb-lg .lgb-l img { width: 34px; height: 34px; }
 .lgb-lg .lgb-l b { font-size: 24px; }
 .lgbs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+/* Teams a person subbed for: "SUB:" after the main team (hero, section profile), "SUB" tag on table rows. */
+.subtag { font-style: normal; margin-left: 8px; padding: 0 5px; border-radius: 2px; border: 1px solid var(--line); color: var(--muted); font: 500 12px/1.4 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.pteams .also { margin-left: 0; align-self: center; }
+.hero .pteams .also { color: var(--panel-mute); border-left-color: var(--panel-line); }

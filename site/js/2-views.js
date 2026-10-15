@@ -52,7 +52,9 @@
       if (g.date !== cur) {
         if (cur !== null) out += '</div></section>';
         cur = g.date;
-        out += '<section class="dgrp"><h3 class="day">' + esc(fmtDay(cur)) + '</h3><div class="gms">';
+        /* Two parts: on desktop the weekday and the date go on two lines (narrow date column), on phones one line. */
+        var dd = parseD(cur);
+        out += '<section class="dgrp"><h3 class="day"><span class="wd">' + esc(dd.toLocaleDateString(loc(), { weekday: 'long' })) + '</span> <span class="dm">' + esc(dd.toLocaleDateString(loc(), { month: 'long', day: 'numeric' })) + '</span></h3><div class="gms">';
       }
       out += gameBlock(g);
     });
@@ -301,7 +303,7 @@
 
   /* Numbers of one person, team by team. The two rows always add up to the "all teams" totals. */
   function byTeamHtml(pp) {
-    var teamCell2 = function (a) { var tm = TA[a]; return tm ? '<span class="tcell">' + crest(a, 'sm') + '<a class="tl strong" href="#team-' + tm.id + '">' + esc(tm.name) + '</a>' + (a === pp.main ? '<em class="maintag">' + t('mainTag') + '</em>' : '') + '</span>' : esc(a); };
+    var teamCell2 = function (a) { var tm = TA[a]; return tm ? '<span class="tcell">' + crest(a, 'sm') + '<a class="tl strong" href="#team-' + tm.id + '">' + esc(tm.name) + '</a>' + (pp.main && a !== pp.main ? '<em class="subtag" title="' + esc(t('alsoPlayed')) + '">' + t('subTag') + '</em>' : '') + '</span>' : esc(a); };
     var teamsOf = function (map) { return pp.teams.filter(function (a) { return map && map[a]; }); };
     var out = '';
     var ss = teamsOf(splitS[pp.id]);
@@ -353,9 +355,10 @@
     var sk = pp.skater, gl = pp.goalie;
     var abb0 = pp.main || pp.teams[0];
     var no = jerseyOf(pp.id);
-    var teamLinks = '<div class="pteams">' + pp.teams.map(function (a) {
-      var tm = TA[a]; return tm ? '<a href="#team-' + tm.id + '"' + (a === pp.main && pp.teams.length > 1 ? ' class="is-main" title="' + esc(t('mainTag')) + '"' : '') + '>' + crest(a, 'sm') + esc(tm.name) + '</a>' : '';
-    }).join('') + '</div>';
+    /* The main team first, in a frame; then "SUB:" and the teams this person subbed for. pp.teams is already in that order. */
+    var multiT = pp.main && pp.teams.length > 1;
+    var tlink = function (a) { var tm = TA[a]; return tm ? '<a href="#team-' + tm.id + '"' + (multiT && a === pp.main ? ' class="is-main" title="' + esc(t('mainTag')) + '"' : '') + '>' + crest(a, 'sm') + esc(tm.name) + '</a>' : ''; };
+    var teamLinks = '<div class="pteams">' + (multiT ? tlink(pp.main) + '<span class="also" title="' + esc(t('alsoPlayed')) + '">' + t('alsoShort') + '</span>' + pp.teams.slice(1).map(tlink).join('') : pp.teams.map(tlink).join('')) + '</div>';
     var metaBits = [], rk = pp.rank;
     if (rk.s && rk.g) metaBits.push('<span>' + t('ratingS') + ': ' + esc(rk.s) + '</span>', '<span>' + t('ratingG') + ': ' + esc(rk.g) + '</span>');
     else if (rk.s || rk.g) metaBits.push('<span>' + t('rating') + ': ' + esc(rk.s || rk.g) + '</span>');
