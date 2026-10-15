@@ -6,10 +6,7 @@
    *   - Game clocks (350 bytes) are read only for games that are on today, from 30 min before the start.
    *   - After an error the code waits longer. After HTTP 429 it stops for 5 minutes.
    */
-  var API = (function () {
-    var m = document.querySelector('meta[name="ldhml-api"]');
-    return String(window.LDHML_API || (m && m.getAttribute('content')) || 'https://admin.nbhpa.com').replace(/\/+$/, '');
-  })();
+  var API = 'https://admin.nbhpa.com';
   var LEAGUE_ID = String(D.meta.leagueId || '10');
   var POLL = {
     tickMs: 5000, live: 30000, pre: 90000, none: 120000, recap: 120000, timeout: 12000, gap: 1200, gapSmall: 400,

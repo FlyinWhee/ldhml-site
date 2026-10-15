@@ -16,7 +16,7 @@ The site is small; the owner is not a developer; fewer tools to break. Files are
 Cloudflare challenges data-center IPs. Confirmed for GitHub Actions runners, a Cloudflare Worker, and a Worker cron. Only residential browsers and a local script pass. So: Windows `refresh.bat` and a planned Unraid script.
 
 ## The Cloudflare Worker (dead end)
-Plan: a Worker caches NBHPA answers for 10-60 s so 200 visitors cost 1 request. Result: the Worker itself is blocked by the challenge. Code kept in `worker/` and the toml files; safe to delete. The `LDHML_API` env and `ldhml-api` meta are leftovers.
+Plan: a Worker caches NBHPA answers for 10-60 s so 200 visitors cost 1 request. Result: the Worker itself is blocked by the challenge. The code and its hooks (`worker/`, `wrangler.toml`, `LDHML_API`, the `ldhml-api` meta) were removed on 2026-10-15.
 
 ## Standings history (dropped)
 A history of standings over time was considered and not built. Per-game data in box scores covers the need.

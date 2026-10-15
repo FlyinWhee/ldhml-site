@@ -3,7 +3,7 @@
 ## `build.mjs` step by step
 1. Read `leagues.json`, `shared/parsers.js`, `site/js/*.js` (sorted), `site/style.css`, `site/themes.mjs`.
 2. `leagueJs` = parsers + core + views + live. `hubJs` = parsers + hub.js. `leagueCss` = style + `themeCss()`. `hubCss` = style + hub.css + `cardCss()`.
-3. `fill(template, css, js, data)` replaces the 3 placeholders (it throws if one is missing). If env `LDHML_API` is set it prepends `window.LDHML_API = "..."` (not used now; the Worker is retired).
+3. `fill(template, css, js, data)` replaces the 3 placeholders (it throws if one is missing).
 4. Data per league: reads `data/<slug>/{meta,teams,games,players,goalies,box}.json`, applies `niceName`, builds `registry` (league list for the picker) and a hub summary.
 5. Logos: `assets/logos/<key>.webp` (page) and `<key>-icon.png` (tab icon) become data URIs.
 6. `page()` wraps the fragment in a full HTML document: lang, `data-league`, viewport (`viewport-fit=cover`), title, description, icon, and the PWA tags and registration script when `pwa` is set.

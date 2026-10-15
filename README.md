@@ -93,8 +93,6 @@ A bad answer (empty table, fewer rows) never replaces good data.
 
 Live mode needs a normal web page (GitHub Pages, a file on disk). The sandbox of an Artifact preview blocks it, so the preview shows the snapshot and says so.
 
-The Cloudflare Worker in `worker/` is retired (Cloudflare blocks Workers too). See `docs/decisions.md`.
-
 
 ## Be polite to the source
 

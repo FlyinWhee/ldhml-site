@@ -20,7 +20,6 @@ site/test-*.mjs         jsdom tests of the built pages.
 assets/logos/           League logos (WebP for pages, PNG for tab icon). Inlined as data URIs.
 assets/pwa/             PWA icons per logo (192, 512, maskable). Copied to dist/icons.
 scripts/                refresh.bat (Windows) and unraid-refresh.sh: run the scraper and push data/.
-worker/, wrangler.toml  UNUSED Cloudflare Worker proxy (kept as a record, see decisions.md).
 .github/workflows/      Pages deploy (build only).
 docs/                   This documentation.
 ```

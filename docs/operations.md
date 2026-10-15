@@ -13,7 +13,6 @@ If the refresh stops, nothing breaks. The page compares its cache with the live 
 - About 4 requests per league + 1 recap per game that has a score and is new or from the last 3 days. Pause `DELAY_MS` (1500) between requests. Retries up to 3 times on 5xx/429 with growing waits.
 - User-Agent: `ldhml-stats-poc/0.2 (community stats viewer; low-volume; ...)`.
 - It refuses to overwrite a league when `assemble()` reports problems (fewer than 2 teams, no games, incomplete rows, no players). Other leagues continue; exit code 1 at the end.
-- `LDHML_API` (env) can point it at a proxy. Not used.
 - `scraper/import-raw.mjs <file>`: build snapshots from a raw JSON saved from a browser session (`{ slug: { standings, players, goalies, schedule, recaps } }`). A fallback if the scraper cannot reach NBHPA.
 
 ## Windows (`scripts/refresh.bat`)
@@ -39,9 +38,8 @@ Check `site/test-hub.mjs` and `test-pwa.mjs` pass (they read `leagues.json`).
 Push to `main`. Wait about a minute. Open https://flyinwhee.github.io/ldhml-site/. Pages needs "Source: GitHub Actions" in the repo settings.
 Commit message style: short, imperative. The session tooling appends co-author trailers; keep them.
 
-## Retired / unused
-- Cloudflare Worker (`worker/`, `wrangler.toml` at root and in `worker/`). It was meant as a caching proxy. Cloudflare blocks Workers from reaching NBHPA, so it is useless. Safe to delete both toml files, the folder, the Worker in the Cloudflare account, and the GitHub Actions variable `LDHML_API`. (Pending the owner's OK.)
-- `LDHML_API` env in `build.mjs` and `fetch.mjs`, and `<meta name="ldhml-api">` support in `3-live.js`: harmless, can be removed with the Worker.
+## Retired
+The Cloudflare Worker proxy and its `LDHML_API` hook were removed (2026-10-15). See `decisions.md`. The Cloudflare Worker and the GitHub variable `LDHML_API` may still exist in the owner's accounts; they are unused.
 
 ## Permission (open question)
 There is no contract with NBHPA about use of their public endpoints and team logos. The owner will contact them. Until then: keep rates low, send no more than the current polling, no photos, say on the site that it is unofficial (the hub footer does).
