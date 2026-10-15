@@ -30,7 +30,7 @@ var STR = {
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
-    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', rankFrom: 'De…', rankTo: 'À…', otherRanks: 'Autres', rankOrder: 'Plus le chiffre est petit, plus la cote est forte : H8 est plus forte que H12. W7+ est entre W6 et W7. H, W et J sont des échelles séparées.', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
+    allSex: 'Tous', women: 'Femmes', men: 'Hommes', allRoles: 'Tous les rôles', skaters: 'Joueurs', goalies: 'Gardiens', filters: 'Filtres', close: 'Fermer', sexLabel: 'Sexe', roleLabel: 'Rôle', showN: 'Voir {n} joueurs', rankFrom: 'De…', rankTo: 'À…', otherRanks: 'Autres', rankOrder: 'Plus le chiffre est petit, plus la cote est forte : H8 est plus forte que H12. W7+ est entre W6 et W7. H, W et J sont des échelles séparées.', noRank: 'Sans cote', allLeaguesF: 'Toutes les ligues', clearFilters: 'Effacer les filtres',
     inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', subShort: 'SUB:', subFor: 'Remplaçant pour', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
@@ -49,7 +49,7 @@ var STR = {
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
-    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', rankFrom: 'From…', rankTo: 'To…', otherRanks: 'Other', rankOrder: 'A lower number is a stronger rating: H8 is stronger than H12. W7+ is between W6 and W7. H, W and J are separate scales.', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
+    allSex: 'All', women: 'Women', men: 'Men', allRoles: 'All roles', skaters: 'Skaters', goalies: 'Goalies', filters: 'Filters', close: 'Close', sexLabel: 'Sex', roleLabel: 'Role', showN: 'Show {n} players', rankFrom: 'From…', rankTo: 'To…', otherRanks: 'Other', rankOrder: 'A lower number is a stronger rating: H8 is stronger than H12. W7+ is between W6 and W7. H, W and J are separate scales.', noRank: 'No rating', allLeaguesF: 'All leagues', clearFilters: 'Clear filters',
     inLeague: '{p}: stats in {l}', mainTag: 'Main team', subShort: 'SUB:', subFor: 'Subbed for', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
@@ -238,7 +238,8 @@ function rankSel(k, id, first, withOther) {
     order.map(function (c) { return '<optgroup label="' + esc(c) + '">' + groups[c].map(function (r) { return opt(r, r); }).join('') + '</optgroup>'; }).join('') +
     (withOther ? '<optgroup label="' + esc(t('otherRanks')) + '">' + other.map(function (r) { return opt(r, r); }).join('') + opt('-', t('noRank')) + '</optgroup>' : '') + '</select>';
 }
-function filterBar() {
+var FPANEL = false; // the filter panel is open (phones)
+function filterBar(n) {
   var seg = function (k, opts) {
     return '<div class="seg" role="group">' + opts.map(function (o) { return '<button type="button" data-f="' + k + '=' + o[0] + '" aria-pressed="' + (ui[k] === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
   };
@@ -246,12 +247,21 @@ function filterBar() {
     return '<select id="' + id + '" class="ctl" data-fsel="' + k + '" aria-label="' + esc(label) + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (ui[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
   };
   var any = ui.q || ui.sex || ui.role || ui.rFrom || ui.rTo || ui.lg;
-  return '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off">' +
-    seg('sex', [['', t('allSex')], ['f', t('women')], ['m', t('men')]]) +
-    seg('role', [['', t('allRoles')], ['s', t('skaters')], ['g', t('goalies')]]) +
-    '<span class="rk-range" title="' + esc(t('rankOrder')) + '"><span class="rk-l">' + t('rating') + '</span>' + rankSel('rFrom', 'prfrom', t('rankFrom'), true) + rankSel('rTo', 'prto', t('rankTo'), false) + '</span>' +
-    (H.leagues.length > 1 ? sel('lg', 'plg', t('leagues'), [['', t('allLeaguesF')]].concat(H.leagues.map(function (l) { return [l.slug, l.name]; }))) : '') +
-    (any ? '<button type="button" class="lnk clearf" data-fclear>' + t('clearFilters') + '</button>' : '') + '</div>';
+  var active = [ui.sex, ui.role, ui.rFrom || ui.rTo, ui.lg].filter(Boolean).length;
+  var grp = function (label, html) { return '<div class="fp-grp"><span class="fp-lbl">' + esc(label) + '</span>' + html + '</div>'; };
+  /* One set of controls. Desktop: inline in the bar (the panel box is "display: contents").
+   * Phones: the bar has the search and a "Filters" button; the controls are in a side panel (FPANEL). */
+  return '<div class="controls fbar' + (FPANEL ? ' fp-on' : '') + '"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off">' +
+    '<button type="button" class="fbtn" data-fpanel aria-expanded="' + FPANEL + '" aria-controls="fpanel">' + t('filters') + (active ? ' <b>' + active + '</b>' : '') + '</button>' +
+    '<div class="fp-back" data-fpanel-close></div>' +
+    '<div class="fpanel" id="fpanel" role="dialog" aria-label="' + esc(t('filters')) + '"><div class="fp-head"><b>' + t('filters') + '</b><button type="button" class="fp-x" data-fpanel-close aria-label="' + esc(t('close')) + '">×</button></div>' +
+    grp(t('sexLabel'), seg('sex', [['', t('allSex')], ['f', t('women')], ['m', t('men')]])) +
+    grp(t('roleLabel'), seg('role', [['', t('allRoles')], ['s', t('skaters')], ['g', t('goalies')]])) +
+    grp(t('rating'), '<span class="rk-range" title="' + esc(t('rankOrder')) + '"><span class="rk-l">' + t('rating') + '</span>' + rankSel('rFrom', 'prfrom', t('rankFrom'), true) + rankSel('rTo', 'prto', t('rankTo'), false) + '</span><p class="fp-note">' + esc(t('rankOrder')) + '</p>') +
+    (H.leagues.length > 1 ? grp(t('leagues'), sel('lg', 'plg', t('leagues'), [['', t('allLeaguesF')]].concat(H.leagues.map(function (l) { return [l.slug, l.name]; })))) : '') +
+    (any ? '<button type="button" class="lnk clearf clearf-d" data-fclear>' + t('clearFilters') + '</button>' : '') +
+    '<div class="fp-foot"><button type="button" class="lnk clearf" data-fclear' + (any ? '' : ' disabled') + '>' + t('clearFilters') + '</button><button type="button" class="fp-go" data-fpanel-close>' + esc(t('showN', { n: n })) + '</button></div>' +
+    '</div></div>';
 }
 function viewPlayers() {
   var q = norm(ui.q.trim());
@@ -263,7 +273,7 @@ function viewPlayers() {
     return '<tr><td class="stick"><a class="tl strong" href="#player-' + esc(p.id) + '">' + esc(p.name) + '</a><div class="pl-under">' + chips + '</div></td><td class="num">' + rankTxt(p.rank.s) + '</td><td class="num">' + rankTxt(p.rank.g) + '</td><td class="pl-lgcol">' + chips + '</td></tr>';
   }).join('');
   return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
-    filterBar() + '<p class="count pl-count">' + t('nShown', { n: list.length }) + '</p>' +
+    filterBar(list.length) + '<p class="count pl-count">' + t('nShown', { n: list.length }) + '</p>' +
     (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col" class="pl-lgcol">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
     '<p class="note">' + t('ratingNote') + '</p></div>';
 }
@@ -310,6 +320,8 @@ function renderSection(keepScroll) {
   var r = parseRoute();
   $('#top').innerHTML = sectionTop(r.name);
   $('#main').innerHTML = r.name === 'player' ? viewPlayer(r) : r.name === 'players' ? viewPlayers() : viewSectionHome();
+  /* The page does not scroll behind the open filter panel (phones; see .fp-open in hub.css). */
+  document.documentElement.classList.toggle('fp-open', FPANEL && r.name === 'players');
   var p = r.name === 'player' && PEOPLE[r.id];
   document.title = (p ? p.name + ' | ' : '') + 'LDHML ' + nameOf(S) + ' | ' + season();
   if (!keepScroll) window.scrollTo(0, 0);
@@ -342,12 +354,18 @@ function renderPicker() {
 }
 
 document.addEventListener('click', function (e) {
+  /* Filter panel (phones): open, close */
+  var fp = e.target.closest && e.target.closest('[data-fpanel],[data-fpanel-close]');
+  if (fp) { setPanel(fp.hasAttribute('data-fpanel')); return; }
   /* Player list filters */
   var f = e.target.closest && e.target.closest('[data-f],[data-fclear]');
   if (f) {
+    var key = f.getAttribute('data-f');
     if (f.hasAttribute('data-fclear')) ui = Object.assign({}, FILTERS0);
-    else { var kv = f.getAttribute('data-f').split('='); ui[kv[0]] = kv[1]; }
+    else { var kv = key.split('='); ui[kv[0]] = kv[1]; }
     render(true);
+    var again = key && document.querySelector('[data-f="' + key + '"]');
+    if (again) again.focus();
     return;
   }
   var th = e.target.closest && e.target.closest('[data-theme-toggle]');
@@ -379,7 +397,14 @@ document.addEventListener('change', function (e) {
   var n = document.getElementById(el.id);
   if (n) n.focus();
 });
-window.addEventListener('hashchange', function () { render(false); });
+function setPanel(open) {
+  FPANEL = open;
+  render(true);
+  var to = open ? document.querySelector('#fpanel button, #fpanel select') : document.querySelector('[data-fpanel]');
+  if (to) to.focus();
+}
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && FPANEL) setPanel(false); });
+window.addEventListener('hashchange', function () { FPANEL = false; render(false); });
 /* Team logos (crests): show a logo once it has loaded; remove it if it fails, the team colour and code stay (same as the league pages). */
 document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
 document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);

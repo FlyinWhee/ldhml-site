@@ -104,6 +104,17 @@ for (const s of cfg.sections) {
     assert.equal(rows(), H.people.filter((p) => p.lg[mine[0].slug] && p.lg[mine[0].slug].g).length, `${s.key}: goalies of one league`);
   }
   await click('[data-fclear]');
+  // phones: the filters open in a side panel; the same controls, a count, Escape closes it
+  await click('[data-fpanel]');
+  assert.ok(d.querySelector('.fbar.fp-on') && d.documentElement.classList.contains('fp-open'), `${s.key}: filter panel opens`);
+  assert.ok(d.activeElement && d.activeElement.closest('#fpanel'), `${s.key}: focus moves into the panel`);
+  await click('#fpanel [data-f="sex=m"]');
+  assert.ok(d.querySelector('.fbar.fp-on'), `${s.key}: panel stays open while filtering`);
+  assert.ok(d.querySelector('.fp-go').textContent.includes(String(H.people.filter((p) => p.sex === 'm').length)), `${s.key}: panel button shows the result count`);
+  assert.equal(d.querySelector('.fbtn b').textContent, '1', `${s.key}: the Filters button counts active filters`);
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(10);
+  assert.ok(!d.querySelector('.fbar.fp-on') && !d.documentElement.classList.contains('fp-open'), `${s.key}: Escape closes the panel`);
+  await click('[data-fclear]');
   for (const p of H.people) {
     w.location.hash = '#player-' + p.id; await wait(5);
     assert.ok(main().includes(p.name), `${s.key}: profile of ${p.name}`);
