@@ -74,7 +74,7 @@ npm run build            # dist/
 npm test                 # the full chain (see docs/testing.md). Must pass before every commit.
 ```
 
-Open `dist/<section>/<league>/index.html` (for example `dist/equipes/retro/index.html`) to see a league. The entry page is `dist/index.html`, a section is `dist/<section>/index.html`.
+Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.html`) to see a league. The entry page is `dist/index.html`, a section is `dist/<section>/index.html`.
 
 ## Where to change what
 

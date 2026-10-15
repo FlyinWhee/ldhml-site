@@ -30,7 +30,7 @@ If you change polling, rules or the live markup, update this test in the same co
 
 ## Manual regression checklist (run before a push that changes UI or live code)
 1. `npm test` passes.
-2. Open `dist/equipes/retro/index.html` (a file is fine), plus `dist/index.html` and a section page with a player profile, at 1280 px and at 400 px wide. Visit: home, standings, a team, a player, a game with a box score, schedule, live.
+2. Open `dist/draft/retro/index.html` (a file is fine), plus `dist/index.html` and a section page with a player profile, at 1280 px and at 400 px wide. Visit: home, standings, a team, a player, a game with a box score, schedule, live.
 3. Header: at 900-1100 px the nav is one row, or cleanly two rows. No overlap of links with the fixed mobile menu at 400 px.
 4. Toggle language (EN) and theme; toggle dark mode. Check contrast on the live card and the scoreboard.
 5. Open the league picker; switch league; footer link to the hub works.

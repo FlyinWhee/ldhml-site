@@ -41,7 +41,7 @@ The scraper and the browser use the **same parsers** (`shared/parsers.js`). A ch
 ```
 dist/index.html                       entry page (one card per section)
 dist/<section>/index.html             section page (2): leagues, players, player profiles
-dist/<section>/<league>/index.html    one per league (6), for example dist/equipes/retro/
+dist/<section>/<league>/index.html    one per league (6), for example dist/draft/retro/
 dist/<page>/manifest.webmanifest, dist/<page>/sw.js    PWA files, per page (entry, sections, leagues)
 dist/icons/*.png                PWA icons (shared)
 dist/artifact/...               same tree for the Artifact preview (entry page is a fragment, no PWA files)

@@ -1,7 +1,7 @@
 // Build the static site.
 //   dist/index.html                       LDHML entry page (one card per section: draft leagues, team leagues)
 //   dist/<section>/index.html             section page: its leagues and its players (for example /equipes/)
-//   dist/<section>/<league>/index.html    one page per league, with its own theme (for example /equipes/retro/)
+//   dist/<section>/<league>/index.html    one page per league, with its own theme (for example /draft/retro/)
 //   dist/artifact/...          the same tree for the Artifact preview (the home page is a fragment)
 // Every page is one self-contained file: CSS, JS, parsers and a data snapshot are inlined.
 import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';

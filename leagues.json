@@ -9,7 +9,7 @@
   ],
   "rankSystems": [],
   "leagues": [
-    { "slug": "retro",   "section": "teams", "logo": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
+    { "slug": "retro",   "section": "draft", "logo": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
     { "slug": "vintage", "section": "teams", "logo": "vintage", "categoryId": 3661, "theme": "vintage", "short": "Vintage", "name": "LDHML Vintage" },
     { "slug": "draft",   "section": "draft", "path": "ldhml", "logo": "draft", "categoryId": 2433, "theme": "draft", "short": "Draft", "name": "LDHML Draft" },
     { "slug": "3v3-a",   "section": "teams", "logo": "dek",     "categoryId": 1896, "theme": "ice",     "short": "3v3 A",   "name": "LDHML 3 vs 3 A" },

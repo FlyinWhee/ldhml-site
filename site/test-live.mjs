@@ -6,7 +6,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const html = await readFile(path.join(root, 'dist/equipes/retro/index.html'), 'utf8');
+const cfg = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8'));
+const retro = cfg.leagues.find((l) => l.slug === 'retro');
+const html = await readFile(path.join(root, 'dist', cfg.sections.find((s) => s.key === retro.section).path, retro.path || retro.slug, 'index.html'), 'utf8');
 const data = JSON.parse(await readFile(path.join(root, 'data/retro/games.json'), 'utf8'));
 const nextGame = data.find((g) => g.as == null && !g.cancelled);
 const sameDay = data.filter((g) => g.date === nextGame.date);

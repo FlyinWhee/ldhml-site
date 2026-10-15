@@ -9,7 +9,7 @@ The site has two sections: the draft leagues and the team leagues ("Équipes", w
 | --- | --- |
 | `/` | LDHML entry page: one card per section |
 | `/draft/`, `/equipes/` | A section: its leagues, next game nights, the list of its players, one profile page per player (`#player-L0001`) |
-| `/draft/ldhml/`, `/equipes/retro/`, `/equipes/vintage/`, `/equipes/3v3-a/`, `/equipes/3v3-b/`, `/equipes/4v4-b/` | One league: standings, teams, schedule, players, goalies, leaders, live page |
+| `/draft/ldhml/`, `/draft/retro/`, `/equipes/vintage/`, `/equipes/3v3-a/`, `/equipes/3v3-b/`, `/equipes/4v4-b/` | One league: standings, teams, schedule, players, goalies, leaders, live page |
 | `/preview/<branch>/` | The same site, built from a branch other than `main` (see "Branch previews") |
 
 Each person has one id of ours (`L0001`), kept in `registry/people.json`. The NBHPA person id is the link to the league system.
