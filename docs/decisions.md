@@ -56,3 +56,15 @@ French default, English toggle, saved in `localStorage`. Replies to the owner ar
 
 ## Alphabetical team list
 The Teams page is sorted by name (not by standings) at the owner's request. Standings stay on the Standings page.
+
+## Two sections: draft leagues and the other leagues (2026-10-15)
+The owner wants the draft leagues split from the others "as much as possible": an entry page, then a section page each (`/draft/`, `/equipes/`), then the leagues. Each section has its own player page; links across sections exist only to make navigation nicer. The name "Équipes"/"Teams" for the non-draft section is a working name. Breaking the old URLs (`/retro/`) was accepted (the site was not launched).
+
+## Our own person id, NBHPA id as foreign key (2026-10-15)
+A platform for captains and admins needs one record per person. NBHPA `player_id` is a registration (one person can have several); `nbhpa_player_id` (`nid`) is the person. We keep our own id (`L0001`) in a committed file (`registry/people.json`) because there is no backend; ids are assigned on the owner's computer during the refresh, never in CI, so they stay stable. Our own data about people (ranks, later captain flags, sub eligibility) hangs off our id.
+
+## Ranks per position, and our own rank systems (2026-10-15)
+A rank only exists per position (skater, goalie). The NBHPA rank is one value per person and position (checked across all leagues). Our own rank systems are planned (not defined yet: maybe per league): `rankSystems` in `leagues.json` declares them per section (optionally per league), values live in the registry. First use: a draft "salary" per player, with a salary cap per team.
+
+## Branch previews on the same Pages site (2026-10-15)
+Pages holds one site per repo. Options were: a second host with per-branch URLs (Cloudflare Pages, Netlify), or building every branch into `/preview/<branch>/` of the one Pages site. Chosen: the Pages subfolder. No new account or service, everything stays in GitHub. Cost: each deploy builds all branches (a few seconds each), and previews are public.

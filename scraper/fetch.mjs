@@ -8,6 +8,7 @@
 // If anything looks wrong, the old snapshot of that league stays in place.
 import path from 'node:path';
 import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
+import { syncFromData } from './registry.mjs';
 
 const BASE = 'https://admin.nbhpa.com';
 const MIN_AGE_MIN = Number(process.env.MIN_AGE_MIN ?? 15);
@@ -84,4 +85,7 @@ for (const lg of cfg.leagues) {
   }
   await sleep(DELAY);
 }
+// Our own person ids: add the new people of data/ to registry/people.json.
+try { const r = await syncFromData(); console.log(`registry: ${r.reg.people.length} people, ${r.added} new.`); }
+catch (e) { failed++; console.error(e.message); }
 if (failed) process.exit(1);

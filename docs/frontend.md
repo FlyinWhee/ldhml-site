@@ -16,6 +16,7 @@ Mobile: bottom tab bar (`TAB_MAIN = live, standings, teams, schedule, leaders`; 
 ## Rules for editing views
 - Escape everything with `esc()`. Data comes from a third party.
 - Names and teams: always through the link helpers so they stay links.
+- People: `p.id` is our id (`L0001`). A box row holds an NBHPA `player_id`: use `pLink(row[0])` or `U(row[0])`. Never build `#player-` from a box row directly.
 - Texts: add a key to **both** `fr` and `en` in `STR` (and `COLS` for table headers). The UI test visits every page in French; check English by hand (`localStorage ldhml-lang=en` or the EN button).
 - Numbers that line up: `font-variant-numeric: tabular-nums` (already on `.num`).
 - A game's state in a view: use `eff(g)`, `liveOf(g.id)`, `boxOf(g.id)`. Never test `played(g)` alone for "final".
@@ -40,9 +41,12 @@ Each theme: `mark` (ball icon colors), `brand` (gradient of the league name), op
 `themeCss()` builds the three blocks per theme. `cardCss()` builds the hub card styles per theme.
 Team colors: Retro uses a fixed table (`COLORS` in 1-core.js, from the artwork); other leagues use `hashColor(abb)` (stable).
 
-## Hub (`site/hub/`)
-Separate, small: `hub.html` (shell), `hub.css`, `hub.js` (own `STR` fr/en, own storage keys `ldhml-lang`, `ldhml-theme`, same as league pages so the choice is shared).
-Cards per league: leader, top scorer, next game night. Reads standings of each league from the API on load (6 requests in sequence, stops after failures). `LDHML_NOW` (string, test only) fakes the date.
+## Entry page and section pages (`site/hub/`)
+Separate, small: `hub.html` (shell), `hub.css`, `hub.js` (own `STR` fr/en, same storage keys `ldhml-lang`, `ldhml-theme` as league pages so the choice is shared).
+One app, two kinds (`H.kind`): `root` (cards per section, no API request) and `section` (cards per league, `#players`, `#player-<id>`; reads the standings of its leagues on load, in sequence, stops after failures). The section header reuses the league header classes (`.top-in.sec-top`, `.brand`, `.nav`); on phones its menu stays visible (`.sec-top .nav`) because there is no tab bar. `LDHML_NOW` (string, test only) fakes the date.
+
+## Sections in league pages
+The picker lists the section page and the leagues of this section only. The footer links to the section page (`D.base`) and the entry page (`D.root`). The player page ends its hero with `crossLinks(pp)`: the section profile, the other leagues of the section, the profile in the other section (`.pxl`). Ratings: `pp.rank.s` / `pp.rank.g`; both are shown with labels when both exist.
 
 ## Search
 Global search (`#gs`): index of teams and people (`buildSearch`, rebuilt when the model changes). Accent-insensitive (`norm`). Arrow keys and Enter work; Escape clears and closes it.

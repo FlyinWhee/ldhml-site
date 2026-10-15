@@ -28,7 +28,7 @@ Each item is a trap that already cost time. Check this list before a change.
 ## Build and deploy
 20. **Placeholders** `/*__CSS__*/`, `/*__JS__*/`, `/*__DATA__*/` are replaced with function replacers so `$` in code is safe. Keep it so.
 21. JSON in `<script>` is escaped for `<`, U+2028, U+2029 (`safe()`). Keep using it.
-22. `site/test-all.mjs` runs `test-ui` for every dir in `dist/` except `artifact` and `icons`. A new non-league dir in `dist/` must be excluded there.
+22. `site/test-all.mjs` runs `test-ui` for every league of `leagues.json` (pages are in `dist/<section>/<league>/`). It no longer scans `dist/`.
 23. The service worker version is a hash of the HTML, so each deploy refreshes it. The SW never intercepts cross-origin requests (NBHPA calls). Do not change that: it would cache live data.
 24. In the Artifact preview, live mode is blocked by the sandbox. Do not "fix" that.
 25. Syncing a stale working copy over the repo overwrote the Unraid section of README once. Always `git pull` before you edit.
@@ -41,3 +41,11 @@ Each item is a trap that already cost time. Check this list before a change.
 
 ## Tests tied to the data snapshot
 30. `site/test-ui.mjs` has a Retro-only block (`if (slug === 'retro')`). Most checks there are now computed from `data/` (top scorer, upcoming games, last night, multi-team players). Some names are still fixed: leader "Ghostbusters" in the standings, player "Michael Jobin", game `2539180` (scorer "Bellerose"), band text "TOP", search "gagnon", filter "lévesque". A data refresh can break them (it happened on 2026-10-15). When the test fails after a refresh and the page looks right, fix the test to read the value from `data/` instead of editing the data.
+
+## People and sections
+31. **An NBHPA `player_id` is not a person.** One person can have several (Marco Normandin had two in Retro, so he showed as two people). The person key is our id (registry), mapped from `nid`. Box rows hold `player_id`: always go through `U()` / `pLink`.
+32. **`registry/people.json` is a source of truth.** Do not regenerate it, do not renumber it. The refresh scripts must commit it with `data/`. If the registry lags behind `data/`, the build still works (temporary ids `n<nid>`, no cross links) but `npm test` fails: run `npm run registry`.
+33. A person's NBHPA rank is per position. Do not merge the skater rank and the goalie rank into one field.
+34. The section page shows snapshot numbers for people (no live polling there, on purpose). The league pages have the live numbers.
+35. **Branch previews:** the deploy always runs from `main` (the `github-pages` environment lets only `main` deploy). `preview.yml` only starts `refresh.yml` on `main`. Do not make the deploy run from the branch ref.
+36. Headless Edge has a minimum window width (about 500 px): a `--window-size=400,...` screenshot looks clipped on the right. To check 400 px, put the page in a 400 px wide `<iframe>` and take the shot of that.

@@ -14,12 +14,12 @@ git pull --rebase --autostash -q origin main
 docker run --rm -v "$REPO":/app -w /app node:22-alpine sh -c \
   '[ -d node_modules ] || npm ci --silent; node scraper/fetch.mjs'
 
-if git diff --quiet -- data && [ -z "$(git ls-files --others --exclude-standard data)" ]; then
+if git diff --quiet -- data registry && [ -z "$(git ls-files --others --exclude-standard data registry)" ]; then
   echo "No change in data. Nothing to push."
   exit 0
 fi
 
-git add data
+git add data registry
 git -c user.name="LDHML refresh" -c user.email="refresh@localhost" commit -q -m "Refresh data cache"
 git push -q origin HEAD:main
 echo "Pushed. GitHub Pages deploys from the push."

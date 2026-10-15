@@ -7,13 +7,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const slug = process.argv[2] || 'retro';
-const html = await readFile(path.join(root, 'dist', slug, 'index.html'), 'utf8');
+const cfg = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8'));
+const lgc = cfg.leagues.find((l) => l.slug === slug);
+const rel = cfg.sections.find((s) => s.key === lgc.section).path + '/' + (lgc.path || lgc.slug);
+const html = await readFile(path.join(root, 'dist', rel, 'index.html'), 'utf8');
 const errors = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
 vc.on('error', (e) => errors.push(String(e)));
 
-const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' + slug + '/' });
+const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' + rel + '/' });
 const w = dom.window;
 w.scrollTo = () => {};
 const wait = (ms = 15) => new Promise((r) => setTimeout(r, ms));
@@ -33,12 +36,26 @@ for (const h of ['#home', '#standings', '#schedule', '#players', '#goalies', '#l
 }
 // 2. every team and every person page renders
 for (const t of data.teams) { await go('#team-' + t.id); assert.ok(main().toLowerCase().includes(t.name.toLowerCase()), `team page ${t.name}`); hrefs().forEach((x) => seen.add(x)); }
-const ids = new Set([...data.players, ...data.goalies].map((p) => p.id));
+// People have our own ids (registry/people.json). One person can have several NBHPA player_id rows: they are one person.
+const rowsAll = [...data.players, ...data.goalies];
+const uidOf = (p) => data.ids.nids[p.nid];
+assert.deepEqual(rowsAll.filter((p) => !uidOf(p)).map((p) => p.name), [], 'every person has an id of ours (run "npm run registry")');
+const ids = new Set(rowsAll.map(uidOf));
 for (const id of ids) {
   await go('#player-' + id);
-  const name = [...data.players, ...data.goalies].find((p) => p.id === id).name;
+  const name = rowsAll.find((p) => uidOf(p) === id).name;
   assert.ok(main().toLowerCase().includes(name.toLowerCase().replace(/\s+/g, ' ')), `player page ${name}`);
   hrefs().forEach((x) => seen.add(x));
+}
+// an old link with an NBHPA player_id still opens the person
+await go('#player-' + data.players[0].id);
+assert.ok(main().toLowerCase().includes(data.players[0].name.toLowerCase().replace(/\s+/g, ' ')), 'old player_id link opens the person');
+// skater lines per person (rows of one person added together)
+const merged = {};
+for (const p of data.players) {
+  const m = merged[uidOf(p)] ??= { id: uidOf(p), name: p.name, teams: [], rows: 0, gp: 0, g: 0, a: 0 };
+  p.teams.forEach((a) => { if (!m.teams.includes(a)) m.teams.push(a); });
+  m.rows++; m.gp += p.gp; m.g += p.g; m.a += p.a;
 }
 // 2b. every game page renders (played games show a box score)
 for (const g of data.games) {
@@ -65,8 +82,23 @@ assert.ok(w.document.getElementById('top').textContent.includes(data.league.shor
 assert.ok(w.document.querySelectorAll('.sbc').length >= 1, 'scoreboard shows games');
 const picker = [...w.document.querySelectorAll('#lgsel option')];
 assert.equal(picker.length, data.registry.length + 1, 'picker lists the home page and every league');
-assert.equal(picker.find((o) => o.selected).value, slug, 'picker shows the current league');
-assert.ok(w.document.querySelector('#foot a[href="../"]'), 'footer links to the LDHML home page');
+assert.equal(picker.find((o) => o.selected).value, lgc.path || slug, 'picker shows the current league');
+assert.ok(data.registry.every((l) => l.path && cfg.leagues.find((c) => c.slug === l.slug).section === lgc.section), 'picker lists only the leagues of this section');
+assert.ok(w.document.querySelector('#foot a[href="../"]'), 'footer links to the section page');
+assert.ok(w.document.querySelector('#foot a[href="../../"]'), 'footer links to the LDHML entry page');
+// a person with several NBHPA player_id rows in this league is listed once
+await go('#players');
+w.document.querySelector('[data-scope="all"]') && w.document.querySelector('[data-scope="all"]').click(); await wait();
+for (const m of Object.values(merged).filter((x) => x.rows > 1)) {
+  const n = [...w.document.querySelectorAll('.tbl tbody tr')].filter((tr) => tr.querySelector(`a[href="#player-${m.id}"]`)).length;
+  assert.equal(n, 1, m.name + ' is listed once');
+}
+w.document.querySelector('[data-scope="main"]') && w.document.querySelector('[data-scope="main"]').click(); await wait();
+// cross links: the section profile of the person
+const cross = Object.keys(data.ids.who)[0];
+await go('#player-' + cross);
+assert.ok(w.document.querySelector(`.pxl a[href="../#player-${cross}"]`), 'player page links to the section profile');
+for (const k of data.ids.who[cross].xs) assert.ok(w.document.querySelector(`.pxl a[href="../../${data.sections[k].path}/#player-${cross}"]`), 'player page links to the other section');
 await go('#standings');
 const lead = [...data.teams].sort((x, y) => x.pos - y.pos)[0];
 assert.ok(w.document.querySelector('.tbl tbody tr').textContent.toLowerCase().includes(lead.name.toLowerCase()), 'standings start with the leader');
@@ -113,7 +145,7 @@ const firstRow = w.document.querySelector('.tbl tbody tr').textContent;
 assert.ok(/Ghostbusters/.test(firstRow), 'Ghostbusters lead the standings');
 await go('#players');
 const rows = w.document.querySelectorAll('.tbl tbody tr').length;
-assert.equal(rows, data.players.length, 'all skaters listed');
+assert.equal(rows, Object.keys(merged).length, 'all skaters listed, once per person');
 
 // 5. interactions: sort, filter, language, search
 w.document.querySelector('[data-sort="players|g|desc"]').click(); await wait();
@@ -159,7 +191,7 @@ const rowOf = (name) => [...w.document.querySelectorAll('.tbl tbody tr')].find((
 const cells = (tr) => [...tr.children].map((c) => c.textContent.trim());
 assert.ok(w.document.querySelector('.scope [data-scope="main"][aria-pressed="true"]'), 'main team is the default scope');
 // a skater who played for several teams (the data decides who)
-const multi = data.players.filter((x) => x.teams.length > 1).sort((x, y) => y.gp - x.gp)[0];
+const multi = Object.values(merged).filter((x) => x.teams.length > 1).sort((x, y) => y.gp - x.gp)[0];
 if (multi) {
   const mrow = rowOf(multi.name);
   assert.ok(mrow && /rempl|sub/i.test(cells(mrow)[2]), 'main team shown first, other teams tagged');
@@ -175,7 +207,7 @@ await go('#player-' + multi.id);
 const tfoot = [...w.document.querySelectorAll('.tbl tfoot td')].map((c) => c.textContent.trim());
 assert.ok(w.document.querySelector('.scope'), 'scope switch on the player page');
 }
-for (const p of data.players.filter((x) => x.teams.length > 1)) {
+for (const p of Object.values(merged).filter((x) => x.teams.length > 1)) {
   await go('#player-' + p.id);
   const f = [...w.document.querySelectorAll('.sec .tbl tfoot')][0];
   const t = f ? [...f.querySelectorAll('td')].map((c) => c.textContent.trim()) : [];

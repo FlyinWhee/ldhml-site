@@ -1,8 +1,12 @@
-/* LDHML home page: one card per league. The numbers come from the snapshot built into the page.
- * When the page opens, the standings of each league are read again from the public API (6 requests, one at a time). */
+/* LDHML entry page and section pages. One small app, two kinds of page (H.kind):
+ *   root     /            one card per section (draft leagues, team leagues). No request to the league server.
+ *   section  /<section>/  one card per league of the section, the people of the section, a player page per person.
+ * The numbers come from the snapshot built into the page. On a section page, the standings of each league are read
+ * again from the public API when the page opens (one request at a time, it stops after 2 failures). */
 var H = JSON.parse(document.getElementById('hub-data').textContent);
 var $ = function (s, r) { return (r || document).querySelector(s); };
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var norm = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
 var API = 'https://admin.nbhpa.com';
 var THEME_ON = true;
 try { THEME_ON = localStorage.getItem('ldhml-theme') !== 'off'; } catch (e) { /* storage can be blocked */ }
@@ -17,7 +21,16 @@ var STR = {
     leader: 'En tête', scorer: 'Meilleur pointeur', open: 'Ouvrir la ligue', night: 'Prochaine soirée', nights: 'Prochaines soirées', tonight: 'Ce soir',
     noNight: 'Aucun match à venir pour le moment.', gm: 'match', gms: 'matchs', all: 'Toutes les ligues', pickLabel: 'Ligue', themeLabel: 'Thème', themeTipOff: 'Désactiver les thèmes des ligues (look par défaut)', themeTipOn: 'Activer les thèmes des ligues',
     footUpdated: 'Données du {t}', footSource: 'Aperçu non officiel. Tous les chiffres viennent des données publiques de la ligue NBHPA.',
-    of: 'sur', gp: 'MJ', noGames: 'Pas de match joué', pointsShort: 'pts', fresh: 'Classements à jour', goTonight: 'Voir en direct'
+    of: 'sur', gp: 'MJ', noGames: 'Pas de match joué', pointsShort: 'pts', fresh: 'Classements à jour', goTonight: 'Voir en direct',
+    sections: 'Sections', nLeagues: '{n} ligues', nLeague: '{n} ligue', nTeams: '{n} équipes', nPeople: '{n} joueurs', openSection: 'Ouvrir la section {s}',
+    allOf: 'Toutes les ligues {s}', hubName: 'Accueil LDHML', home: 'Ligues', players: 'Joueurs', people: 'joueurs',
+    playersLede: 'Toutes les personnes qui jouent dans les ligues {s} cette saison. Ouvrez un nom pour son profil.',
+    filter: 'Filtrer par nom', nShown: '{n} joueurs', noPlayers: 'Aucun joueur ne correspond.', player: 'Joueur', inLeagues: 'Ligues',
+    rating: 'Cote', ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', ratingSShort: 'Cote J', ratingGShort: 'Cote G', ratingNote: 'La cote vient de la NBHPA. Elle existe séparément pour joueur et pour gardien.',
+    skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', leaguePage: 'Page dans la ligue', otherSection: 'Joue aussi dans la section {s} :',
+    profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
+    snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
+    cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
   en: {
     title: 'LDHML', lead: 'Standings, schedules, box scores and stats for the ball hockey leagues, {s} season.',
@@ -25,11 +38,21 @@ var STR = {
     leader: 'Leading', scorer: 'Top scorer', open: 'Open the league', night: 'Next game night', nights: 'Next game nights', tonight: 'Tonight',
     noNight: 'No upcoming games for now.', gm: 'game', gms: 'games', all: 'All leagues', pickLabel: 'League', themeLabel: 'Theme', themeTipOff: 'Switch off the league themes (default look)', themeTipOn: 'Switch the league themes on',
     footUpdated: 'Data of {t}', footSource: 'Unofficial preview. All numbers come from the public NBHPA league data.',
-    of: 'of', gp: 'GP', noGames: 'No game played yet', pointsShort: 'pts', fresh: 'Standings are up to date', goTonight: 'Watch live'
+    of: 'of', gp: 'GP', noGames: 'No game played yet', pointsShort: 'pts', fresh: 'Standings are up to date', goTonight: 'Watch live',
+    sections: 'Sections', nLeagues: '{n} leagues', nLeague: '{n} league', nTeams: '{n} teams', nPeople: '{n} players', openSection: 'Open the {s} section',
+    allOf: 'All {s} leagues', hubName: 'LDHML home', home: 'Leagues', players: 'Players', people: 'players',
+    playersLede: 'Everybody who plays in the {s} leagues this season. Open a name for the profile.',
+    filter: 'Filter by name', nShown: '{n} players', noPlayers: 'No player matches.', player: 'Player', inLeagues: 'Leagues',
+    rating: 'Rating', ratingS: 'Skater rating', ratingG: 'Goalie rating', ratingSShort: 'Rtg S', ratingGShort: 'Rtg G', ratingNote: 'The rating comes from NBHPA. A skater rating and a goalie rating are separate.',
+    skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', leaguePage: 'Page in the league', otherSection: 'Also plays in the {s} section:',
+    profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
+    snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
+    cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
 };
-var t = function (k, v) { var s = (STR[lang][k] != null ? STR[lang][k] : k); Object.keys(v || {}).forEach(function (n) { s = s.replace('{' + n + '}', v[n]); }); return s; };
+var t = function (k, v) { var s = (STR[lang][k] != null ? STR[lang][k] : k); Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 var season = function () { var s = H.season; return lang === 'fr' ? s : s.replace('Automne', 'Fall').replace('Hiver', 'Winter').replace('Été', 'Summer').replace('Printemps', 'Spring'); };
+var nameOf = function (s) { return s && s.name ? (s.name[lang] || s.name.fr) : ''; };
 
 var today = function () {
   if (window.LDHML_NOW) return window.LDHML_NOW.slice(0, 10);
@@ -44,8 +67,12 @@ var fmtStamp = function (iso) {
   if (isNaN(x)) return '';
   return x.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { day: 'numeric', month: 'long', timeZone: 'America/Toronto' });
 };
+var fmtShort = function (d) {
+  return new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+};
 
 var BALL = '<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" style="fill:var(--mark-a)"/><path d="M6 11a15 15 0 0 1 10-7" fill="none" style="stroke:var(--mark-b)" stroke-width="2" stroke-linecap="round" opacity=".7"/><g fill="#0A1218"><circle cx="18" cy="8" r="2.1"/><circle cx="18" cy="28" r="2.1"/><circle cx="8" cy="18" r="2.1"/><circle cx="28" cy="18" r="2.1"/><circle cx="11" cy="11" r="2.1"/><circle cx="25" cy="11" r="2.1"/><circle cx="11" cy="25" r="2.1"/><circle cx="25" cy="25" r="2.1"/><circle cx="18" cy="18" r="2.1"/></g></svg>';
+var logoImg = function (key, w, h) { return key && H.logos && H.logos[key] ? '<img class="mk-logo" src="' + H.logos[key] + '" alt="" width="' + w + '" height="' + h + '">' : BALL; };
 
 var live = {}; // slug -> fresher standings, once read from the API
 
@@ -53,9 +80,9 @@ function standingsOf(l) { return live[l.slug] || l.top; }
 function playedOf(l) { return live[l.slug] ? live[l.slug].played : l.played; }
 
 /* Next game date of each league, soonest first. */
-function nextNights() {
+function nextNights(list) {
   var td = today(), rows = [];
-  H.leagues.forEach(function (l) {
+  list.forEach(function (l) {
     var up = l.upcoming.filter(function (g) { return g.date >= td; });
     if (!up.length) return;
     var date = up.map(function (g) { return g.date; }).sort()[0];
@@ -65,16 +92,13 @@ function nextNights() {
   rows.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.l.name < b.l.name ? -1 : 1; });
   return rows;
 }
-var fmtShort = function (d) {
-  return new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-};
 
-function nightHtml() {
-  var rows = nextNights();
+function nightHtml(list, prefix) {
+  var rows = nextNights(list);
   if (!rows.length) return '<p class="lede">' + t('noNight') + '</p>';
   return '<section class="night" aria-labelledby="nt"><h2 id="nt" class="night-h">' + (rows[0].isToday ? t('tonight') : t('nights')) + '</h2><ul class="night-l">' +
     rows.map(function (r) {
-      return '<li class="lcard-mini" data-t="' + esc(themeOf(r.l)) + '"><a href="' + esc(r.l.slug) + '/#' + (r.isToday ? 'live' : 'schedule') + '"><i aria-hidden="true"></i><b>' + esc(r.l.short) + '</b><span>' +
+      return '<li class="lcard-mini" data-t="' + esc(themeOf(r.l)) + '"><a href="' + esc(prefix + r.l.path) + '/#' + (r.isToday ? 'live' : 'schedule') + '"><i aria-hidden="true"></i><b>' + esc(r.l.short) + '</b><span>' +
         esc(r.isToday ? t('tonight') : fmtShort(r.date)) + ' · ' + r.n + ' ' + (r.n === 1 ? t('gm') : t('gms')) + ' · ' + esc(r.first) + '</span></a></li>';
     }).join('') + '</ul></section>';
 }
@@ -85,8 +109,8 @@ function cardHtml(l) {
   var rows = top.slice(0, 3).map(function (r, i) {
     return '<li><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(window.LDParsers.niceName(r.name)) + '</span><span class="rec">' + r.w + '-' + r.l + '-' + r.t + '</span><b>' + r.pts + '</b></li>';
   }).join('');
-  return '<article class="lcard" data-slug="' + esc(l.slug) + '" data-t="' + esc(themeOf(l)) + '"><div class="lcard-head">' + (l.logo && H.logos && H.logos[l.logo] ? '<img class="mk-logo" src="' + H.logos[l.logo] + '" alt="" width="60" height="52">' : BALL) +
-    '<h2><a class="lcard-link" href="' + esc(l.slug) + '/"><span>LDHML</span> <i>' + esc(l.short) + '</i></a></h2></div>' +
+  return '<article class="lcard" data-slug="' + esc(l.slug) + '" data-t="' + esc(themeOf(l)) + '"><div class="lcard-head">' + logoImg(l.logo, 60, 52) +
+    '<h2><a class="lcard-link" href="' + esc(l.path) + '/"><span>LDHML</span> <i>' + esc(l.short) + '</i></a></h2></div>' +
     '<p class="lcard-meta">' + l.teams + ' ' + t('teams') + ' · ' + pl + ' ' + t('of') + ' ' + l.total + ' ' + t('games') + '</p>' +
     '<div class="bar" role="img" aria-label="' + pl + ' / ' + l.total + '"><i style="width:' + pct + '%"></i></div>' +
     (pl ? '<ol class="lcard-top" aria-label="' + t('leader') + '">' + rows + '</ol>' : '<p class="lcard-none">' + t('noGames') + '</p>') +
@@ -94,27 +118,139 @@ function cardHtml(l) {
     '</article>';
 }
 
-function render() {
-  document.documentElement.lang = lang;
-  document.documentElement.setAttribute('data-league', 'default');
+/* ================= entry page: one card per section ================= */
+function sectionCard(s) {
+  var nx = nextNights(s.leagues)[0];
+  var teams = s.leagues.reduce(function (a, l) { return a + l.teams; }, 0);
+  return '<article class="lcard scard" data-section="' + esc(s.key) + '" data-t="' + esc(THEME_ON ? s.theme || 'default' : 'default') + '"><div class="lcard-head">' + logoImg(s.logo, 60, 52) +
+    '<h2><a class="lcard-link" href="' + esc(s.path) + '/" aria-label="' + esc(t('openSection', { s: nameOf(s) })) + '"><span>LDHML</span> <i>' + esc(nameOf(s)) + '</i></a></h2></div>' +
+    '<p class="lcard-meta">' + t(s.leagues.length === 1 ? 'nLeague' : 'nLeagues', { n: s.leagues.length }) + ' · ' + t('nTeams', { n: teams }) + ' · ' + t('nPeople', { n: s.people }) + '</p>' +
+    '<ul class="scard-l">' + s.leagues.map(function (l) {
+      return '<li class="lcard-mini" data-t="' + esc(themeOf(l)) + '"><a href="' + esc(s.path + '/' + l.path) + '/"><i aria-hidden="true"></i><b>' + esc(l.short) + '</b></a></li>';
+    }).join('') + '</ul>' +
+    (nx ? '<p class="lcard-sc"><small>' + t('night') + '</small><span>' + esc(nx.isToday ? t('tonight') : fmtDay(nx.date)) + '</span></p>' : '') + '</article>';
+}
+function renderRoot() {
+  var all = [];
+  H.sections.forEach(function (s) { all = all.concat(s.leagues); });
+  var totals = all.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); return a; }, { teams: 0, played: 0 });
   $('#top').innerHTML = '';
-  var totals = H.leagues.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); a.total += l.total; return a; }, { teams: 0, played: 0, total: 0 });
   $('#main').innerHTML = '<div class="arena hero"><div class="wrap hub-hero">' +
     (H.logos && H.logos.hero ? '<img class="hero-logo" src="' + H.logos.hero + '" alt="" width="693" height="747">' : '') +
-    '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><p class="hub-season">' + esc(season()) + '</p><ul class="hub-stats"><li><b>' + H.leagues.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
-    '<div class="wrap hub-body">' + nightHtml() + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + H.leagues.map(cardHtml).join('') + '</div></div>';
-  var stamp = H.leagues.reduce(function (m, l) { return l.fetchedAt > m ? l.fetchedAt : m; }, '');
-  $('#foot').innerHTML = '<p>' + t('footSource') + '</p>';
+    '<div><h1' + (H.logos && H.logos.hero ? ' class="sr"' : '') + '>LDHML</h1><p class="hub-season">' + esc(season()) + '</p><ul class="hub-stats"><li><b>' + all.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div></div>' +
+    '<div class="wrap hub-body"><h2 class="hub-h">' + t('sections') + '</h2><div class="lcards scards">' + H.sections.map(sectionCard).join('') + '</div></div>';
   document.title = 'LDHML | ' + season();
+}
+
+/* ================= section page ================= */
+var S = H.section;
+var ui = { q: '' };
+var PEOPLE = {};
+(H.people || []).forEach(function (p) { PEOPLE[p.id] = p; });
+var leagueBy = {};
+(H.leagues || []).forEach(function (l) { leagueBy[l.slug] = l; });
+var mins = function (sec) { return Math.round((sec || 0) / 60); };
+var pct3 = function (n) { return Number(n).toFixed(3).replace(/^0/, ''); };
+var playedIn = function (p) { return (H.leagues || []).filter(function (l) { return p.lg[l.slug]; }); };
+var rankTxt = function (v) { return v ? esc(v) : '-'; };
+
+function parseRoute() {
+  var h = String(location.hash || '').replace(/^#/, '');
+  var m = h.match(/^player-([A-Za-z0-9]+)$/);
+  if (m) return { name: 'player', id: m[1] };
+  if (h === 'players') return { name: 'players' };
+  return { name: 'home' };
+}
+function sectionTop(route) {
+  var nav = [['home', t('home')], ['players', t('players')]];
+  return '<div class="wrap top-in sec-top"><a class="brand" href="#home">' + logoImg(S.logo, 52, 44) + '<span><b>LDHML <i>' + esc(nameOf(S)) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
+    '<nav class="nav" aria-label="Main">' + nav.map(function (n) { return '<a href="#' + n[0] + '"' + (route === n[0] || (route === 'player' && n[0] === 'players') ? ' aria-current="page"' : '') + '>' + n[1] + '</a>'; }).join('') +
+    '<a href="' + esc(H.up || '../') + '">' + t('hubName') + '</a></nav></div>';
+}
+function viewSectionHome() {
+  var list = H.leagues;
+  var totals = list.reduce(function (a, l) { a.teams += l.teams; a.played += playedOf(l); return a; }, { teams: 0, played: 0 });
+  return '<div class="arena sec-arena"><div class="wrap"><h1>LDHML ' + esc(nameOf(S)) + '</h1><ul class="hub-stats"><li><b>' + list.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + H.people.length + '</b><span>' + t('people') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div>' +
+    '<div class="wrap hub-body">' + nightHtml(list, '') + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + list.map(cardHtml).join('') + '</div></div>';
+}
+function leagueChips(p) {
+  return '<span class="abbs">' + playedIn(p).map(function (l) { return '<a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + esc(l.short) + '</a>'; }).join('') + '</span>';
+}
+function viewPlayers() {
+  var q = norm(ui.q.trim());
+  var list = H.people.filter(function (p) { return !q || norm(p.name).indexOf(q) >= 0; })
+    .sort(function (a, b) { return a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'fr', { sensitivity: 'base' }); });
+  var rows = list.map(function (p) {
+    return '<tr><td class="stick"><a class="tl strong" href="#player-' + esc(p.id) + '">' + esc(p.name) + '</a></td><td class="num">' + rankTxt(p.rank.s) + '</td><td class="num">' + rankTxt(p.rank.g) + '</td><td>' + leagueChips(p) + '</td></tr>';
+  }).join('');
+  return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
+    '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off"><span class="count">' + t('nShown', { n: list.length }) + '</span></div>' +
+    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col">' + t('inLeagues') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
+    '<p class="note">' + t('ratingNote') + '</p></div>';
+}
+function lineTable(head, cells) {
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr>' + head.map(function (h, i) { return '<th scope="col"' + (i ? ' class="num"' : '') + '>' + h + '</th>'; }).join('') + '</tr></thead><tbody><tr>' +
+    cells.map(function (c, i) { return '<td' + (i ? ' class="num"' : '') + '>' + c + '</td>'; }).join('') + '</tr></tbody></table></div>';
+}
+function viewPlayer(r) {
+  var p = PEOPLE[r.id];
+  if (!p) return '<div class="wrap sec-body"><h1 class="ph">' + t('notFound') + '</h1><p class="lede">' + esc(t('notFoundText', { s: nameOf(S) })) + '</p><p class="note"><a class="lnk" href="#players">' + t('back') + '</a></p></div>';
+  var bits = [];
+  if (p.rank.s) bits.push('<span>' + t('ratingS') + ': <b>' + esc(p.rank.s) + '</b></span>');
+  if (p.rank.g) bits.push('<span>' + t('ratingG') + ': <b>' + esc(p.rank.g) + '</b></span>');
+  /* Our own rank systems of this section (none yet): values per position. */
+  var own = (H.rankSystems || []).filter(function (sys) { return p.ranks && p.ranks[sys.key]; }).map(function (sys) {
+    var v = p.ranks[sys.key];
+    return '<span>' + esc(nameOf(sys)) + ': <b>' + [v.s != null ? t('skater') + ' ' + esc(v.s) : '', v.g != null ? t('goalie') + ' ' + esc(v.g) : ''].filter(Boolean).join(' · ') + '</b></span>';
+  });
+  var cards = playedIn(p).map(function (l) {
+    var m = p.lg[l.slug], out = '';
+    if (m.s) out += lineTable([t('skater'), t('gp'), t('cG'), t('cA'), t('cP'), t('cPim')], [esc(m.teams.join(', ')), m.s.gp, m.s.g, m.s.a, m.s.g + m.s.a, mins(m.s.pim)]);
+    if (m.g) out += lineTable([t('goalie'), t('gp'), t('cW'), t('cL'), t('cT'), t('cSv')], [esc(m.teams.join(', ')), m.g.gp, m.g.w, m.g.l, m.g.t, m.g.sa ? pct3(m.g.sv / m.g.sa) : '-']);
+    return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><div class="sec-h"><h2>' + esc(l.name) + '</h2><a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + t('leaguePage') + '</a></div>' + out + '</section>';
+  }).join('');
+  var other = (p.xs || []).map(function (k) {
+    var s = H.sections[k];
+    return s ? '<p class="note pxl">' + esc(t('otherSection', { s: nameOf(s) })) + ' <a class="lnk" href="' + esc((H.up || '../') + s.path) + '/#player-' + esc(p.id) + '">' + esc(t('profile', { s: nameOf(s) })) + '</a></p>' : '';
+  }).join('');
+  var stamp = (H.leagues || []).reduce(function (m, l) { return l.fetchedAt > m ? l.fetchedAt : m; }, '');
+  return '<div class="wrap sec-body"><p class="note"><a class="lnk" href="#players">' + t('players') + '</a></p><div class="hero pl-hero"><div><h1>' + esc(p.name) + '</h1><p class="meta">' + bits.join('') + '</p>' +
+    (own.length ? '<p class="meta"><span>' + t('ownRanks') + '</span>' + own.join('') + '</p>' : '') + '</div></div>' + other + cards +
+    '<p class="note">' + esc(t('snapNote', { t: fmtStamp(stamp) })) + '</p></div>';
+}
+function renderSection(keepScroll) {
+  var r = parseRoute();
+  $('#top').innerHTML = sectionTop(r.name);
+  $('#main').innerHTML = r.name === 'player' ? viewPlayer(r) : r.name === 'players' ? viewPlayers() : viewSectionHome();
+  var p = r.name === 'player' && PEOPLE[r.id];
+  document.title = (p ? p.name + ' | ' : '') + 'LDHML ' + nameOf(S) + ' | ' + season();
+  if (!keepScroll) window.scrollTo(0, 0);
+}
+
+/* ================= shared ================= */
+function render(keepScroll) {
+  document.documentElement.lang = lang;
+  document.documentElement.setAttribute('data-league', 'default');
+  if (H.kind === 'section') renderSection(keepScroll); else renderRoot();
+  $('#foot').innerHTML = '<p>' + t('footSource') + '</p>' + (H.kind === 'section' ? '<p><a href="' + esc(H.up || '../') + '">' + t('hubName') + '</a></p>' : '');
   renderPicker();
 }
 
+/* Picker. Entry page: each section and its leagues. Section page: this section's leagues and the entry page. */
 function renderPicker() {
-  var el = $('#picker');
+  var el = $('#picker'), opts;
+  if (H.kind === 'section') {
+    opts = '<option value="" selected>' + esc(t('allOf', { s: nameOf(S) })) + '</option>' + H.leagues.map(function (l) { return '<option value="' + esc(l.path) + '/">' + esc(l.name) + '</option>'; }).join('') +
+      '<option value="' + esc(H.up || '../') + '">' + t('hubName') + '</option>';
+  } else {
+    opts = '<option value="" selected>' + t('hubName') + '</option>' + H.sections.map(function (s) {
+      return '<optgroup label="' + esc(nameOf(s)) + '"><option value="' + esc(s.path) + '/">' + esc(t('allOf', { s: nameOf(s) })) + '</option>' +
+        s.leagues.map(function (l) { return '<option value="' + esc(s.path + '/' + l.path) + '/">' + esc(l.name) + '</option>'; }).join('') + '</optgroup>';
+    }).join('');
+  }
   el.innerHTML = '<button type="button" class="lgbtn" data-lang="' + (lang === 'fr' ? 'en' : 'fr') + '" aria-label="' + (lang === 'fr' ? 'Switch to English' : 'Passer au français') + '">' + (lang === 'fr' ? 'English' : 'Français') + '</button>' + '<button type="button" class="thm" data-theme-toggle aria-pressed="' + THEME_ON + '" title="' + esc(THEME_ON ? t('themeTipOff') : t('themeTipOn')) + '"><i aria-hidden="true"></i>' + t('themeLabel') + '</button>' +
-    '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '"><option value="" selected>' + t('all') + '</option>' +
-    H.leagues.map(function (l) { return '<option value="' + esc(l.slug) + '">' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
-  $('#lgsel').addEventListener('change', function (e) { if (e.target.value) location.href = e.target.value + '/'; });
+    '<label><span class="sr">' + t('pickLabel') + '</span><select id="lgsel" aria-label="' + t('pickLabel') + '">' + opts + '</select></label>';
+  $('#lgsel').addEventListener('change', function (e) { if (e.target.value) location.href = e.target.value; });
 }
 
 document.addEventListener('click', function (e) {
@@ -122,19 +258,28 @@ document.addEventListener('click', function (e) {
   if (th) {
     THEME_ON = !THEME_ON;
     try { localStorage.setItem('ldhml-theme', THEME_ON ? 'on' : 'off'); } catch (err) { /* ignore */ }
-    render();
+    render(true);
     return;
   }
   var b = e.target.closest && e.target.closest('[data-lang]');
   if (!b) return;
   lang = b.getAttribute('data-lang');
   try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ }
-  render();
+  render(true);
 });
+document.addEventListener('input', function (e) {
+  if (!e.target.hasAttribute || !e.target.hasAttribute('data-q')) return;
+  ui.q = e.target.value;
+  var pos = e.target.selectionStart;
+  render(true);
+  var n = document.getElementById('pq');
+  if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* ignore */ } }
+});
+window.addEventListener('hashchange', function () { render(false); });
 
-/* ---- fresher standings from the public API, one request at a time ---- */
+/* ---- fresher standings from the public API, one request at a time (section pages only) ---- */
 function refreshStandings() {
-  if (typeof fetch !== 'function' || !window.LDParsers) return;
+  if (H.kind !== 'section' || typeof fetch !== 'function' || !window.LDParsers) return;
   var queue = H.leagues.slice(), failures = 0;
   function qs(l) {
     var q = new URLSearchParams();
@@ -162,5 +307,5 @@ function refreshStandings() {
   step();
 }
 
-render();
+render(true);
 setTimeout(refreshStandings, 600);

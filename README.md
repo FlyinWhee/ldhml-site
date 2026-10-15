@@ -3,20 +3,27 @@
 > Working on this repo with an AI agent or in an editor? Start with `CLAUDE.md` and the `docs/` folder.
 
 A fast, cross-linked stats site for the LDHML ball hockey leagues.
-The home page lists every league. Each league has its own page, theme and data. Every team name and every player name is a link.
+The site has two sections: the draft leagues and the team leagues ("Équipes", working name). Each league belongs to one section and has its own page, theme and data. Every team name and every player name is a link.
 
 | URL | Page |
 | --- | --- |
-| `/` | LDHML home page: one card per league, next game nights |
-| `/retro/`, `/vintage/`, `/draft/`, `/3v3-a/`, `/3v3-b/`, `/4v4-b/` | One league: standings, teams, schedule, players, goalies, leaders, live page |
+| `/` | LDHML entry page: one card per section |
+| `/draft/`, `/equipes/` | A section: its leagues, next game nights, the list of its players, one profile page per player (`#player-L0001`) |
+| `/draft/ldhml/`, `/equipes/retro/`, `/equipes/vintage/`, `/equipes/3v3-a/`, `/equipes/3v3-b/`, `/equipes/4v4-b/` | One league: standings, teams, schedule, players, goalies, leaders, live page |
+| `/preview/<branch>/` | The same site, built from a branch other than `main` (see "Branch previews") |
 
+Each person has one id of ours (`L0001`), kept in `registry/people.json`. The NBHPA person id is the link to the league system.
 A picker in the bottom right corner of every page switches league. Pages work in French (default) and English.
+
+## Branch previews
+
+Push a branch (anything but `main`). About two minutes later its preview is at `https://flyinwhee.github.io/ldhml-site/preview/<branch>/` (a `/` in the branch name becomes `-`). The previews are public, like the site. A deleted branch loses its preview at the next deploy.
 
 ## How it works
 
-1. `leagues.json` lists the leagues (URL slug, NBHPA category id, theme). Add a league there, then run the fetch.
-2. `scraper/fetch.mjs` reads the data of each league from the public NBHPA pages. It makes about 4 requests per league, plus one for each new finished game. The snapshot is saved in `data/<slug>/`.
-3. `build.mjs` puts each snapshot inside `site/template.html`. Each league becomes one static file, `dist/<slug>/index.html`. The home page is `dist/index.html`.
+1. `leagues.json` lists the sections and the leagues (slug, section, NBHPA category id, theme). Add a league there, then run the fetch.
+2. `scraper/fetch.mjs` reads the data of each league from the public NBHPA pages. It makes about 4 requests per league, plus one for each new finished game. The snapshot is saved in `data/<slug>/`. Then it gives an id of ours to each new person (`registry/people.json`).
+3. `build.mjs` puts each snapshot inside `site/template.html`. Each league becomes one static file, `dist/<section>/<league>/index.html`. The section pages are `dist/<section>/index.html`, the entry page is `dist/index.html`.
 4. Any static host can serve `dist/`. No server and no database are needed.
 
 ## Themes
@@ -41,6 +48,7 @@ npm run fetch                 # refresh every league (skips a league if its data
 node scraper/fetch.mjs retro  # refresh one league
 npm run fetch:force           # refresh now
 npm run import-raw -- raw/ldhml-raw.json   # build snapshots from a raw file saved in a browser
+npm run registry              # give an id of ours to the new people of data/ (fetch does it too)
 npm run build                 # build dist/
 npm test                      # parser tests, build, click-through test of every page of every league, home page test, live test
 ```
@@ -49,7 +57,7 @@ Open `dist/index.html` in a browser to see the site.
 
 ## Refresh from a home server (Unraid)
 
-`scripts/unraid-refresh.sh` pulls the repo, runs `node scraper/fetch.mjs` in a Node container, and pushes `data/` if it changed. The push triggers the Pages deploy.
+`scripts/unraid-refresh.sh` pulls the repo, runs `node scraper/fetch.mjs` in a Node container, and pushes `data/` and `registry/` if they changed. The push triggers the Pages deploy.
 
 1. Clone the repo on the server (for example `/mnt/user/appdata/ldhml-site`) with a deploy key that has write access (GitHub > repo > Settings > Deploy keys > "Allow write access").
 2. In the User Scripts plugin, add the script and use a cron schedule such as `45 23 * * *`.
@@ -60,7 +68,7 @@ If the server is down, nothing breaks. The site compares its cache with the live
 ## Refresh from your own computer
 
 The league server challenges requests from data centers (GitHub's runners, Cloudflare Workers, even a Worker cron), so no server-side job can fetch data. Only browsers on normal connections pass. Visitors still get live data, because their browsers read the API.
-To refresh the saved data on Windows, double-click `scripts\refresh.bat` (or run it from a terminal). It pulls `main`, runs `node scraper/fetch.mjs --force`, then commits and pushes `data/`. Needs git and Node. Elsewhere, run `npm run fetch:force`, then commit and push `data/`.
+To refresh the saved data on Windows, double-click `scripts\refresh.bat` (or run it from a terminal). It pulls `main`, runs `node scraper/fetch.mjs --force`, then commits and pushes `data/` and `registry/`. Needs git and Node. Elsewhere, run `npm run fetch:force`, then commit and push `data/` and `registry/`.
 
 ## Data source
 
@@ -103,7 +111,7 @@ Live mode needs a normal web page (GitHub Pages, a file on disk). The sandbox of
 
 ## Automatic refresh
 
-`.github/workflows/refresh.yml` builds the site and publishes it to GitHub Pages on every push. It does not fetch data (see above). Refresh `data/` from your own computer with `npm run fetch:force`.
+`.github/workflows/refresh.yml` builds the site and publishes it to GitHub Pages on every push to `main` (with a preview of each other branch). It does not fetch data (see above). Refresh `data/` from your own computer with `npm run fetch:force`.
 
 ## Known limits
 

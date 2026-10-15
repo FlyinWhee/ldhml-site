@@ -1,4 +1,4 @@
-// Home page test: one card per league, links go to /<slug>/, language toggle, next game nights.
+// Entry page (one card per section) and section pages (leagues, players, player profiles).
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -6,37 +6,89 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const html = await readFile(path.join(root, 'dist/index.html'), 'utf8');
 const cfg = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8'));
-const errors = [];
-const vc = new VirtualConsole();
-vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
-const calls = [];
-const dom = new JSDOM(html, {
-  runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/',
-  beforeParse(win) { win.LDHML_NOW = '2026-10-09T10:00:00'; win.fetch = async (u) => { calls.push(String(u)); return { ok: false, status: 403 }; }; }
-});
-const w = dom.window, d = w.document;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-await wait(300);
-
-const hub = JSON.parse(d.getElementById('hub-data').textContent);
-assert.equal(d.querySelectorAll('.lcard').length, hub.leagues.length, 'one card per league');
-for (const l of hub.leagues) {
-  assert.ok(d.querySelector(`.lcard a[href="${l.slug}/"]`), `card links to ${l.slug}/`);
-  assert.ok(d.querySelector(`.lcard[data-t="${l.theme}"]`), `card has its theme ${l.theme}`);
+async function open(rel) {
+  const html = await readFile(path.join(root, 'dist', rel, 'index.html'), 'utf8');
+  const errors = [], calls = [];
+  const vc = new VirtualConsole();
+  vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://example.test/' + (rel ? rel + '/' : ''),
+    beforeParse(win) { win.LDHML_NOW = '2026-10-09T10:00:00'; win.scrollTo = () => {}; win.fetch = async (u) => { calls.push(String(u)); return { ok: false, status: 403 }; }; }
+  });
+  await wait(300);
+  const d = dom.window.document;
+  return { w: dom.window, d, errors, calls, H: JSON.parse(d.getElementById('hub-data').textContent), main: () => d.getElementById('main').textContent };
 }
-assert.equal(d.documentElement.lang, 'fr', 'French by default');
-assert.ok(/Ligues/.test(d.getElementById('main').textContent));
-const night = d.querySelector('.night');
-assert.ok(night && night.querySelectorAll('li').length >= 1, 'next game nights listed');
-assert.equal(d.querySelectorAll('#lgsel option').length, hub.leagues.length + 1, 'picker lists every league');
-d.querySelector('[data-lang]').click(); await wait(20);
-assert.equal(d.documentElement.lang, 'en');
-assert.ok(/Leagues/.test(d.getElementById('main').textContent), 'English toggle works');
-assert.ok(calls.every((u) => u.startsWith('https://admin.nbhpa.com/table_data.php')), 'home page only reads standings');
-assert.ok(calls.length <= 2, 'home page stops after failed requests (' + calls.length + ' made)');
-assert.ok(cfg.leagues.every((l) => hub.leagues.some((x) => x.slug === l.slug)), 'every configured league has data');
-assert.deepEqual(errors, [], 'page errors:\n' + errors.join('\n'));
-console.log(`Home page test passed: ${hub.leagues.length} leagues.`);
-w.close(); process.exit(0);
+
+// ---- entry page ----
+{
+  const { w, d, errors, calls, H } = await open('');
+  assert.equal(H.kind, 'root');
+  assert.equal(d.querySelectorAll('.scard').length, cfg.sections.length, 'one card per section');
+  for (const s of cfg.sections) {
+    assert.ok(d.querySelector(`.scard a[href="${s.path}/"]`), `card links to ${s.path}/`);
+    for (const l of cfg.leagues.filter((x) => x.section === s.key)) assert.ok(d.querySelector(`.scard a[href="${s.path}/${l.path || l.slug}/"]`), `card links to league ${l.slug}`);
+  }
+  assert.equal(d.documentElement.lang, 'fr', 'French by default');
+  assert.ok(/Ligues/.test(d.getElementById('main').textContent));
+  assert.equal(d.querySelectorAll('#lgsel option').length, 1 + cfg.sections.length + cfg.leagues.length, 'picker lists the sections and every league');
+  d.querySelector('[data-lang]').click(); await wait(20);
+  assert.equal(d.documentElement.lang, 'en');
+  assert.ok(/Leagues/.test(d.getElementById('main').textContent), 'English toggle works');
+  assert.equal(calls.length, 0, 'the entry page makes no request to the league server');
+  assert.deepEqual(errors, [], 'page errors:\n' + errors.join('\n'));
+  w.close();
+}
+
+// ---- section pages ----
+const seenIn = {};
+let nights = 0;
+for (const s of cfg.sections) {
+  const { w, d, errors, calls, H, main } = await open(s.path);
+  const mine = cfg.leagues.filter((l) => l.section === s.key);
+  assert.equal(H.kind, 'section');
+  assert.equal(d.querySelectorAll('.lcard').length, mine.length, `${s.key}: one card per league of the section`);
+  for (const l of mine) assert.ok(d.querySelector(`.lcard a[href="${l.path || l.slug}/"]`), `${s.key}: card links to ${l.slug}`);
+  assert.ok(H.leagues.every((l) => l.section === s.key), `${s.key}: no league of another section`);
+  nights += d.querySelectorAll('.night li').length;
+  assert.equal(d.querySelectorAll('#lgsel option').length, mine.length + 2, `${s.key}: picker lists the section, its leagues and the entry page`);
+  assert.ok(d.querySelector('#foot a[href="../"]'), `${s.key}: footer links to the entry page`);
+
+  // people: only what this section knows; everybody has an id of ours
+  assert.ok(H.people.length > 0, `${s.key}: people`);
+  assert.deepEqual(H.people.filter((p) => !/^L\d+$/.test(p.id)).map((p) => p.name), [], `${s.key}: every person has an id of ours (run "npm run registry")`);
+  for (const p of H.people) {
+    assert.ok(Object.keys(p.lg).length && Object.keys(p.lg).every((slug) => mine.some((l) => l.slug === slug)), `${s.key}: ${p.name} has leagues of this section only`);
+    assert.ok(Object.keys(p.rank).sort().join() === 'g,s', `${s.key}: ${p.name} has a rank per position`);
+    seenIn[p.id] = (seenIn[p.id] || []).concat(s.key);
+  }
+  w.location.hash = '#players'; await wait(20);
+  assert.equal(d.querySelectorAll('.tbl tbody tr').length, H.people.length, `${s.key}: player list has everybody`);
+  const one = H.people[0], q = d.getElementById('pq');
+  q.value = one.name; q.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
+  assert.ok([...d.querySelectorAll('.tbl tbody tr')].some((tr) => tr.textContent.includes(one.name)), `${s.key}: name filter`);
+  for (const p of H.people) {
+    w.location.hash = '#player-' + p.id; await wait(5);
+    assert.ok(main().includes(p.name), `${s.key}: profile of ${p.name}`);
+    for (const slug of Object.keys(p.lg)) {
+      const l = mine.find((x) => x.slug === slug);
+      assert.ok(d.querySelector(`a[href="${l.path || l.slug}/#player-${p.id}"]`), `${s.key}: ${p.name} links to the league page`);
+    }
+    for (const k of p.xs) assert.ok(d.querySelector(`.pxl a[href="../${cfg.sections.find((x) => x.key === k).path}/#player-${p.id}"]`), `${s.key}: ${p.name} links to the other section`);
+  }
+  w.location.hash = '#player-nobody'; await wait(5);
+  assert.ok(/introuvable|not found/i.test(main()), `${s.key}: unknown person`);
+  assert.ok(calls.every((u) => u.startsWith('https://admin.nbhpa.com/table_data.php')), `${s.key}: section page only reads standings`);
+  assert.ok(calls.length <= 2, `${s.key}: stops after failed requests (${calls.length} made)`);
+  assert.deepEqual(errors, [], `${s.key}: page errors:\n` + errors.join('\n'));
+  w.close();
+}
+assert.ok(nights >= 1, 'next game nights listed');
+// a person who plays in both sections keeps one id of ours in both
+const both = Object.entries(seenIn).filter(([, v]) => v.length > 1);
+assert.ok(both.length > 0, 'some people play in both sections (same id in both)');
+assert.ok(cfg.leagues.every((l) => cfg.sections.some((s) => s.key === l.section)), 'every league has a section');
+console.log(`Entry and section pages passed: ${cfg.sections.length} sections, ${Object.keys(seenIn).length} people (${both.length} in both sections).`);
+process.exit(0);

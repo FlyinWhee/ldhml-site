@@ -16,14 +16,14 @@ if not exist node_modules (
 
 node scraper/fetch.mjs --force || goto :fail
 
-git add data || goto :fail
-git diff --cached --quiet -- data
+git add data registry || goto :fail
+git diff --cached --quiet -- data registry
 if not errorlevel 1 (
   echo No change in data. Nothing to push.
   goto :done
 )
 
-git commit -q -m "Refresh data cache" -- data || goto :fail
+git commit -q -m "Refresh data cache" -- data registry || goto :fail
 git push -q origin HEAD:main || goto :fail
 echo Pushed. GitHub Pages deploys from the push.
 goto :done

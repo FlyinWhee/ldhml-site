@@ -3,12 +3,17 @@
   "seasonId": 4307,
   "seasonName": "Automne 2026",
   "default": "retro",
+  "sections": [
+    { "key": "draft", "path": "draft",   "logo": "draft", "theme": "draft", "name": { "fr": "Draft",   "en": "Draft" } },
+    { "key": "teams", "path": "equipes", "logo": "dek",   "theme": "default", "name": { "fr": "Équipes", "en": "Teams" } }
+  ],
+  "rankSystems": [],
   "leagues": [
-    { "slug": "retro", "logo": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
-    { "slug": "vintage", "logo": "vintage", "categoryId": 3661, "theme": "vintage", "short": "Vintage", "name": "LDHML Vintage" },
-    { "slug": "draft", "logo": "draft",   "categoryId": 2433, "theme": "draft",   "short": "Draft",   "name": "LDHML Draft" },
-    { "slug": "3v3-a", "logo": "dek",   "categoryId": 1896, "theme": "ice",     "short": "3v3 A",   "name": "LDHML 3 vs 3 A" },
-    { "slug": "3v3-b", "logo": "dek",   "categoryId": 1909, "theme": "asphalt", "short": "3v3 B",   "name": "LDHML 3 vs 3 B" },
-    { "slug": "4v4-b", "logo": "dek",   "categoryId": 1913, "theme": "pitch",   "short": "4v4 B",   "name": "LDHML 4 vs 4 B" }
+    { "slug": "retro",   "section": "teams", "logo": "retro",   "categoryId": 6796, "theme": "retro",   "short": "Retro",   "name": "LDHML Retro" },
+    { "slug": "vintage", "section": "teams", "logo": "vintage", "categoryId": 3661, "theme": "vintage", "short": "Vintage", "name": "LDHML Vintage" },
+    { "slug": "draft",   "section": "draft", "path": "ldhml", "logo": "draft", "categoryId": 2433, "theme": "draft", "short": "Draft", "name": "LDHML Draft" },
+    { "slug": "3v3-a",   "section": "teams", "logo": "dek",     "categoryId": 1896, "theme": "ice",     "short": "3v3 A",   "name": "LDHML 3 vs 3 A" },
+    { "slug": "3v3-b",   "section": "teams", "logo": "dek",     "categoryId": 1909, "theme": "asphalt", "short": "3v3 B",   "name": "LDHML 3 vs 3 B" },
+    { "slug": "4v4-b",   "section": "teams", "logo": "dek",     "categoryId": 1913, "theme": "pitch",   "short": "4v4 B",   "name": "LDHML 4 vs 4 B" }
   ]
 }

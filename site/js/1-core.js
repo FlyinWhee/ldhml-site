@@ -4,6 +4,13 @@
   var THEME_ON = true;
   try { THEME_ON = localStorage.getItem('ldhml-theme') !== 'off'; } catch (e) { /* storage can be blocked */ }
   var LG = D.league || { slug: 'retro', theme: 'retro', short: 'Retro', name: 'LDHML Retro' };
+  /* People have our own ids ("L0001", see registry/people.json). NBHPA gives a person one nid and sometimes several
+   * player_id values (registrations). D.ids from the build: pids { player_id: id }, nids { nid: id },
+   * who { id: { lg: [other leagues of this section], xs: [other sections] } }. Box scores hold player_id values: use U(). */
+  var IDS = D.ids || { pids: {}, nids: {}, who: {} };
+  var PID = {};
+  var U = function (id) { return PID[id] || id; };
+  var secName = function (s) { return s && s.name ? (s.name[lang] || s.name.fr) : ''; };
 
   /* ================= helpers ================= */
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -55,7 +62,8 @@
       scopeNoteAll: 'Each player counts every game he played in this league, for all teams, substitute games included. This matches the totals on the official site.',
       alsoShort: 'SUB:', more: 'More', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
       teamsLede: 'All {n} teams in standings order. Open a team for its roster, substitutes and schedule.',
-      shotsLive: 'Shots on goal', pickLabel: 'League', searchPh: 'Search', assistsLabel: 'Assists:', themeLabel: 'Theme', themeTipOff: 'Switch off the league theme (default look)', themeTipOn: 'Switch the league theme on', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page'
+      shotsLive: 'Shots on goal', pickLabel: 'League', searchPh: 'Search', assistsLabel: 'Assists:', themeLabel: 'Theme', themeTipOff: 'Switch off the league theme (default look)', themeTipOn: 'Switch the league theme on', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page',
+      ratingS: 'Skater rating', ratingG: 'Goalie rating', alsoIn: 'See also:', sectionProfile: '{s} profile', allLeaguesOf: 'All {s} leagues', footSection: 'All {s} leagues'
     },
     fr: {
       home: 'Accueil', standings: 'Classement', schedule: 'Calendrier', players: 'Joueurs', goalies: 'Gardiens', leaders: 'Meneurs',
@@ -95,7 +103,8 @@
       scopeNoteAll: 'Chaque joueur compte tous ses matchs dans cette ligue, pour toutes les équipes, remplacements inclus. C’est ce que montre le site officiel.',
       alsoShort: 'SUB:', more: 'Plus', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
       teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
-      shotsLive: 'Tirs au but', pickLabel: 'Ligue', searchPh: 'Chercher', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match'
+      shotsLive: 'Tirs au but', pickLabel: 'Ligue', searchPh: 'Chercher', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match',
+      ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', alsoIn: 'Voir aussi :', sectionProfile: 'Profil {s}', allLeaguesOf: 'Toutes les ligues {s}', footSection: 'Toutes les ligues {s}'
     }
   };
   var COLS = {
@@ -183,6 +192,27 @@
     D.teams.forEach(function (x) { x.name = LDParsers.niceName(x.name); });
     D.players.concat(D.goalies).forEach(function (x) { x.name = LDParsers.niceName(x.name); });
     Object.keys(D.box.names).forEach(function (k) { D.box.names[k] = LDParsers.niceName(D.box.names[k]); });
+    /* One row per person: rows of the same person (same nid, several player_id) are added together. */
+    PID = Object.assign({}, IDS.pids);
+    var uidOf = function (row) { return IDS.nids[row.nid] || (row.nid ? 'n' + row.nid : row.id); };
+    var mergeRows = function (rows, keys, goalie) {
+      var out = [], by = {};
+      rows.forEach(function (r) {
+        var u = uidOf(r), o = by[u];
+        PID[r.id] = u;
+        if (!o) { by[u] = Object.assign({}, r, { id: u, pids: [r.id], teams: r.teams.slice() }); out.push(by[u]); return; }
+        o.pids.push(r.id);
+        r.teams.forEach(function (a) { if (o.teams.indexOf(a) < 0) o.teams.push(a); });
+        if (goalie) ['gaa', 'gaat'].forEach(function (k) { o[k] = ((o[k] || 0) * o.gp + (r[k] || 0) * r.gp) / ((o.gp + r.gp) || 1); });
+        keys.forEach(function (k) { o[k] = (o[k] || 0) + (r[k] || 0); });
+        if (goalie) o.pct = o.sa ? o.sv / o.sa : 0;
+        if (!o.rank) o.rank = r.rank;
+      });
+      return out;
+    };
+    var rawS = mergeRows(D.players, ['gp', 'g', 'a', 'p', 'pim', 'ppg', 'ppp', 'shg', 'shp', 'gwg', 'otg']);
+    var rawG = mergeRows(D.goalies, ['gp', 'w', 'l', 't', 'sa', 'sv', 'ga', 'so', 'g', 'a', 'pts', 'pim', 'mp'], true);
+    rosterS = rawS; rosterG = rawG;
     teams = D.teams.slice().sort(function (a, b) { return a.pos - b.pos; });
     T = {}; TA = {};
     teams.forEach(function (x) { T[x.id] = x; TA[x.abb] = x; });
@@ -215,18 +245,20 @@
         var abb = T[bt.id] ? T[bt.id].abb : '?';
         bt.sk.forEach(function (r) {
           if (!r[0]) return;
-          var z = ((splitS[r[0]] = splitS[r[0]] || {})[abb] = splitS[r[0]][abb] || { gp: 0, g: 0, a: 0, pim: 0, ppg: 0, ppp: 0, shg: 0, shp: 0, gwg: 0, otg: 0, last: '' });
+          var u = U(r[0]);
+          var z = ((splitS[u] = splitS[u] || {})[abb] = splitS[u][abb] || { gp: 0, g: 0, a: 0, pim: 0, ppg: 0, ppp: 0, shg: 0, shp: 0, gwg: 0, otg: 0, last: '' });
           z.gp++; z.g += r[2]; z.a += r[3]; z.pim += r[4] * 60; z.ppg += r[5]; z.ppp += r[6]; z.shg += r[7]; z.shp += r[8]; z.gwg += r[9]; z.otg += r[10];
           if (g.date > z.last) z.last = g.date;
-          (logS[r[0]] = logS[r[0]] || []).push(Object.assign({ no: r[1], g: r[2], a: r[3], pim: r[4], gwg: r[9] }, base));
-          if (r[1]) { var c = numOf[r[0]] = numOf[r[0]] || {}; c[r[1]] = (c[r[1]] || 0) + 1; }
+          (logS[u] = logS[u] || []).push(Object.assign({ no: r[1], g: r[2], a: r[3], pim: r[4], gwg: r[9] }, base));
+          if (r[1]) { var c = numOf[u] = numOf[u] || {}; c[r[1]] = (c[r[1]] || 0) + 1; }
         });
         bt.gk.forEach(function (r) {
           if (!r[0]) return;
-          var y = ((splitG[r[0]] = splitG[r[0]] || {})[abb] = splitG[r[0]][abb] || { gp: 0, w: 0, l: 0, t: 0, sa: 0, sv: 0, ga: 0, so: 0, last: '' });
+          var u = U(r[0]);
+          var y = ((splitG[u] = splitG[u] || {})[abb] = splitG[u][abb] || { gp: 0, w: 0, l: 0, t: 0, sa: 0, sv: 0, ga: 0, so: 0, last: '' });
           y.gp++; y.w += r[1]; y.l += r[2]; y.t += r[3]; y.sa += r[4]; y.sv += r[5]; y.ga += r[6]; y.so += r[7];
           if (g.date > y.last) y.last = g.date;
-          (logG[r[0]] = logG[r[0]] || []).push(Object.assign({ w: r[1], l: r[2], sa: r[4], sv: r[5], ga: r[6], so: r[7] }, base));
+          (logG[u] = logG[u] || []).push(Object.assign({ w: r[1], l: r[2], sa: r[4], sv: r[5], ga: r[6], so: r[7] }, base));
         });
       });
     });
@@ -243,7 +275,6 @@
       });
       return best;
     };
-    var rawS = D.players, rawG = D.goalies;
     hasMulti = rawS.concat(rawG).some(function (p) { return p.teams.length > 1; });
     var zeroS = { gp: 0, g: 0, a: 0, pim: 0, ppg: 0, ppp: 0, shg: 0, shp: 0, gwg: 0, otg: 0 };
     skaterFor = function (p, abb, keep) {
@@ -266,16 +297,18 @@
     skaters = rawS.map(function (p) { return scoped(p, skaterFor, splitS); });
     goalies = rawG.map(function (p) { return scoped(p, goalieFor, splitG); });
     people = {};
-    var ensure = function (p) {
+    /* A rank exists per position: rank.s (skater) and rank.g (goalie). */
+    var ensure = function (p, pos) {
       var all = p.all || p;
-      var o = people[p.id] || (people[p.id] = { id: p.id, name: p.name, sex: p.sex, rank: p.rank, teams: [], main: mainTeam(all) });
+      var o = people[p.id] || (people[p.id] = { id: p.id, nid: p.nid, name: p.name, sex: p.sex, rank: { s: null, g: null }, teams: [], main: mainTeam(all) });
+      if (all.rank) o.rank[pos] = all.rank;
       all.teams.forEach(function (a) { if (o.teams.indexOf(a) < 0) o.teams.push(a); });
       return o;
     };
-    skaters.forEach(function (p) { ensure(p).skater = p; });
-    goalies.forEach(function (p) { ensure(p).goalie = p; });
+    skaters.forEach(function (p) { ensure(p, 's').skater = p; });
+    goalies.forEach(function (p) { ensure(p, 'g').goalie = p; });
   }
-  var mainTeam, skaterFor, goalieFor;
+  var mainTeam, skaterFor, goalieFor, rosterS, rosterG;
   buildModel();
 
   /* ================= live state (filled by 3-live.js) ================= */
@@ -346,11 +379,12 @@
   function jersey(abb, no, cls) {
     return '<span class="jersey ' + (cls || '') + '" style="--tc:' + colorOf(abb) + '"><svg viewBox="0 0 100 96" aria-hidden="true"><path d="M31 6L8 18L1 44L19 51L23 42V92H77V42L81 51L99 44L92 18L69 6C65 15 58 19 50 19C42 19 35 15 31 6Z"/></svg><b>' + esc(no == null ? '' : no) + '</b></span>';
   }
+  /* id: our id or an NBHPA player_id (box scores). */
   function pLink(id, fallback, cls) {
-    var p = id && people[id];
+    var u = U(id), p = id && people[u];
     var name = p ? p.name : (BOX.names[id] || fallback || '');
     if (!p) return '<span class="' + (cls || '') + '">' + esc(name) + '</span>';
-    return '<a class="tl ' + (cls == null ? 'strong' : cls) + '" href="#player-' + id + '">' + esc(name) + '</a>';
+    return '<a class="tl ' + (cls == null ? 'strong' : cls) + '" href="#player-' + u + '">' + esc(name) + '</a>';
   }
   var abbOfTeam = function (id) { return T[id] ? T[id].abb : '?'; };
 

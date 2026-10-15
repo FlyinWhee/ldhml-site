@@ -1,6 +1,7 @@
 // Build the static site.
-//   dist/index.html            LDHML home page (one card per league)
-//   dist/<slug>/index.html     one page per league, with its own theme (for example /retro/)
+//   dist/index.html                       LDHML entry page (one card per section: draft leagues, team leagues)
+//   dist/<section>/index.html             section page: its leagues and its players (for example /equipes/)
+//   dist/<section>/<league>/index.html    one page per league, with its own theme (for example /equipes/retro/)
 //   dist/artifact/...          the same tree for the Artifact preview (the home page is a fragment)
 // Every page is one self-contained file: CSS, JS, parsers and a data snapshot are inlined.
 import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
@@ -8,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { themeCss, cardCss } from './site/themes.mjs';
+import { peopleIndex } from './site/people.mjs';
 
 globalThis.DOMParser ??= class {}; // the parsers need a DOMParser only when they parse HTML
 await import('./shared/parsers.js');
@@ -118,7 +120,16 @@ for (const k of logoKeys) {
 }
 const hubIcon = 'data:image/png;base64,' + (await readFile(path.join(root, 'assets/logos/hub-icon.png'))).toString('base64');
 logos.hero = 'data:image/webp;base64,' + (await readFile(path.join(root, 'assets/logos/dek-hero.webp'))).toString('base64');
-const registry = leagues.map(({ lg }) => ({ slug: lg.slug, name: lg.name, short: lg.short, theme: lg.theme }));
+// ---- sections: the first level of the site (draft leagues, team leagues). Each league belongs to one. ----
+const pathOf = (lg) => lg.path || lg.slug;
+const sections = cfg.sections.map((s) => ({ ...s, leagues: leagues.filter(({ lg }) => lg.section === s.key) }));
+for (const { lg } of leagues) if (!sections.some((s) => s.key === lg.section)) throw new Error(`League ${lg.slug}: unknown section "${lg.section}" (see "sections" in leagues.json)`);
+const sectionLinks = Object.fromEntries(cfg.sections.map((s) => [s.key, { path: s.path, name: s.name }]));
+
+// ---- people: our own ids (registry/people.json), one instance per section ----
+const reg = JSON.parse(await read('registry/people.json').catch(() => '{"next":1,"people":[]}'));
+const { people, missing } = peopleIndex(cfg, leagues, reg, nice);
+if (missing.length) console.warn(`${missing.length} people are not in registry/people.json yet (temporary ids). Run "npm run registry".`);
 
 // ---- home page data: a small summary of each league ----
 const summary = leagues.map(({ lg, data }) => {
@@ -126,7 +137,7 @@ const summary = leagues.map(({ lg, data }) => {
   const teamName = Object.fromEntries(data.teams.map((t) => [t.id, t]));
   const scorer = [...data.players].sort((a, b) => b.p - a.p || b.g - a.g)[0];
   return {
-    slug: lg.slug, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo, categoryId: lg.categoryId,
+    slug: lg.slug, path: pathOf(lg), section: lg.section, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo, categoryId: lg.categoryId,
     teams: data.teams.length, played: played.length, total: data.games.filter((g) => !g.cancelled).length,
     top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ name: nice(t.name), pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
     scorer: scorer && scorer.p > 0 ? { name: nice(scorer.name), p: scorer.p } : null,
@@ -134,38 +145,80 @@ const summary = leagues.map(({ lg, data }) => {
     fetchedAt: data.meta.fetchedAt
   };
 });
-const hubData = { leagueId: cfg.leagueId, seasonId: cfg.seasonId, season: cfg.seasonName, logos, leagues: summary };
+const common = { leagueId: cfg.leagueId, seasonId: cfg.seasonId, season: cfg.seasonName, logos };
+const sectionOf = (s) => ({ key: s.key, path: s.path, name: s.name, logo: s.logo, theme: s.theme });
+const peopleIn = (key) => Object.values(people).filter((p) => p.in[key]).length;
+// Entry page: one card per section.
+const rootData = { ...common, kind: 'root', sections: sections.map((s) => ({ ...sectionOf(s), people: peopleIn(s.key), leagues: summary.filter((l) => l.section === s.key) })) };
+// Section page: its leagues and its people (only what this section knows about them).
+const sectionData = (s) => ({
+  ...common, kind: 'section', section: sectionOf(s), sections: sectionLinks, up: '../',
+  rankSystems: (cfg.rankSystems ?? []).filter((r) => r.section === s.key).map((r) => ({ key: r.key, name: r.name })),
+  leagues: summary.filter((l) => l.section === s.key),
+  people: Object.values(people).filter((p) => p.in[s.key]).map((p) => ({
+    id: p.id, name: p.name, sex: p.sex, rank: p.rank, ranks: p.in[s.key].ranks, lg: p.in[s.key].leagues, xs: Object.keys(p.in).filter((k) => k !== s.key)
+  }))
+});
+// League page: maps from NBHPA ids to our ids, and where else each person plays.
+const personByNid = new Map(Object.values(people).map((p) => [p.nid, p]));
+const leagueIds = (lg, data) => {
+  const ids = { pids: {}, nids: {}, who: {} };
+  for (const row of [...data.players, ...data.goalies]) {
+    const p = personByNid.get(row.nid);
+    if (!p) continue;
+    ids.nids[p.nid] = p.id;
+    for (const pid of p.pids) ids.pids[pid] = p.id;
+    ids.who[p.id] = { lg: Object.keys(p.in[lg.section].leagues).filter((s) => s !== lg.slug), xs: Object.keys(p.in).filter((k) => k !== lg.section) };
+  }
+  return ids;
+};
 
 // ---- write ----
 const outDirs = [path.join(root, 'dist'), path.join(root, 'dist/artifact')];
 await rm(path.join(root, 'dist'), { recursive: true, force: true });
-const hubFragment = fill(await read('site/hub/hub.html'), hubCss, hubJs, safe(hubData));
+const hubTpl = await read('site/hub/hub.html');
+const rootFragment = fill(hubTpl, hubCss, hubJs, safe(rootData));
 const leagueTpl = await read('site/template.html');
+const sha = (html) => createHash('sha1').update(html).digest('hex').slice(0, 10);
 let total = 0;
 for (const out of outDirs) {
   await mkdir(out, { recursive: true });
   const isArtifact = out.endsWith('artifact');
   // The artifact host adds its own <html> wrapper to the main page, so that one is a fragment.
-  const hubHtml = isArtifact ? hubFragment : page(hubFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.', pwa: { up: '', icon: 'hub', shortName: 'LDHML' } });
-  await writeFile(path.join(out, 'index.html'), hubHtml);
+  const rootHtml = isArtifact ? rootFragment : page(rootFragment, { title: 'LDHML', theme: 'default', icon: hubIcon, description: 'Classements, calendriers et statistiques des ligues LDHML, hockey balle.', pwa: { up: '', icon: 'hub', shortName: 'LDHML' } });
+  await writeFile(path.join(out, 'index.html'), rootHtml);
   if (!isArtifact) {
     await mkdir(path.join(out, 'icons'), { recursive: true });
     for (const f of await readdir(path.join(root, 'assets/pwa'))) await writeFile(path.join(out, 'icons', f), await readFile(path.join(root, 'assets/pwa', f)));
     await writeFile(path.join(out, 'manifest.webmanifest'), manifestOf({ name: 'LDHML', shortName: 'LDHML', description: 'Ligues LDHML, hockey balle', icon: { up: '', key: 'hub' } }));
-    await writeFile(path.join(out, 'sw.js'), swOf(createHash('sha1').update(hubHtml).digest('hex').slice(0, 10)));
+    await writeFile(path.join(out, 'sw.js'), swOf(sha(rootHtml)));
   }
-  for (const { lg, data } of leagues) {
-    const D = { ...data, league: { slug: lg.slug, theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null }, registry, base: '../' };
-    const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
-    const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });
-    await mkdir(path.join(out, lg.slug), { recursive: true });
-    await writeFile(path.join(out, lg.slug, 'index.html'), html);
+  for (const s of sections) {
+    const sdir = path.join(out, s.path);
+    const sname = `LDHML ${s.name.fr}`;
+    const shtml = page(fill(hubTpl, hubCss, hubJs, safe(sectionData(s))), { title: `${sname} | ${cfg.seasonName}`, theme: 'default', icon: s.logo ? icons[s.logo] : hubIcon, description: `Ligues ${s.name.fr} de la LDHML : classements, calendriers, joueurs.`, pwa: isArtifact ? null : { up: '../', icon: s.logo || 'hub', shortName: sname } });
+    await mkdir(sdir, { recursive: true });
+    await writeFile(path.join(sdir, 'index.html'), shtml);
     if (!isArtifact) {
-      await writeFile(path.join(out, lg.slug, 'manifest.webmanifest'), manifestOf({ name: lg.name.replace(/^LDHML\s+/, 'LDHML - '), shortName: `LDHML - ${lg.short}`, description: `${lg.name}, ${cfg.seasonName}`, icon: { up: '../', key: lg.logo || 'hub' } }));
-      await writeFile(path.join(out, lg.slug, 'sw.js'), swOf(createHash('sha1').update(html).digest('hex').slice(0, 10)));
+      await writeFile(path.join(sdir, 'manifest.webmanifest'), manifestOf({ name: sname, shortName: sname, description: `${sname}, ${cfg.seasonName}`, icon: { up: '../', key: s.logo || 'hub' } }));
+      await writeFile(path.join(sdir, 'sw.js'), swOf(sha(shtml)));
     }
-    total += html.length;
+    const registry = s.leagues.map(({ lg }) => ({ slug: lg.slug, path: pathOf(lg), name: lg.name, short: lg.short, theme: lg.theme }));
+    for (const { lg, data } of s.leagues) {
+      const D = { ...data, league: { slug: lg.slug, path: pathOf(lg), theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null },
+        section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, ids: leagueIds(lg, data), base: '../', root: '../../' };
+      const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
+      const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });
+      const ldir = path.join(sdir, pathOf(lg));
+      await mkdir(ldir, { recursive: true });
+      await writeFile(path.join(ldir, 'index.html'), html);
+      if (!isArtifact) {
+        await writeFile(path.join(ldir, 'manifest.webmanifest'), manifestOf({ name: lg.name.replace(/^LDHML\s+/, 'LDHML - '), shortName: `LDHML - ${lg.short}`, description: `${lg.name}, ${cfg.seasonName}`, icon: { up: '../../', key: lg.logo || 'hub' } }));
+        await writeFile(path.join(ldir, 'sw.js'), swOf(sha(html)));
+      }
+      total += html.length;
+    }
   }
 }
 await writeFile(path.join(root, 'dist/.nojekyll'), '');
-console.log(`Built the home page and ${leagues.length} leagues: ${leagues.map((l) => l.lg.slug).join(', ')} (about ${(total / outDirs.length / leagues.length / 1024).toFixed(0)} KB each).`);
+console.log(`Built the home page, ${sections.length} sections (${sections.map((s) => s.path).join(', ')}) and ${leagues.length} leagues: ${leagues.map((l) => `${sectionLinks[l.lg.section].path}/${pathOf(l.lg)}`).join(', ')} (about ${(total / outDirs.length / leagues.length / 1024).toFixed(0)} KB each). ${Object.keys(people).length} people.`);

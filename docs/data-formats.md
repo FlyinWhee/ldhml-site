@@ -21,9 +21,30 @@ Not used on purpose: `https://admin.nbhpa.com/livegame/<id>` (official live page
 ## `leagues.json`
 
 ```
-{ leagueId, seasonId, seasonName, default, leagues: [ { slug, logo, categoryId, theme, short, name } ] }
+{ leagueId, seasonId, seasonName, default,
+  sections: [ { key, path, logo, theme, name: { fr, en } } ],
+  rankSystems: [],
+  leagues: [ { slug, section, path?, logo, categoryId, theme, short, name } ] }
 ```
-`logo` is a key into `assets/logos` (`retro`, `vintage`, `draft`, `dek`). `theme` is a key in `site/themes.mjs`.
+`logo` is a key into `assets/logos` (`retro`, `vintage`, `draft`, `dek`). `theme` is a key in `site/themes.mjs` (`default` = no theme).
+`section` is the `key` of a section (`draft`, `teams`). `slug` names the data folder (`data/<slug>/`). The URL is `/<section path>/<path or slug>/`
+(the draft league has `path: "ldhml"`, so `/draft/ldhml/`). Renaming a `path` changes URLs only, not data.
+
+`rankSystems` (empty for now) declares **our own** rank systems. Planned shape:
+`{ key, section, leagues?: [slug], name: { fr, en } }`. A system belongs to one section (and optionally to some of its leagues).
+The values are in the registry: `people[].ranks[key] = { s, g }` (a value per position). `site/people.mjs` copies them into the
+person’s instance of that section; the section page shows them. Example use: a draft "salary" per player, with a salary cap per team (cap rule not built).
+
+## `registry/people.json` (source of truth, not a cache)
+```
+{ next: 240, people: [ { id: "L0001", nid, name, sex, pids: [player_id...], since, ranks?: { <system key>: { s, g } } } ] }
+```
+One person per line. `id` is ours and never changes. `nid` is the NBHPA person id (`nbhpa_player_id`), the foreign key. `pids` are the NBHPA
+`player_id` values seen (one person can have several; for example Marco Normandin has two in Retro). Written by `scraper/registry.mjs`. See `registry/CLAUDE.md`.
+
+## Ranks
+A rank exists **per position**: `s` (skater, from `players.json`) and `g` (goalie, from `goalies.json`). Checked on 2026-10-15: the NBHPA rank of a
+person for one position is the same in every league. Values seen: `H8`..`H12`, `W5`..`W8`, `W6+`, `W7+`, `J5`, `N/C`, `""` and `null` (no rank).
 
 ## `data/<slug>/meta.json`
 `{ league:"LDHML", category, slug, name, season, leagueId, seasonId, categoryId, fetchedAt (ISO UTC), source }`.
@@ -41,7 +62,7 @@ Not used on purpose: `https://admin.nbhpa.com/livegame/<id>` (official live page
 ## `players.json` / `goalies.json` (arrays)
 Skater: `{ id, nid, name, sex "m"|"f", rank "H10", teams [abb], gp, g, a, p, pim, ppg, ppp, shg, shp, gwg, otg }`.
 Goalie: `{ id, nid, name, sex, rank, teams, gp, w, l, t, sa, sv, ga, pct, gaa, gaat, so, g, a, pts, pim, mp, mpp, ppg_ }`.
-`id` (source `player_id`) is the key used everywhere: links (`#player-<id>`), box scores, search. `nid` (source `nbhpa_player_id`) is the NBHPA-wide person id; the site does not use it.
+`id` (source `player_id`) is an NBHPA registration id: box scores use it. It is **not** a person key: one person can have several. `nid` (source `nbhpa_player_id`) is the NBHPA-wide person id; the site maps it to our id (registry) and uses our id for links, search and per-person stats.
 There is **no birth date, age or photo**. `rank` is a skill level label (for example H10), not a standings rank.
 `teams` has several entries when a person played for several teams. The stat line is then combined.
 

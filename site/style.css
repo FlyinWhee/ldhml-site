@@ -591,3 +591,6 @@ a.chip:hover { filter: brightness(1.12); }
 
 /* Live game page: the scoreboard has the same red border as the live cards */
 .gboard:has(.livebadge) { border-color: #E5253B; box-shadow: 0 0 0 1px #E5253B; }
+
+/* Links to the same person in other leagues and sections (player pages). */
+.pxl { margin-top: 10px; }

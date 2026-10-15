@@ -3,6 +3,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
+import { syncFromData } from './registry.mjs';
 
 const file = process.argv[2];
 if (!file) { console.error('Usage: node scraper/import-raw.mjs <raw.json>'); process.exit(1); }
@@ -17,3 +18,5 @@ for (const lg of cfg.leagues) {
   await saveLeague(lg.slug, out);
   console.log(`${lg.slug}: ${out.teams.length} teams, ${out.games.length} games, ${out.players.length} players, ${out.goalies.length} goalies, ${boxSaved} box scores.`);
 }
+const r = await syncFromData();
+console.log(`registry: ${r.reg.people.length} people, ${r.added} new.`);
