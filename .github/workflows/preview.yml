@@ -1,0 +1,20 @@
+# A push to a branch other than main (or a deleted branch) starts "Refresh and publish" on main.
+# That workflow rebuilds the site with a preview of each branch at /preview/<branch>/.
+# It runs from main on purpose: the github-pages environment only lets main deploy.
+name: Preview a branch
+
+on:
+  push:
+    branches-ignore: [main]
+  delete:
+
+permissions:
+  actions: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run refresh.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

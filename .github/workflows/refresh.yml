@@ -2,6 +2,10 @@
 # The league server challenges requests from data centers (GitHub, Cloudflare), so this job cannot fetch data.
 # Refresh the saved snapshot from your own computer: npm run fetch:force, then commit and push data/.
 # Visitors' browsers read the live data themselves.
+#
+# Branch previews: Pages holds ONE site, so every deploy also builds each other branch into
+# /preview/<branch>/ (a "/" in the branch name becomes "-"). preview.yml starts this workflow
+# when a branch is pushed or deleted. The deploy always runs from main.
 name: Refresh and publish
 
 on:
@@ -23,12 +27,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: node build.mjs
+      - name: Build a preview of every other branch
+        run: |
+          echo "## Previews" >> "$GITHUB_STEP_SUMMARY"
+          for b in $(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin); do
+            [ "$b" = "main" ] || [ "$b" = "HEAD" ] && continue
+            safe=$(printf '%s' "$b" | tr -c 'A-Za-z0-9._-' '-')
+            wt="$RUNNER_TEMP/wt-$safe"
+            git worktree add -q --detach "$wt" "origin/$b"
+            if (cd "$wt" && npm ci --silent && node build.mjs); then
+              mkdir -p "dist/preview/$safe"
+              cp -r "$wt/dist/." "dist/preview/$safe/"
+              rm -rf "dist/preview/$safe/artifact"
+              echo "- \`$b\`: preview/$safe/" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::The preview of branch $b did not build."
+              echo "- \`$b\`: build failed" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
