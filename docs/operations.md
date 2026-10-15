@@ -43,6 +43,7 @@ and **every other branch** into `dist/preview/<branch>/` (`/` in the name become
 branch delete; it only starts `refresh.yml` on `main` (`gh workflow run`), because the `github-pages` environment lets only `main` deploy.
 Preview URL: https://flyinwhee.github.io/ldhml-site/preview/<branch>/. Previews are public. A branch that fails to build gets a warning and no preview; `main` still deploys.
 Each deploy builds every branch: delete merged branches so deploys stay fast.
+After a deploy reports success, Pages can serve the previous copy for a few more minutes (pages are cached with `max-age=600`). Check `Last-Modified` with `curl -sI`, or reload hard, before concluding a change is missing.
 Commit message style: short, imperative. The session tooling appends co-author trailers; keep them.
 
 ## Retired
