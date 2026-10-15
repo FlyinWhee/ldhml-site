@@ -29,7 +29,7 @@ const parsers = (await read('shared/parsers.js')) + '\n' + (await read('shared/l
 const leagueJs = [parsers, ...(await Promise.all(jsParts.map((f) => read(`site/js/${f}`))))].join('\n');
 const hubJs = [parsers, await read('site/hub/hub.js')].join('\n');
 const baseCss = await read('site/style.css');
-const leagueCss = baseCss + '\n' + themeCss();
+const leagueCss = baseCss + '\n' + themeCss() + '\n' + cardCss(); // cardCss: [data-t] tokens, for league badges of other leagues
 const hubCss = baseCss + '\n' + await read('site/hub/hub.css') + '\n' + cardCss();
 
 const fill = (tpl, css, js, data) => {
@@ -171,7 +171,8 @@ const leagueIds = (lg, data) => {
     if (!p) continue;
     ids.nids[p.nid] = p.id;
     for (const pid of p.pids) ids.pids[pid] = p.id;
-    ids.who[p.id] = { lg: Object.keys(p.in[lg.section].leagues).filter((s) => s !== lg.slug), xs: Object.keys(p.in).filter((k) => k !== lg.section) };
+    const other = Object.entries(p.in[lg.section].leagues).filter(([s]) => s !== lg.slug);
+    ids.who[p.id] = { lg: other.map(([slug, m]) => ({ slug, teams: m.teams })), xs: Object.keys(p.in).filter((k) => k !== lg.section) };
   }
   return ids;
 };
@@ -206,10 +207,13 @@ for (const out of outDirs) {
       await writeFile(path.join(sdir, 'manifest.webmanifest'), manifestOf({ name: sname, shortName: sname, description: `${sname}, ${cfg.seasonName}`, icon: { up: '../', key: s.logo || 'hub' } }));
       await writeFile(path.join(sdir, 'sw.js'), swOf(sha(shtml)));
     }
-    const registry = s.leagues.map(({ lg }) => ({ slug: lg.slug, path: pathOf(lg), name: lg.name, short: lg.short, theme: lg.theme }));
+    // The leagues of this section, with their teams and small logo (64 px tab icon), for the picker and the league badges.
+    const registry = s.leagues.map(({ lg, data }) => ({ slug: lg.slug, path: pathOf(lg), name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
+      teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name) })) }));
+    const leagueIcons = Object.fromEntries(s.leagues.filter(({ lg }) => lg.logo).map(({ lg }) => [lg.logo, icons[lg.logo]]));
     for (const { lg, data } of s.leagues) {
       const D = { ...data, league: { slug: lg.slug, path: pathOf(lg), theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null },
-        section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, ids: leagueIds(lg, data), base: '../', root: '../../' };
+        section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, icons: leagueIcons, ids: leagueIds(lg, data), base: '../', root: '../../' };
       const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
       const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });
       const ldir = path.join(sdir, pathOf(lg));

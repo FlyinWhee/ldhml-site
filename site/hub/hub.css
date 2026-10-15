@@ -13,11 +13,6 @@ main#main { padding-block: 0; }
 .night-h { font: 600 28px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
 .night-h small { font: 500 16px var(--f-text); text-transform: none; letter-spacing: 0; color: var(--muted); }
 .night-l { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.lcard-mini a { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: var(--panel); color: var(--panel-ink); text-decoration: none; font-size: 14px; border: 1px solid var(--panel-line); }
-.lcard-mini a:hover { border-color: var(--ball); }
-.lcard-mini i { width: 10px; height: 10px; border-radius: 50%; background: var(--ball); }
-.lcard-mini b { font: 600 18px/1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
-.lcard-mini span { color: var(--panel-mute); }
 
 .lcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
 .lcard { position: relative; display: grid; align-content: start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; padding-bottom: 16px; transition: transform .15s, box-shadow .15s; min-width: 0; }
@@ -106,13 +101,13 @@ main#main { padding-block: 0; }
 .lcard-top .nm a, .lcard-sc a { position: relative; z-index: 1; }  /* above the link that covers the card */
 .lcard-top .nm .tl { overflow: hidden; text-overflow: ellipsis; }
 .lcard-sc span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.pl-lg-name { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; border-radius: 3px; background: var(--panel); color: var(--panel-ink); text-decoration: none; }
-.pl-lg-name .mk-logo { height: 34px; }
-.pl-lg-name span { font: 600 26px/1 var(--f-display); letter-spacing: .03em; text-transform: uppercase; }
-.pl-lg-name i { font-style: normal; font-family: var(--f-brand, var(--f-display)); background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .pl-teams { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 0 12px; }
 .pl-teams li { display: inline-flex; align-items: center; gap: 8px; }
 .pl-teams small { color: var(--muted); font-variant-numeric: tabular-nums; }
 .pl-teams .maintag { margin-left: 0; }
-.pl-lgs { display: inline-flex; align-items: center; gap: 6px; margin: 2px 14px 2px 0; }
-.sec-h .pl-lg-name, .sec-h .pl-lg-name span { color: var(--panel-mute); text-decoration: none; }
+
+.pl-lg-h { margin: 0 0 12px; }
+/* Phones: the league badges of the player list go under the name; team badges stay in a person's team list. */
+.pl-under { display: none; margin-top: 6px; }
+@media (max-width: 600px) { .pl-under { display: block; } .pl-lgcol { display: none; } }
+@media (max-width: 520px) { .pl-teams .tcell .crest { display: inline-grid; } }

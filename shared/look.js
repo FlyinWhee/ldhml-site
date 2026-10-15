@@ -6,6 +6,7 @@
  *   LDLook.colorVar(slug, abb)     value for style="--tc:..." (sets --tc and --tx together)
  *   LDLook.crest(team, slug, size) team badge: the team colour with the code, and the team logo on top when it loads
  *   LDLook.abbLink(team, slug, href)  team code chip in the team colour, a link (title = full name)
+ *   LDLook.leagueBadge(league, o)  league badge, a container: the league part (context link) + the team chips inside
  * team = { abb, name?, logo? }. size = '' | 'sm' | 'lg'.
  * A page that shows crests needs the two image handlers that the league pages and hub.js have: a logo gets class "ok"
  * when it loads (CSS shows it), and is removed when it fails (the colour and the code stay).
@@ -48,5 +49,18 @@
   function abbLink(team, slug, href) {
     return href ? '<a href="' + esc(href) + '" style="--tc:' + colorVar(slug, team.abb) + '" title="' + esc(team.name || team.abb) + '">' + esc(team.abb) + '</a>' : '<span>' + esc(team.abb) + '</span>';
   }
-  root.LDLook = { LOGO_BASE: LOGO_BASE, teamColor: teamColor, colorVar: colorVar, crest: crest, abbLink: abbLink };
+  /* League badge: the league (logo or dot, short name in its theme) and, inside it, the teams of this context.
+   * The league part opens the league IN THE CURRENT CONTEXT (on a person: that person's page in the league;
+   * elsewhere: the league home). The team chips inside always open the team pages.
+   *   league = { slug, short, name, theme, logo? (image URL or data URI) }
+   *   o = { href, title, theme (theme to use, 'default' when themes are off), teams: [{ abb, name, href }], extra (text after the name), size: '' | 'lg' } */
+  function leagueBadge(league, o) {
+    o = o || {};
+    var mark = league.logo ? '<img src="' + esc(league.logo) + '" alt="">' : '<i aria-hidden="true"></i>';
+    var inner = mark + '<b>' + esc(league.short) + '</b>' + (o.extra ? '<span>' + esc(o.extra) + '</span>' : '');
+    var head = o.href ? '<a class="lgb-l" href="' + esc(o.href) + '" title="' + esc(o.title || league.name) + '">' + inner + '</a>' : '<span class="lgb-l" title="' + esc(o.title || league.name) + '">' + inner + '</span>';
+    var teams = (o.teams || []).map(function (tm) { return abbLink(tm, league.slug, tm.href); }).join('');
+    return '<span class="lgb' + (o.size ? ' lgb-' + o.size : '') + '" data-t="' + esc(o.theme || league.theme || 'default') + '">' + head + (teams ? '<span class="abbs">' + teams + '</span>' : '') + '</span>';
+  }
+  root.LDLook = { LOGO_BASE: LOGO_BASE, teamColor: teamColor, colorVar: colorVar, crest: crest, abbLink: abbLink, leagueBadge: leagueBadge };
 })(typeof window !== 'undefined' ? window : globalThis);

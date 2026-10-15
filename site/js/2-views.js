@@ -329,14 +329,23 @@
 
   /* The same person elsewhere: the section profile, the other leagues of this section, the other sections.
    * Navigation only: each section keeps its own data. People not in the registry yet get no links. */
+  /* The other leagues are league badges (docs/presentation.md): the league part opens this person's page in that league,
+   * the team chips inside open the team pages there. */
   function crossLinks(pp) {
     var w = IDS.who[pp.id]; if (!w) return '';
-    var reg = D.registry || [], secs = D.sections || {}, base = D.base || '../', top = D.root || '../../';
+    var reg = D.registry || [], secs = D.sections || {}, base = D.base || '../', top = D.root || '../../', icons = D.icons || {};
     var a = function (href, label) { return '<a class="lnk" href="' + esc(href) + '#player-' + esc(pp.id) + '">' + esc(label) + '</a>'; };
+    var badges = w.lg.map(function (x) {
+      var l = reg.filter(function (r) { return r.slug === x.slug; })[0]; if (!l) return '';
+      var home = base + l.path + '/';
+      return LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: icons[l.logo] }, {
+        href: home + '#player-' + pp.id, title: t('inLeague', { p: pp.name, l: l.name }), theme: THEME_ON ? l.theme : 'default',
+        teams: x.teams.map(function (abb) { var tm = (l.teams || []).filter(function (y) { return y.abb === abb; })[0] || { abb: abb }; return { abb: abb, name: tm.name, href: tm.id ? home + '#team-' + tm.id : '' }; })
+      });
+    }).join('');
     var bits = [a(base, t('sectionProfile', { s: secName(D.section) }))];
-    w.lg.forEach(function (slug) { var l = reg.filter(function (x) { return x.slug === slug; })[0]; if (l) bits.push(a(base + l.path + '/', l.name)); });
     w.xs.forEach(function (k) { if (secs[k]) bits.push(a(top + secs[k].path + '/', t('sectionProfile', { s: secName(secs[k]) }))); });
-    return '<p class="note pxl">' + t('alsoIn') + ' ' + bits.join(' · ') + '</p>';
+    return '<p class="note pxl">' + t('alsoIn') + ' ' + (badges ? '<span class="lgbs">' + badges + '</span> ' : '') + bits.join(' · ') + '</p>';
   }
 
   function viewPlayer(r) {

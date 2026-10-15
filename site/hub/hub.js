@@ -30,7 +30,7 @@ var STR = {
     skater: 'Joueur', goalie: 'Gardien', team: 'Équipe', season: 'Saison {s}', otherSection: 'Joue aussi dans la section {s} :',
     profile: 'Profil {s}', notFound: 'Joueur introuvable', notFoundText: 'Cette personne ne joue pas dans les ligues {s} cette saison.', back: 'Retour aux joueurs',
     snapNote: 'Chiffres du {t}. Les pages des ligues ont les chiffres en direct.', ownRanks: 'Cotes de la section',
-    fullStats: 'Statistiques complètes →', mainTag: 'Équipe principale', leaguesTeams: 'Ligues et équipes',
+    inLeague: '{p} : statistiques dans {l}', mainTag: 'Équipe principale', leaguesTeams: 'Ligues et équipes',
     cG: 'B', cA: 'A', cP: 'PTS', cPim: 'PUN', cW: 'V', cL: 'D', cT: 'N', cSv: '%ARR'
   },
   en: {
@@ -48,7 +48,7 @@ var STR = {
     skater: 'Skater', goalie: 'Goalie', team: 'Team', season: '{s} season', otherSection: 'Also plays in the {s} section:',
     profile: '{s} profile', notFound: 'Player not found', notFoundText: 'This person does not play in the {s} leagues this season.', back: 'Back to the players',
     snapNote: 'Numbers of {t}. The league pages have the live numbers.', ownRanks: 'Section ratings',
-    fullStats: 'Full stats →', mainTag: 'Main team', leaguesTeams: 'Leagues and teams',
+    inLeague: '{p}: stats in {l}', mainTag: 'Main team', leaguesTeams: 'Leagues and teams',
     cG: 'G', cA: 'A', cP: 'PTS', cPim: 'PIM', cW: 'W', cL: 'L', cT: 'T', cSv: 'SV%'
   }
 };
@@ -82,6 +82,7 @@ var teamOf = function (l, abb) { return (l.teamList || []).filter(function (x) {
 var teamHref = function (l, tm) { return tm.id ? l.path + '/#team-' + tm.id : ''; };
 var crestOf = function (l, abb) { return window.LDLook.crest(teamOf(l, abb), l.slug, 'sm'); };
 var teamChips = function (l, abbs) { return '<span class="abbs">' + abbs.map(function (a) { var tm = teamOf(l, a); return window.LDLook.abbLink(tm, l.slug, teamHref(l, tm)); }).join('') + '</span>'; };
+var badgeOf = function (l, o) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: H.logos && H.logos[l.logo] }, Object.assign({ theme: themeOf(l) }, o)); };
 var teamName = function (l, tm) { var href = teamHref(l, tm); return href ? '<a class="tl strong" href="' + esc(href) + '">' + esc(tm.name || tm.abb) + '</a>' : esc(tm.name || tm.abb); };
 
 var live = {}; // slug -> fresher standings, once read from the API
@@ -108,8 +109,8 @@ function nightHtml(list, prefix) {
   if (!rows.length) return '<p class="lede">' + t('noNight') + '</p>';
   return '<section class="night" aria-labelledby="nt"><h2 id="nt" class="night-h">' + (rows[0].isToday ? t('tonight') : t('nights')) + '</h2><ul class="night-l">' +
     rows.map(function (r) {
-      return '<li class="lcard-mini" data-t="' + esc(themeOf(r.l)) + '"><a href="' + esc(prefix + r.l.path) + '/#' + (r.isToday ? 'live' : 'schedule') + '"><i aria-hidden="true"></i><b>' + esc(r.l.short) + '</b><span>' +
-        esc(r.isToday ? t('tonight') : fmtShort(r.date)) + ' · ' + r.n + ' ' + (r.n === 1 ? t('gm') : t('gms')) + ' · ' + esc(r.first) + '</span></a></li>';
+      return '<li>' + badgeOf(r.l, { href: prefix + r.l.path + '/#' + (r.isToday ? 'live' : 'schedule'), title: r.l.name,
+        extra: (r.isToday ? t('tonight') : fmtShort(r.date)) + ' · ' + r.n + ' ' + (r.n === 1 ? t('gm') : t('gms')) + ' · ' + r.first }) + '</li>';
     }).join('') + '</ul></section>';
 }
 
@@ -139,7 +140,7 @@ function sectionCard(s) {
     '<h2><a class="lcard-link" href="' + esc(s.path) + '/" aria-label="' + esc(t('openSection', { s: nameOf(s) })) + '"><span>LDHML</span> <i>' + esc(nameOf(s)) + '</i></a></h2></div>' +
     '<p class="lcard-meta">' + t(s.leagues.length === 1 ? 'nLeague' : 'nLeagues', { n: s.leagues.length }) + ' · ' + t('nTeams', { n: teams }) + ' · ' + t('nPeople', { n: s.people }) + '</p>' +
     '<ul class="scard-l">' + s.leagues.map(function (l) {
-      return '<li class="lcard-mini" data-t="' + esc(themeOf(l)) + '"><a href="' + esc(s.path + '/' + l.path) + '/"><i aria-hidden="true"></i><b>' + esc(l.short) + '</b></a></li>';
+      return '<li>' + badgeOf(l, { href: s.path + '/' + l.path + '/', title: l.name }) + '</li>';
     }).join('') + '</ul>' +
     (nx ? '<p class="lcard-sc"><small>' + t('night') + '</small><span>' + esc(nx.isToday ? t('tonight') : fmtDay(nx.date)) + '</span></p>' : '') + '</article>';
 }
@@ -186,22 +187,27 @@ function viewSectionHome() {
   return '<div class="arena sec-arena"><div class="wrap"><h1>LDHML ' + esc(nameOf(S)) + '</h1><ul class="hub-stats"><li><b>' + list.length + '</b><span>' + t('leagues') + '</span></li><li><b>' + totals.teams + '</b><span>' + t('teams') + '</span></li><li><b>' + H.people.length + '</b><span>' + t('people') + '</span></li><li><b>' + totals.played + '</b><span>' + t('played') + '</span></li></ul></div></div>' +
     '<div class="wrap hub-body">' + nightHtml(list, '') + '<h2 class="hub-h">' + t('leagues') + '</h2><div class="lcards">' + list.map(cardHtml).join('') + '</div></div>';
 }
-/* Each league of the person: the league (a link to the person's page in it) and the teams (badges in the team colour, links to the team pages). */
+/* Each league of the person, as a league badge: the league part opens the person's page in that league,
+ * the team chips inside open the team pages (docs/presentation.md). */
+function personBadge(p, l, size) {
+  return badgeOf(l, { href: l.path + '/#player-' + p.id, title: t('inLeague', { p: p.name, l: l.name }), size: size,
+    teams: size ? [] : p.lg[l.slug].teams.map(function (a) { var tm = teamOf(l, a); return { abb: a, name: tm.name, href: teamHref(l, tm) }; }) });
+}
 function leagueChips(p) {
-  return playedIn(p).map(function (l) {
-    return '<span class="pl-lgs" data-t="' + esc(themeOf(l)) + '"><a class="lnk" href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + esc(l.short) + '</a>' + teamChips(l, p.lg[l.slug].teams) + '</span>';
-  }).join('');
+  return '<span class="lgbs">' + playedIn(p).map(function (l) { return personBadge(p, l); }).join('') + '</span>';
 }
 function viewPlayers() {
   var q = norm(ui.q.trim());
   var list = H.people.filter(function (p) { return !q || norm(p.name).indexOf(q) >= 0; })
     .sort(function (a, b) { return a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'fr', { sensitivity: 'base' }); });
   var rows = list.map(function (p) {
-    return '<tr><td class="stick"><a class="tl strong" href="#player-' + esc(p.id) + '">' + esc(p.name) + '</a></td><td class="num">' + rankTxt(p.rank.s) + '</td><td class="num">' + rankTxt(p.rank.g) + '</td><td>' + leagueChips(p) + '</td></tr>';
+    /* The badges are in their own column; on phones they move under the name (CSS .pl-under / .pl-lgcol). */
+    var chips = leagueChips(p);
+    return '<tr><td class="stick"><a class="tl strong" href="#player-' + esc(p.id) + '">' + esc(p.name) + '</a><div class="pl-under">' + chips + '</div></td><td class="num">' + rankTxt(p.rank.s) + '</td><td class="num">' + rankTxt(p.rank.g) + '</td><td class="pl-lgcol">' + chips + '</td></tr>';
   }).join('');
   return '<div class="wrap sec-body"><h1 class="ph">' + t('players') + '</h1><p class="lede">' + esc(t('playersLede', { s: nameOf(S) })) + '</p>' +
     '<div class="controls"><input id="pq" class="ctl" type="search" data-q placeholder="' + esc(t('filter')) + '" value="' + esc(ui.q) + '" aria-label="' + esc(t('filter')) + '" autocomplete="off"><span class="count">' + t('nShown', { n: list.length }) + '</span></div>' +
-    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
+    (list.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th scope="col" class="stick">' + t('player') + '</th><th scope="col" class="num" title="' + esc(t('ratingS')) + '">' + t('ratingSShort') + '</th><th scope="col" class="num" title="' + esc(t('ratingG')) + '">' + t('ratingGShort') + '</th><th scope="col" class="pl-lgcol">' + t('leaguesTeams') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noPlayers') + '</p>') +
     '<p class="note">' + t('ratingNote') + '</p></div>';
 }
 function lineTable(head, cells) {
@@ -230,8 +236,7 @@ function viewPlayer(r) {
     }).join('') + '</ul>';
     if (m.s) out += lineTable([t('skater'), t('gp'), t('cG'), t('cA'), t('cP'), t('cPim')], [teamChips(l, m.teams), m.s.gp, m.s.g, m.s.a, m.s.g + m.s.a, mins(m.s.pim)]);
     if (m.g) out += lineTable([t('goalie'), t('gp'), t('cW'), t('cL'), t('cT'), t('cSv')], [teamChips(l, m.teams), m.g.gp, m.g.w, m.g.l, m.g.t, m.g.sa ? pct3(m.g.sv / m.g.sa) : '-']);
-    return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><div class="sec-h"><h2><a class="pl-lg-name" href="' + esc(l.path) + '/">' + logoImg(l.logo, 40, 34) + '<span>LDHML <i>' + esc(l.short) + '</i></span></a></h2>' +
-      '<a href="' + esc(l.path) + '/#player-' + esc(p.id) + '">' + t('fullStats') + '</a></div>' + teams + out + '</section>';
+    return '<section class="sec pl-lg" data-t="' + esc(themeOf(l)) + '"><h2 class="pl-lg-h">' + personBadge(p, l, 'lg') + '</h2>' + teams + out + '</section>';
   }).join('');
   var other = (p.xs || []).map(function (k) {
     var s = H.sections[k];

@@ -62,7 +62,7 @@
       alsoShort: 'SUB:', more: 'More', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
       teamsLede: 'All {n} teams in standings order. Open a team for its roster, substitutes and schedule.',
       shotsLive: 'Shots on goal', pickLabel: 'League', searchPh: 'Search', assistsLabel: 'Assists:', themeLabel: 'Theme', themeTipOff: 'Switch off the league theme (default look)', themeTipOn: 'Switch the league theme on', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page',
-      ratingS: 'Skater rating', ratingG: 'Goalie rating', alsoIn: 'See also:', sectionProfile: '{s} profile', allLeaguesOf: 'All {s} leagues', footSection: 'All {s} leagues'
+      ratingS: 'Skater rating', ratingG: 'Goalie rating', alsoIn: 'See also:', sectionProfile: '{s} profile', allLeaguesOf: 'All {s} leagues', footSection: 'All {s} leagues', inLeague: '{p}: stats in {l}'
     },
     fr: {
       home: 'Accueil', standings: 'Classement', schedule: 'Calendrier', players: 'Joueurs', goalies: 'Gardiens', leaders: 'Meneurs',
@@ -103,7 +103,7 @@
       alsoShort: 'SUB:', more: 'Plus', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
       teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
       shotsLive: 'Tirs au but', pickLabel: 'Ligue', searchPh: 'Chercher', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match',
-      ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', alsoIn: 'Voir aussi :', sectionProfile: 'Profil {s}', allLeaguesOf: 'Toutes les ligues {s}', footSection: 'Toutes les ligues {s}'
+      ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', alsoIn: 'Voir aussi :', sectionProfile: 'Profil {s}', allLeaguesOf: 'Toutes les ligues {s}', footSection: 'Toutes les ligues {s}', inLeague: '{p} : statistiques dans {l}'
     }
   };
   var COLS = {
@@ -247,7 +247,8 @@
 
     /* Main team = the team a person played most games for. A tie goes to the team of the latest game. */
     var gpOf = function (id, abb) { return ((splitS[id] || {})[abb] || { gp: 0 }).gp + ((splitG[id] || {})[abb] || { gp: 0 }).gp; };
-    var lastOf = function (id, abb) { return Math.max(((splitS[id] || {})[abb] || { last: '' }).last, ((splitG[id] || {})[abb] || { last: '' }).last) || ''; };
+    /* Latest game date for that team. Dates are "YYYY-MM-DD" strings: compare them as strings (Math.max would give NaN). */
+    var lastOf = function (id, abb) { var a = ((splitS[id] || {})[abb] || { last: '' }).last, b = ((splitG[id] || {})[abb] || { last: '' }).last; return a > b ? a : b; };
     mainTeam = function (p) {
       var best = null;
       p.teams.forEach(function (a) {
@@ -287,6 +288,8 @@
     };
     skaters.forEach(function (p) { ensure(p, 's').skater = p; });
     goalies.forEach(function (p) { ensure(p, 'g').goalie = p; });
+    /* The main team counts skater AND goalie games, so it is set once both rows are in (a person can skate for one team and play goal for another). */
+    Object.keys(people).forEach(function (k) { people[k].main = mainTeam(people[k]); });
   }
   var mainTeam, skaterFor, goalieFor, rosterS, rosterG;
   buildModel();

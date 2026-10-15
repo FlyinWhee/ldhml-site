@@ -94,10 +94,33 @@ for (const m of Object.values(merged).filter((x) => x.rows > 1)) {
   assert.equal(n, 1, m.name + ' is listed once');
 }
 w.document.querySelector('[data-scope="main"]') && w.document.querySelector('[data-scope="main"]').click(); await wait();
+// main team: most games (skater + goalie), a tie goes to the team of the latest game. The section pages use the same rule (site/people.mjs).
+{
+  const dateOf = Object.fromEntries(data.games.map((g) => [g.id, g.date]));
+  const per = {};
+  for (const [gid, b] of Object.entries(data.box.games)) {
+    if (!dateOf[gid] || b.t.length !== 2) continue;
+    for (const side of b.t) for (const r of [...side.sk, ...side.gk]) {
+      const u = data.ids.pids[r[0]]; if (!u) continue;
+      const z = ((per[u] ??= {})[side.id] ??= { gp: 0, last: '' }); z.gp++; if (dateOf[gid] > z.last) z.last = dateOf[gid];
+    }
+  }
+  for (const [u, byTeam] of Object.entries(per)) {
+    const ids = Object.keys(byTeam).sort((a, b) => byTeam[b].gp - byTeam[a].gp || byTeam[b].last.localeCompare(byTeam[a].last));
+    if (ids.length < 2 || (byTeam[ids[0]].gp === byTeam[ids[1]].gp && byTeam[ids[0]].last === byTeam[ids[1]].last)) continue;
+    await go('#player-' + u);
+    const main = w.document.querySelector('.pteams a.is-main');
+    assert.equal(main && main.getAttribute('href'), '#team-' + ids[0], `main team of ${u} (most games, then latest game)`);
+  }
+}
 // cross links: the section profile of the person
-const cross = Object.keys(data.ids.who)[0];
+const cross = Object.keys(data.ids.who).find((k) => data.ids.who[k].lg.length) || Object.keys(data.ids.who)[0];
 await go('#player-' + cross);
 assert.ok(w.document.querySelector(`.pxl a[href="../#player-${cross}"]`), 'player page links to the section profile');
+for (const x of data.ids.who[cross].lg) {
+  const l = data.registry.find((r) => r.slug === x.slug);
+  assert.ok(w.document.querySelector(`.pxl .lgb-l[href="../${l.path}/#player-${cross}"]`), 'league badge opens the person in the other league');
+}
 for (const k of data.ids.who[cross].xs) assert.ok(w.document.querySelector(`.pxl a[href="../../${data.sections[k].path}/#player-${cross}"]`), 'player page links to the other section');
 await go('#standings');
 const lead = [...data.teams].sort((x, y) => x.pos - y.pos)[0];

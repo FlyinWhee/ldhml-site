@@ -81,6 +81,7 @@ for (const s of cfg.sections) {
       const l = mine.find((x) => x.slug === slug);
       assert.ok(d.querySelector(`a[href="${l.path || l.slug}/#player-${p.id}"]`), `${s.key}: ${p.name} links to the league page`);
       const hl = H.leagues.find((x) => x.slug === slug);
+      assert.ok(d.querySelector(`.pl-lg-h .lgb-l[href="${hl.path}/#player-${p.id}"]`), `${s.key}: ${p.name}: the league badge opens the person's page in ${slug}`);
       for (const abb of p.lg[slug].teams) {
         const tm = hl.teamList.find((x) => x.abb === abb);
         if (tm) assert.ok(d.querySelector(`.pl-teams a[href="${hl.path}/#team-${tm.id}"]`) && d.querySelector(`.pl-teams .crest`), `${s.key}: ${p.name}: team ${abb} has a badge, its full name and a link`);

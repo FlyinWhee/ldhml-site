@@ -5,7 +5,15 @@
 - Show the data in full. Give the context a stats reader needs: denominators ("12 of 30 games"), thresholds ("min. 2 GP"), the date of the data, and what the source does not record.
 - **Every piece of data links to the page that has more detail about it.** A team goes to its team page, a person to their page in that league, a date or a score to the game page, and a league to its home page.
 - **A league, a team or a person looks the same on every page.** The same logo, colors, badge and name, everywhere on the platform (league pages, section pages, entry page, and the tools to come).
-- A summary page (section, entry, a future captain tool) always links to the page where the full data is. Example: a section profile has a "Full stats" link to the person's page in each league.
+- A summary page (section, entry, a future captain tool) always links to the page where the full data is. Example: on a section profile, the league badge opens the person's page in that league.
+
+## What a click opens (the badge rule)
+- **A team badge, team name or team chip always opens the team page** (in that team's league). Its meaning never changes with the page.
+- **A league badge opens the league in the current context.** On a person (a person's row, a person's profile): that person's page in the league.
+  Elsewhere (cards, night lists, the entry page): the league home (or its live or schedule page for a game night).
+- The league badge is a **container**: the league part is the context link, the team chips inside are team links. One unit shows "this person, in this league, with these teams" without text labels.
+- Every badge has a `title` that says where it goes ("Marco Normandin : statistiques dans LDHML Retro", the team's full name). Touch screens have no hover: keep the targets at least 26 px high.
+- Already inside the league (a league page)? The person's own teams link to the team pages; the other leagues of the person are league badges.
 
 ## Identity pieces (use these; do not draw them again)
 
@@ -16,6 +24,7 @@
 | Team badge (crest) | Team colour with the code; the NBHPA team logo on top once it loads. Sizes `sm`, default, `lg`. | `crest(abb, size)` | `crestOf(l, abb)` |
 | Team, full | Badge + full name, a link to the team page (`.tcell`, `a.tl.strong`). | `teamCell(id)` | `crestOf` + `teamName(l, tm)` |
 | Team, compact | Code chip in the team colour, a link; the full name is in `title` (`.abbs a`). For dense table cells. | `abbLinks([abb])` | `teamChips(l, [abb])` |
+| League badge | `LDLook.leagueBadge(league, o)`: a container in the league theme (`data-t`): logo (or a dot) + short name in the brand gradient, then the team chips of this context. Size `lg` for a block heading. `extra` adds text (game night). | `crossLinks(pp)` | `badgeOf(l, o)`, `personBadge(p, l)` |
 | Person | Name, a link (`a.tl`, `strong` in tables). In a league: their page in the league. Across leagues: the section profile. Box rows hold an NBHPA `player_id`: go through `pLink` / `U()`. | `pLink(id)` | `<a class="tl strong" href="<league>/#player-<id>">` |
 | A person's teams | Badge + full name + games + "Main team" tag (`.maintag`); other teams are substitute teams (`SUB:` in tables, `.also`). | `byTeamHtml`, `teamsHtml` | `.pl-teams` |
 | Player hero | Jersey in the main team colour with the most used number (`jersey()`), name, team links, ranks per position, LED readout. | `viewPlayer` | `.pl-hero` |
@@ -29,7 +38,8 @@ All team visuals come from `shared/look.js` (`LDLook`). It is inlined into every
 - A dense table cell (many columns, several teams): code chips. The full name is in the tooltip.
 - A team in a hero: large badge (`crest-lg`).
 - A person: always the name as a link, never only a code or an id.
-- A league outside its own pages: its logo and its themed name, never plain text only.
+- A league outside its own pages: a league badge, never plain text only.
+- A person in several leagues: one league badge per league, with the person's teams inside.
 
 ## Context for the numbers
 - Say what a number covers: main team or all teams (`scopeBar`), the snapshot date on pages without live data ("Numbers of 15 October"), the season.
