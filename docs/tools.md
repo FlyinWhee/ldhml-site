@@ -1,0 +1,58 @@
+# Tools (admin and captain areas)
+
+Phase 2 of the project: tools that cut admin work. Captains act on their own within limits; admins validate in one step with all the information in front of them. Roles: **admin** and **captain** only. Status (2026-10-16): admin area built and tested locally, not deployed.
+
+## Stack
+| Part | Service | Cost |
+|---|---|---|
+| Stats site | GitHub Pages (unchanged) | $0 |
+| Tool pages + API | Cloudflare **Workers** (one Worker, `tools/`) | $0 (Free) or $5 a month (Paid) |
+| Database | Cloudflare **D1** (SQLite) | $0 at our size |
+| Sign-in emails | **Resend** (separate company, free: 100 a day) or Cloudflare Email Service (needs Workers Paid) | $0 |
+| Domains | Cloudflare Registrar | about $10–20 a year each |
+Budget set by the owner: under $100 a year.
+
+## Design
+```
+browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/... ──> Worker ──> D1
+                                                                 └── reads /data/season.json (our snapshot; never NBHPA)
+```
+- `build.mjs` writes `dist-tools/`: `tools/public/*`, `assets/site.css` (the site CSS with themes, badges, league logos), `assets/look.js`, `assets/ranks.js`, `data/season.json`. It also writes the same JSON at `dist/api/season.json` on the stats site (public data: leagues, teams, players and our ids).
+- **Seasons** are a table. Every feature row links to a season. A captain's access is: one team, one league, one season (`captain_access`). Team names are copied at grant time. Revoked rows stay for history.
+- A team can be granted only when the season's NBHPA id matches the season in the data (`no_season_data` otherwise).
+
+## Security model
+- **Passwordless:** an admin types their email; an existing, active admin gets a 6-digit code by email; the answer is the same for any email (no account discovery). Code: 10 minutes, single use, 5 tries. Limits: 5 codes per email and 20 per IP per hour.
+- **Nothing readable is stored for sign-in:** codes, emails (in `login_codes`), IPs and session tokens are HMAC-SHA-256 hashes with the `CODE_PEPPER` secret.
+- **Sessions:** a random 256-bit token in a cookie `__Host-ldhml_admin` (`HttpOnly; Secure; SameSite=Strict`, 7 days). Captains will get `__Host-ldhml_captain` (60 days). A session of one kind never opens the other area. Disabling an account ends its sessions at once.
+- **CSRF:** a write must carry our own `Origin`.
+- **Headers** (`tools/public/_headers`): strict Content-Security-Policy, no framing, no indexing.
+- **Audit:** every admin change (and sign-in) is a row in `audit`.
+- **Personal data** (Quebec Law 25): emails and names of admins and captains only. Never in git. Before going live: a short privacy note, a named person in charge, and a way to delete an account.
+
+## Local development and tests
+- `npm test` includes `tools/test/test-tools.mjs`: the real Worker on an in-memory SQLite that behaves like D1 (`node:sqlite`, Node 22.5+), plus the admin page in jsdom wired to the Worker.
+- `npm run tools:dev` runs the Worker in Cloudflare's real runtime (`workerd`, via `wrangler dev`) with a local D1. Create `tools/.dev.vars` first (see `tools/CLAUDE.md`), then `npm run tools:add-admin -- you@example.com "Name"`. The code appears in the terminal and, on localhost only, on the page.
+- Checked on 2026-10-16 in `wrangler dev`: schema, headers, sign-in, session cookie, writes, cross-site write refused (403).
+
+## Deploy (first time, by the owner, with help)
+1. Cloudflare account: decide the owner (personal or league). Install nothing: `npx wrangler login` opens the browser.
+2. `npx wrangler d1 create ldhml-tools` → copy the `database_id` into `tools/wrangler.jsonc`.
+3. `npx wrangler d1 migrations apply ldhml-tools --remote -c tools/wrangler.jsonc`
+4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc` (a long random string; keep a copy in a password manager), and the email key (`RESEND_API_KEY` for Resend).
+5. Email: verify the sending domain at the provider (DNS records in Cloudflare). Set `EMAIL_MODE` to `"resend"` and `EMAIL_FROM` (for example `LDHML <no-reply@your-domain>`) in `tools/wrangler.jsonc`.
+6. `npm run build && npx wrangler deploy -c tools/wrangler.jsonc`. Then attach a custom domain to the Worker (for example `outils.your-domain`) in the Cloudflare dashboard.
+7. `npm run tools:add-admin -- you@example.com "Name" --remote`
+8. Later: deploy from GitHub Actions on push to `main` (a Cloudflare API token as a GitHub secret). Deploying to Cloudflare is fine; only fetching NBHPA from the cloud is blocked.
+
+## Workers Paid ($5 a month): what it adds for us
+- Email Service: 3,000 outbound emails a month included (one vendor instead of Resend).
+- No daily request cap (10 million a month included), CPU up to 30 s per request (Free: 10 ms) and longer Cron Triggers: room for heavier checks (sub pre-validation, imports).
+- D1: 10 GB per database (Free: 500 MB), 25 billion rows read and 50 million written a month, 30 days of Time Travel (point-in-time restore; Free: 7).
+- Queues (1 million operations a month) and Durable Objects: background jobs and notifications later.
+See the pricing pages before relying on numbers; they change.
+
+## Next
+- Captain area (`/captain/`, `/api/captain/...`): sign-in with the captain kind, "my teams this season".
+- First captain tool: substitute request with pre-validation (needs the sub rules from the owner) and an admin approval queue.
+- Manage admins from the admin area (today: the `add-admin` script).

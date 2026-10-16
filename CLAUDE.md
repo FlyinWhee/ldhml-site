@@ -21,7 +21,7 @@ rank systems later (for example a draft "salary" under a salary cap).
 
 **Phase 2 (planned, not built):** tools for league captains and admins (only these two roles), for example substitute
 requests that arrive pre-validated with all the information needed for one-step approval. Goal: fewer admin tasks,
-lean on security and permissions. It needs writes, sign-in and stored state, so it needs a backend: see `docs/open-items.md`.
+lean on security and permissions. **Started:** `tools/` is a Cloudflare Worker + D1 database (admin area: passwordless sign-in, captain accounts, access per season and team, audit log). Built and tested locally, not deployed yet. Read `docs/tools.md` and `tools/CLAUDE.md`.
 
 **Who it is for: data nerds.** Nobody else reads the stats of a recreational ball hockey league. Show the data in full, with its
 context, and link every piece of data to the page that has more detail about it. A league, a team or a person looks the same on every
@@ -69,6 +69,7 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 9. **Content links use class `lnk`, never `more`.** `.more` is the fixed mobile menu. Using it for a link breaks the mobile layout.
 10. **Open legal question:** NBHPA has not given permission for outside sites to use their public endpoints and logos. The owner will raise it with them. Do not add new data sources or heavier polling before that talk. Do not claim the site is "official".
 11. **Never change, reuse or delete an id in `registry/people.json`.** Do not regenerate the file. See `registry/CLAUDE.md`.
+12. **No personal data in git** (the repo is public): admin and captain emails, sessions and requests live only in the tools database (D1). Every tools feature is **per season** and **audited**. See `tools/CLAUDE.md`.
 
 ## Commands
 
@@ -92,6 +93,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | Live behavior, polling | `site/js/3-live.js` (and `site/test-live.mjs`) |
 | A text (fr/en) | `STR` in `site/js/1-core.js` (entry and section pages: `STR` in `site/hub/hub.js`) |
 | Entry page, section pages, section player page | `site/hub/hub.js`, `site/hub/hub.css` |
+| Admin / captain tools (Worker, D1, sign-in) | `tools/` (see `docs/tools.md`, `tools/CLAUDE.md`) |
 | People, our ids, ranks per position | `registry/` (data), `scraper/registry.mjs`, `site/people.mjs`, `scraper/test-registry.mjs` |
 | A league look | `site/themes.mjs` |
 | How teams look on every page (colours, badges, chips) | `shared/look.js` (see `docs/presentation.md`) |
@@ -121,4 +123,5 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | `docs/operations.md` | Refresh data, deploy, add a league, start a new season, Unraid |
 | `docs/gotchas.md` | Always. Known traps and past bugs |
 | `docs/decisions.md` | You want to know why something is done this way, or what was tried and dropped |
+| `docs/tools.md` | You touch the admin or captain tools, sign-in, the database, or deploy them |
 | `docs/open-items.md` | You look for the next task |

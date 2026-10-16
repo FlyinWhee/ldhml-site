@@ -10,8 +10,7 @@ Status as of 2026-10-15.
 ## Phase 2: tools for captains and admins (planned)
 Goal: fewer admin tasks. Captains act on their own, within limits; admins validate in one step with all the information in front of them.
 Roles: **admin** and **captain** only. Players get nothing directly; other roles use the NBHPA system. Keep security and permissions lean.
-- **Blocker: a backend.** Writes (a captain asks for a sub, an admin approves), sign-in and stored state need one. The static site cannot do it alone.
-  Options: a hosted database with sign-in (for example Supabase, free tier; recommended), a Cloudflare Worker with a D1 database (Workers can serve our own data; only fetching NBHPA is blocked), or the Unraid server (home uptime risk). Decide with the owner.
+- **Backend: decided (2026-10-16):** Cloudflare Worker + D1, our own passwordless sign-in (Access free plan is capped at 50 users; 43 teams). Admin area built on branch `admin`, tested locally; deploy steps in `docs/tools.md`. Email: Resend free, or Cloudflare Email Service with Workers Paid ($5 a month; owner is open to it).
 - **Substitute rules:** the owner will send them (who can sub where, rank limits, game limits, per section). They decide what a person's section instance must store.
 - **Our own rank systems:** not defined yet (maybe per league). Draft "salary" and a team salary cap are a core part of the draft leagues. Shape is ready (`rankSystems`, registry `ranks`); no system is declared.
 - **Easy-to-query data** (an MCP-like layer): the build already makes a clean people index; a JSON export of it is a small step.

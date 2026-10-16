@@ -232,4 +232,37 @@ for (const out of outDirs) {
   }
 }
 await writeFile(path.join(root, 'dist/.nojekyll'), '');
+
+// ---- data export: the current season as one JSON file (public data only: leagues, teams, players and our ids) ----
+// dist/api/season.json on the stats site, and /data/season.json in the tools Worker (it checks captain access against it).
+const seasonExport = {
+  generatedAt: new Date().toISOString(), leagueId: cfg.leagueId, seasonId: cfg.seasonId, seasonName: cfg.seasonName, siteUrl: cfg.siteUrl,
+  sections: cfg.sections.map((s) => ({ key: s.key, path: s.path, name: s.name })),
+  leagues: leagues.map(({ lg, data }) => ({ slug: lg.slug, section: lg.section, path: pathOf(lg), sectionPath: sectionLinks[lg.section].path, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
+    teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })) })),
+  people: Object.values(people).filter((p) => /^L\d+$/.test(p.id)).map((p) => ({ id: p.id, name: p.name, sex: p.sex,
+    lg: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, m.teams]))) }))
+};
+await mkdir(path.join(root, 'dist/api'), { recursive: true });
+await writeFile(path.join(root, 'dist/api/season.json'), JSON.stringify(seasonExport));
+
+// ---- tools (Cloudflare Worker static assets): dist-tools/ = tools/public + the site look + the season data ----
+const toolsOut = path.join(root, 'dist-tools');
+// Empty the folder instead of deleting it: "wrangler dev" watches it, and Windows refuses to delete a watched folder.
+await mkdir(toolsOut, { recursive: true });
+for (const e of await readdir(toolsOut)) await rm(path.join(toolsOut, e), { recursive: true, force: true });
+const copyDir = async (from, to) => {
+  await mkdir(to, { recursive: true });
+  for (const e of await readdir(from, { withFileTypes: true })) {
+    if (e.isDirectory()) await copyDir(path.join(from, e.name), path.join(to, e.name));
+    else await writeFile(path.join(to, e.name), await readFile(path.join(from, e.name)));
+  }
+};
+await copyDir(path.join(root, 'tools/public'), toolsOut);
+await mkdir(path.join(toolsOut, 'assets'), { recursive: true });
+await mkdir(path.join(toolsOut, 'data'), { recursive: true });
+await writeFile(path.join(toolsOut, 'assets/site.css'), hubCss);                 // same tokens, badges and league logos as the site
+await writeFile(path.join(toolsOut, 'assets/look.js'), await read('shared/look.js'));
+await writeFile(path.join(toolsOut, 'assets/ranks.js'), await read('shared/ranks.js'));
+await writeFile(path.join(toolsOut, 'data/season.json'), JSON.stringify(seasonExport));
 console.log(`Built the home page, ${sections.length} sections (${sections.map((s) => s.path).join(', ')}) and ${leagues.length} leagues: ${leagues.map((l) => `${sectionLinks[l.lg.section].path}/${pathOf(l.lg)}`).join(', ')} (about ${(total / outDirs.length / leagues.length / 1024).toFixed(0)} KB each). ${Object.keys(people).length} people.`);

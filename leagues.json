@@ -3,6 +3,7 @@
   "seasonId": 4307,
   "seasonName": "Automne 2026",
   "default": "retro",
+  "siteUrl": "https://flyinwhee.github.io/ldhml-site/",
   "sections": [
     { "key": "draft", "path": "draft",   "logo": "draft", "theme": "draft", "name": { "fr": "Draft",   "en": "Draft" } },
     { "key": "teams", "path": "equipes", "logo": "dek",   "theme": "default", "name": { "fr": "Équipes", "en": "Teams" } }

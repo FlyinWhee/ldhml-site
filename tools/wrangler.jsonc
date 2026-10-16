@@ -1,0 +1,28 @@
+// Cloudflare Worker for the LDHML tools (admin area now, captain area later). See tools/CLAUDE.md and docs/tools.md.
+// Secrets are NOT here: set them with "npx wrangler secret put <NAME> -c tools/wrangler.jsonc" (CODE_PEPPER, RESEND_API_KEY).
+// Local development reads them from tools/.dev.vars (git-ignored).
+{
+  "name": "ldhml-tools",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "../dist-tools",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ldhml-tools",
+      // Replace with the id printed by "npx wrangler d1 create ldhml-tools" (docs/tools.md, step 2).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    // "console" prints sign-in codes to the log (local only, refused elsewhere). Production: "resend".
+    "EMAIL_MODE": "console",
+    "EMAIL_FROM": ""
+  },
+  "observability": { "enabled": true }
+}

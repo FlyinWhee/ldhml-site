@@ -1,0 +1,43 @@
+/* LDHML admin area. Built on the site tokens and components (assets/site.css). */
+.ad-body { padding-block: 24px 40px; min-height: 60vh; }
+.ad-tools { margin-left: auto; display: flex; gap: 8px; padding: 8px 0; }
+.ad-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 12px 0; }
+.ad-form label { display: grid; gap: 6px; font: 500 13px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ad-form .ctl { min-width: 220px; font: 400 16px/1.2 var(--f-text); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.ad-login { max-width: 520px; }
+.ad-login label { flex: 1 1 260px; }
+.ad-btn { min-height: 42px; padding: 0 18px; border: 0; border-radius: 3px; background: var(--ball); color: var(--on-ball); font: 600 18px/1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.ad-btn:focus-visible, .ad-x:focus-visible, .ad-linkbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ad-btn-sm { min-height: 34px; padding: 0 12px; font-size: 15px; }
+.ad-linkbtn { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.ad-inline { display: inline-flex; align-items: center; gap: 8px; margin: 6px 0 4px; font-weight: 600; }
+.ad-msg { margin: 0 0 14px; padding: 10px 14px; border-radius: 3px; border: 1px solid var(--line); background: var(--surface); }
+.ad-err { border-left: 5px solid var(--bad, #c0392b); }
+.ad-ok { border-left: 5px solid var(--good, #2e7d32); }
+.ad-dev { padding: 8px 12px; border: 1px dashed var(--line); display: inline-block; }
+.ad-tbl td { vertical-align: top; }
+.ad-tbl .note { margin: 4px 0 0; font-size: 13px; }
+.ad-off td { opacity: .55; }
+.ad-acc { display: inline-flex; align-items: center; gap: 2px; }
+.ad-x { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 3px; width: 26px; height: 26px; cursor: pointer; font-size: 16px; line-height: 1; }
+.ad-x:hover { color: var(--ink); border-color: var(--ink); }
+.ad-grant { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ad-grant .ctl { min-width: 0; max-width: 220px; }
+.ad-detail { font-size: 12px; color: var(--muted); max-width: 360px; overflow-wrap: anywhere; }
+.ad-doors { list-style: none; display: grid; gap: 12px; margin-top: 20px; max-width: 520px; }
+.ad-door { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); text-decoration: none; color: var(--ink); }
+.ad-door b { font: 600 26px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
+.ad-door span { color: var(--muted); }
+.ad-door:hover { border-color: var(--ball); }
+@media (max-width: 899px) { .sec-top { flex-wrap: wrap; } .sec-top .nav { display: flex; flex-basis: 100%; } }
+@media (max-width: 600px) { .ad-form .ctl { min-width: 0; width: 100%; } .ad-form label { flex: 1 1 100%; } }
+body { margin: 0; }
+.ad-body > .ph:first-child, .ad-body > .ad-msg + .ph { margin-top: 10px; }
+/* Phones: each captain is a card (no sideways scroll). */
+@media (max-width: 600px) {
+  .ad-tbl thead { display: none; }
+  .ad-tbl, .ad-tbl tbody, .ad-tbl tr, .ad-tbl td { display: block; width: 100%; }
+  .ad-tbl tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .ad-tbl td { border: 0; padding: 4px 12px; }
+  .ad-grant .ctl { max-width: none; flex: 1 1 140px; }
+}

@@ -1,3 +1,7 @@
 node_modules/
 dist/
 raw/
+dist-tools/
+tools/.dev.vars
+tools/.wrangler/
+.wrangler/

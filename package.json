@@ -10,8 +10,11 @@
     "build": "node build.mjs",
     "refresh": "node scraper/fetch.mjs && node build.mjs",
     "registry": "node scraper/registry.mjs",
-    "test": "node scraper/test.mjs && node scraper/test-registry.mjs && node build.mjs && node site/test-all.mjs && node site/test-hub.mjs && node site/test-live.mjs && node site/test-pwa.mjs",
-    "import-raw": "node scraper/import-raw.mjs"
+    "test": "node scraper/test.mjs && node scraper/test-registry.mjs && node build.mjs && node site/test-all.mjs && node site/test-hub.mjs && node site/test-live.mjs && node site/test-pwa.mjs && node tools/test/test-tools.mjs",
+    "import-raw": "node scraper/import-raw.mjs",
+    "tools:test": "node build.mjs && node tools/test/test-tools.mjs",
+    "tools:dev": "node build.mjs && npx wrangler d1 migrations apply ldhml-tools --local -c tools/wrangler.jsonc && npx wrangler dev -c tools/wrangler.jsonc",
+    "tools:add-admin": "node tools/scripts/add-admin.mjs"
   },
   "dependencies": {
     "jsdom": "^26.0.0"
