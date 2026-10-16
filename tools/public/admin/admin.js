@@ -108,7 +108,10 @@
       giveAccess: 'Donner un accès', accessTitle: 'Donner un accès · {l}', captainField: 'Capitaine', chooseCaptain: 'Capitaine…', editCaptainTitle: 'Modifier le capitaine',
       newPersonTitle: 'Nouvelle personne', addExisting: 'Ajouter une personne existante', editPersonTitle: 'Modifier {n}', editTeamTitle: 'Modifier l’équipe', newTeamTitle: 'Nouvelle équipe · {l}',
       close: 'Fermer', plAll: 'Toute la section', plIn: 'Dans cette ligue', plFree: 'Sans équipe dans cette ligue', elsewhere: 'Ailleurs :',
-      noTeamsLeague: 'Aucune équipe dans cette ligue pour cette saison.'
+      noTeamsLeague: 'Aucune équipe dans cette ligue pour cette saison.',
+      tabSetup: 'Configuration', setupLede: 'Ce qui se règle une fois par saison : les saisons, puis pour chaque ligue ses règles et ses équipes (avec le lien vers NBHPA).',
+      rulesH: 'Règles', teamsSetup: 'Équipes', nTeamsLg: '{n} équipes', playersShort: 'Joueurs', importLeague: 'Importer les équipes depuis NBHPA',
+      setupLink: 'Les équipes se créent et se modifient dans'
     },
     en: {
       captainsLede: 'The captains of the chosen league, team by team. A captain can have access in several leagues.',
@@ -116,7 +119,10 @@
       giveAccess: 'Give access', accessTitle: 'Give access · {l}', captainField: 'Captain', chooseCaptain: 'Captain…', editCaptainTitle: 'Edit the captain',
       newPersonTitle: 'New person', addExisting: 'Add an existing person', editPersonTitle: 'Edit {n}', editTeamTitle: 'Edit the team', newTeamTitle: 'New team · {l}',
       close: 'Close', plAll: 'Whole section', plIn: 'In this league', plFree: 'No team in this league', elsewhere: 'Elsewhere:',
-      noTeamsLeague: 'No team in this league for this season.'
+      noTeamsLeague: 'No team in this league for this season.',
+      tabSetup: 'Setup', setupLede: 'What you set once a season: the seasons, then for each league its rules and its teams (with the NBHPA link).',
+      rulesH: 'Rules', teamsSetup: 'Teams', nTeamsLg: '{n} teams', playersShort: 'Players', importLeague: 'Import the teams from NBHPA',
+      setupLink: 'Teams are created and edited in'
     }
   };
   Object.keys(STR2).forEach(function (k) { Object.keys(STR2[k]).forEach(function (n) { STR[k][n] = STR2[k][n]; }); });
@@ -126,8 +132,8 @@
    * Scope: season, section, league. Every working tab shows only that context. Section and league are remembered in this browser. */
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'captains', seasons: [], captains: [], audit: [], data: null, seasonId: null,
     section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', modal: null, nocapOpen: false };
-  var TABS = ['captains', 'players', 'teams', 'rules', 'seasons', 'audit'];
-  var SCOPED = { captains: 'league', players: 'section', teams: 'league', rules: 'league' };
+  var TABS = ['captains', 'players', 'teams', 'setup', 'audit'];
+  var OLD_TABS = { seasons: 'setup', rules: 'setup' };   // old links still land somewhere sensible
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
   function saveScope() { try { localStorage.setItem('ldhml-admin-scope', JSON.stringify({ section: S.section, league: S.league })); } catch (e) { /* ignore */ } }
 
@@ -287,8 +293,7 @@
         '<td><button type="button" class="ad-x" data-roster-remove="' + r.id + '" data-name="' + esc(r.name) + '" title="' + esc(t('removeFromRoster')) + '" aria-label="' + esc(t('removeFromRoster')) + '">×</button></td></tr>';
     }).join('');
     return '<article class="ad-team" data-team="' + tm.id + '" style="--tc:' + window.LDLook.colorVar(l.slug, tm.abb) + '"><div class="ad-team-h">' + teamHead(tm) +
-      '<span class="note">' + esc(tm.abb) + (tm.nbhpa_team_id ? ' · NBHPA ' + esc(tm.nbhpa_team_id) : '') + '</span>' +
-      '<span class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-team-btn="' + tm.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-del-team="' + tm.id + '" data-name="' + esc(tm.name) + '">' + t('del') + '</button></span></div>' +
+      '<span class="note">' + esc(tm.abb) + '</span></div>' +
       (rows ? '<table class="tbl ad-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       '<p class="ad-payroll' + (over ? ' ad-over' : '') + '">' + esc(cap != null ? t('payrollCap', { v: money(total), c: money(cap) }) : t('payroll', { v: money(total) })) +
       (over ? ' · <b>' + t('overCap') + '</b>' : '') + (missing ? ' · ' + esc(t('missingSalary', { n: missing })) : '') + '</p>' +
@@ -300,45 +305,52 @@
     var s = curSeason(), l = leagueOf(S.league);
     var head = '<h1 class="ph">' + t('tabTeams') + '</h1><p class="lede">' + t('teamsLede') + '</p>' + scopeBar('league');
     if (!s || !l) return head;
-    var have = {}; S.teams.forEach(function (x) { if (x.nbhpa_team_id) have[x.league + ':' + x.nbhpa_team_id] = 1; });
-    var canImport = s.nbhpa_season_id === S.data.seasonId && S.data.leagues.some(function (lg) { return lg.teams.some(function (x) { return !have[lg.slug + ':' + x.id]; }); });
     var rule = S.rules.filter(function (r) { return r.league === l.slug; })[0];
     var teams = S.teams.filter(function (x) { return x.league === l.slug; });
     var onRoster = {}; teams.forEach(function (x) { x.roster.forEach(function (r) { onRoster[r.person_id] = 1; }); });
     var free = S.players.filter(function (p) { return !onRoster[p.id]; });
-    return head + '<p class="ad-btns">' + (canImport ? '<button type="button" class="ad-btn ad-btn-sm" data-act="import-teams">' + t('importTeams') + '</button>' : '') +
-      '<button type="button" class="ad-btn ad-btn-sm" data-act="team-new">' + t('newTeam') + '</button></p>' +
+    return head + '<p class="note">' + t('setupLink') + ' <a class="lnk" href="#setup">' + t('tabSetup') + '</a></p>' +
       '<datalist id="ad-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
       (teams.length ? '<div class="ad-teams">' + teams.map(function (tm) { return teamCard(tm, l, rule); }).join('') + '</div>' : '<p class="note">' + t('noTeamsLeague') + '</p>');
   }
 
-  /* League rules: the row of the chosen league and season. */
-  function viewRules() {
-    var s = curSeason(), l = leagueOf(S.league);
-    var head = '<h1 class="ph">' + t('tabRules') + '</h1><p class="lede">' + t('rulesLede') + '</p>' + scopeBar('league');
-    if (!s || !l) return head;
+  /* ---------- Configuration: what is set once a season ----------
+   * Seasons; then, for the chosen season, one card per league: its rules (one row) and its team setup (NBHPA link). */
+  function leagueSetup(l, s) {
     var val = function (v) { return v == null ? '' : esc(v); };
     var r = S.rules.filter(function (x) { return x.league === l.slug; })[0] || {};
-    return head + '<section class="sec"><form class="ad-form ad-row ad-rule" data-rules="' + esc(l.slug) + '">' +
+    var teams = S.teams.filter(function (x) { return x.league === l.slug; });
+    var have = {}; teams.forEach(function (x) { if (x.nbhpa_team_id) have[x.nbhpa_team_id] = 1; });
+    var canImport = s.nbhpa_season_id === S.data.seasonId && (l.teams || []).some(function (x) { return !have[x.id]; });
+    var rows = teams.map(function (tm) {
+      return '<tr><td>' + teamHead(tm) + '</td><td>' + esc(tm.abb) + '</td><td class="num">' + esc(tm.nbhpa_team_id || '—') + '</td><td class="num">' + tm.roster.length + '</td>' +
+        '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-team-btn="' + tm.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-del-team="' + tm.id + '" data-name="' + esc(tm.name) + '">' + t('del') + '</button></td></tr>';
+    }).join('');
+    return '<article class="ad-lgset" data-league-setup="' + esc(l.slug) + '"><div class="ad-lgset-h">' + leagueOnly(l) + '<span class="note">' + esc(t('nTeamsLg', { n: teams.length })) + '</span></div>' +
+      '<h3 class="ad-h3">' + t('rulesH') + '</h3><form class="ad-form ad-row ad-rule" data-rules="' + esc(l.slug) + '">' +
       '<label>' + t('salaryCap') + '<input class="ctl ad-sm" name="salary_cap" inputmode="decimal" value="' + val(r.salary_cap) + '"></label>' +
       '<label>' + t('minAgeM') + '<input class="ctl ad-sm" name="min_age_m" inputmode="numeric" value="' + val(r.min_age_m) + '"></label>' +
       '<label>' + t('minAgeF') + '<input class="ctl ad-sm" name="min_age_f" inputmode="numeric" value="' + val(r.min_age_f) + '"></label>' +
       '<label>' + t('minAgeG') + '<input class="ctl ad-sm" name="min_age_g" inputmode="numeric" value="' + val(r.min_age_g) + '"></label>' +
       '<label class="ad-wide">' + t('notes') + '<input class="ctl" name="notes" maxlength="500" value="' + val(r.notes) + '"></label>' +
-      '<button class="ad-btn ad-btn-sm" type="submit">' + t('save') + '</button></form></section>';
+      '<button class="ad-btn ad-btn-sm" type="submit">' + t('save') + '</button></form>' +
+      '<h3 class="ad-h3">' + t('teamsSetup') + '</h3>' +
+      (rows ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('team') + '</th><th>' + t('abb') + '</th><th class="num">NBHPA</th><th class="num">' + t('playersShort') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
+      '<p class="ad-btns"><button type="button" class="ad-btn ad-btn-sm" data-team-new="' + esc(l.slug) + '">' + t('newTeam') + '</button>' +
+      (canImport ? '<button type="button" class="ad-btn ad-btn-sm" data-import-league="' + esc(l.slug) + '">' + t('importLeague') + '</button>' : '') + '</p></article>';
   }
-
-  function viewSeasons() {
-    var d = S.data || {};
-    var known = S.seasons.some(function (s) { return s.nbhpa_season_id === d.seasonId; });
-    var rows = S.seasons.map(function (s) { return '<tr><td><b>' + esc(s.name) + '</b></td><td>' + esc(s.key) + '</td><td class="num">' + esc(s.nbhpa_season_id || '') + '</td><td>' + esc(t('st_' + s.status)) + '</td><td>' + esc(fmt(s.created_at)) + '</td><td><button type="button" class="ad-del" data-delete-season="' + s.id + '" data-name="' + esc(s.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
-    return '<h1 class="ph">' + t('seasons') + '</h1><p class="lede">' + t('seasonHint') + '</p>' +
-      '<section class="sec"><div class="sec-h"><h2>' + t('newSeason') + '</h2></div><form id="f-season" class="ad-form ad-row">' +
-      '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="60" value="' + esc(known ? '' : (d.seasonName || '')) + '"></label>' +
-      '<label>' + t('nbhpaId') + '<input class="ctl" name="nbhpa" inputmode="numeric" value="' + esc(known ? '' : (d.seasonId || '')) + '"></label>' +
-      '<label>' + t('status') + '<select class="ctl" name="status">' + ['active', 'upcoming', 'archived'].map(function (k) { return '<option value="' + k + '">' + t('st_' + k) + '</option>'; }).join('') + '</select></label>' +
-      '<button class="ad-btn" type="submit">' + t('create') + '</button></form></section>' +
-      '<section class="sec">' + (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
+  function viewSetup() {
+    var s = curSeason();
+    var seasonRows = S.seasons.map(function (x) { return '<tr><td><b>' + esc(x.name) + '</b></td><td>' + esc(x.key) + '</td><td class="num">' + esc(x.nbhpa_season_id || '') + '</td><td>' + esc(t('st_' + x.status)) + '</td><td>' + esc(fmt(x.created_at)) + '</td><td><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
+    var html = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('setupLede') + '</p>' +
+      '<section class="sec"><div class="sec-h"><h2>' + t('seasons') + '</h2></div><p class="note">' + t('seasonHint') + '</p>' +
+      (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') +
+      '<p><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">' + t('newSeason') + '</button></p></section>';
+    if (!s || !S.data) return html;
+    return html + '<div class="ad-scope">' + seasonSelect() + '</div>' + (S.data.sections || []).map(function (sec) {
+      return '<section class="sec"><div class="sec-h"><h2>' + esc(nameOf(sec)) + '</h2></div><div class="ad-lgsets">' +
+        S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) { return leagueSetup(l, s); }).join('') + '</div></section>';
+    }).join('');
   }
   function viewAudit() {
     var rows = S.audit.map(function (a) { return '<tr><td>' + esc(fmt(a.at)) + '</td><td>' + esc(a.actor_name || (a.actor_kind === 'system' ? t('system') : a.actor_kind + ':' + a.actor_id)) + '</td><td><code>' + esc(a.action) + '</code></td><td>' + esc(a.target || '') + '</td><td class="ad-detail">' + esc(a.detail || '') + '</td></tr>'; }).join('');
@@ -386,7 +398,16 @@
       '<label>' + t('abb') + '<input class="ctl ad-sm" name="abb" required maxlength="6" value="' + esc(x.abb || '') + '"></label>' +
       '<label>' + t('nbhpaTeam') + '<input class="ctl ad-sm" name="nbhpa" inputmode="numeric" value="' + esc(x.nbhpa_team_id || '') + '"></label>'; };
     if (m.kind === 'team-edit' && tm) return { title: t('editTeamTitle'), body: '<form class="ad-form ad-col" data-edit-team="' + tm.id + '">' + teamFields(tm) + footer() + '</form>' };
-    if (m.kind === 'team-new' && l) return { title: t('newTeamTitle', { l: l.name }), body: '<form class="ad-form ad-col" data-newteam="' + esc(l.slug) + '">' + teamFields() + footer(t('create')) + '</form>' };
+    var nl = leagueOf(m.league) || l;
+    if (m.kind === 'team-new' && nl) return { title: t('newTeamTitle', { l: nl.name }), body: '<form class="ad-form ad-col" data-newteam="' + esc(nl.slug) + '">' + teamFields() + footer(t('create')) + '</form>' };
+    if (m.kind === 'season-new') {
+      var d = S.data || {}, known = S.seasons.some(function (x) { return x.nbhpa_season_id === d.seasonId; });
+      return { title: t('newSeason'), body: '<form id="f-season" class="ad-form ad-col">' +
+        '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="60" value="' + esc(known ? '' : (d.seasonName || '')) + '"></label>' +
+        '<label>' + t('nbhpaId') + '<input class="ctl" name="nbhpa" inputmode="numeric" value="' + esc(known ? '' : (d.seasonId || '')) + '"></label>' +
+        '<label>' + t('status') + '<select class="ctl" name="status">' + ['active', 'upcoming', 'archived'].map(function (k) { return '<option value="' + k + '">' + t('st_' + k) + '</option>'; }).join('') + '</select></label>' +
+        '<p class="note">' + t('seasonHint') + '</p>' + footer(t('create')) + '</form>' };
+    }
     return null;
   }
   function modalHtml(msg) {
@@ -402,12 +423,12 @@
 
   function render() {
     document.documentElement.lang = lang;
-    var tabs = [['captains', t('tabCaptains')], ['players', t('tabPlayers')], ['teams', t('tabTeams')], ['rules', t('tabRules')], ['seasons', t('tabSeasons')], ['audit', t('tabAudit')]];
+    var tabs = [['captains', t('tabCaptains')], ['players', t('tabPlayers')], ['teams', t('tabTeams')], ['setup', t('tabSetup')], ['audit', t('tabAudit')]];
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/admin/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
       (S.me ? '<nav class="nav" aria-label="Admin">' + tabs.map(function (x) { return '<a href="#' + x[0] + '"' + (S.tab === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang">' + t('lang') + '</button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { captains: viewCaptains, players: viewPlayers, teams: viewTeams, rules: viewRules, seasons: viewSeasons, audit: viewAudit };
+    var views = { captains: viewCaptains, players: viewPlayers, teams: viewTeams, setup: viewSetup, audit: viewAudit };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : (views[S.tab] || viewCaptains)());
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
@@ -429,7 +450,7 @@
       }
       fixScope();
       var more = [];
-      if (S.seasonId && ['captains', 'teams', 'rules'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
+      if (S.seasonId && ['captains', 'teams', 'setup'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
       if (S.tab === 'players') more.push(api('/people?all=1').then(function (r) { S.allPeople = r.data.people || []; }));
       return Promise.all(more);
@@ -518,7 +539,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team]');
+      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -539,9 +560,10 @@
     if (act === 'person-new') { openModal({ kind: 'person-new' }); return; }
     if (b.hasAttribute('data-edit-person-btn')) { openModal({ kind: 'person-edit', id: num('data-edit-person-btn') }); return; }
     if (b.hasAttribute('data-edit-team-btn')) { openModal({ kind: 'team-edit', id: num('data-edit-team-btn') }); return; }
-    if (act === 'team-new') { openModal({ kind: 'team-new' }); return; }
+    if (b.hasAttribute('data-team-new')) { openModal({ kind: 'team-new', league: b.getAttribute('data-team-new') }); return; }
+    if (act === 'season-new') { openModal({ kind: 'season-new' }); return; }
+    if (b.hasAttribute('data-import-league')) { api('/teams/import', 'POST', { season_id: S.seasonId, league: b.getAttribute('data-import-league') }).then(function (r) { done(r); }); return; }
     /* actions */
-    if (act === 'import-teams') { api('/teams/import', 'POST', { season_id: S.seasonId }).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-revoke')) { if (window.confirm(t('confirmRevoke'))) api('/access/' + b.getAttribute('data-revoke') + '/revoke', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-disable')) { if (window.confirm(t('confirmDisable'))) api('/captains/' + b.getAttribute('data-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-enable')) { api('/captains/' + b.getAttribute('data-enable') + '/enable', 'POST', {}).then(function (r) { done(r); }); return; }
@@ -554,6 +576,7 @@
   });
   window.addEventListener('hashchange', function () {
     var h = location.hash.replace('#', '');
+    h = OLD_TABS[h] || h;
     S.tab = TABS.indexOf(h) >= 0 ? h : 'captains';
     S.msg = null; S.modal = null;
     if (S.me) refresh(); else render();
@@ -561,6 +584,7 @@
 
   /* ---------- start ---------- */
   var h0 = location.hash.replace('#', '');
+  h0 = OLD_TABS[h0] || h0;
   if (TABS.indexOf(h0) >= 0) S.tab = h0;
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me')]).then(function (rs) {
     S.data = rs[0];

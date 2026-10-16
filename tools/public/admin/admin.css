@@ -99,3 +99,9 @@ body { margin: 0; }
 .ad-modal .ad-msg { margin-top: 4px; }
 html.ad-modal-open, html.ad-modal-open body { overflow: hidden; }
 @media (max-width: 520px) { .ad-team .tcell .crest, .ad-modal .tcell .crest { display: inline-grid; } }
+/* ---------- Configuration: one card per league (rules + team setup) ---------- */
+.ad-lgsets { display: grid; gap: 14px; }
+.ad-lgset { border: 1px solid var(--line); border-radius: 3px; background: var(--surface); padding: 12px 14px; }
+.ad-lgset-h { display: flex; align-items: center; gap: 12px; }
+.ad-h3 { margin: 14px 0 4px; font: 600 16px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ad-lgset .ad-rule { border-bottom: 0; padding: 0; margin: 4px 0; }

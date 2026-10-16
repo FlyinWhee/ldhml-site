@@ -117,6 +117,8 @@ r = await call('/api/admin/teams/import', { method: 'POST', cookie, body: { seas
 assert.equal(r.data.added, season.leagues.reduce((a, l) => a + l.teams.length, 0), 'every team of the data is imported');
 assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId } })).data.added, 0, 'import twice: nothing new');
 assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: futureId } })).data.error, 'no_season_data', 'no stats data for a future season');
+assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro' } })).data.added, 0, 'import one league: nothing new');
+assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId, league: 'nope' } })).status, 400, 'import: unknown league');
 const teamsNow = (await call('/api/admin/teams?season=' + seasonId, { cookie })).data.teams;
 const ref = (l, t) => teamsNow.find((x) => x.league === l.slug && x.nbhpa_team_id === t.id).id;
 const teamRef = ref(lg, team);
@@ -374,13 +376,22 @@ const firstTeamsLg = season.leagues.filter((l) => l.section === 'teams')[0].slug
 assert.ok(d.querySelector('.ad-scope [data-lg="' + firstTeamsLg + '"][aria-pressed="true"]'), 'the section change carried over: first league of Équipes');
 assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, firstTeamsLg).first('n'), 'one card per team of the league');
 assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
-d.querySelector('[data-act="team-new"]').click(); await wait(20);
-assert.ok(d.querySelector('#modal [data-newteam="' + firstTeamsLg + '"]'), 'new team: modal for this league');
+assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'), 'team setup is not on the daily Teams tab');
+// Configuration: seasons, then one card per league with its rules and team setup
+w.location.hash = '#setup'; await wait(120);
+assert.equal(d.querySelectorAll('[data-league-setup]').length, season.leagues.length, 'one setup card per league');
+assert.equal(d.querySelectorAll('[data-rules]').length, season.leagues.length, 'each league card has its rules row');
+const setupRetro = d.querySelector('[data-league-setup="retro"]');
+assert.equal(setupRetro.querySelectorAll('[data-edit-team-btn]').length, retro.teams.length, 'the Retro card lists its teams (with edit)');
+assert.ok(!setupRetro.querySelector('[data-import-league]'), 'no import button when every team is already there');
+setupRetro.querySelector('[data-team-new]').click(); await wait(20);
+assert.ok(d.querySelector('#modal [data-newteam="retro"]'), 'new team: modal for that league');
 d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
-// rules: the chosen league's row
-d.querySelector('[data-sec="draft"]').click(); await wait(80);
+d.querySelector('[data-act="season-new"]').click(); await wait(20);
+assert.ok(d.querySelector('#modal #f-season'), 'new season: modal');
+d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
 w.location.hash = '#rules'; await wait(120);
-assert.equal(d.querySelectorAll('[data-rules]').length, 1, 'rules: one row, the chosen league');
+assert.ok(d.querySelector('[data-league-setup]'), 'an old #rules link opens Configuration');
 const rf = d.querySelector('[data-rules="retro"]');
 assert.equal(rf.elements.salary_cap.value, '26', 'rules tab shows the saved row');
 rf.elements.salary_cap.value = '30'; rf.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);

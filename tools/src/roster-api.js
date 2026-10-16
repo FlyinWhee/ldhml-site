@@ -125,17 +125,18 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
   // Create the teams of a season from the stats data (when the season is the one in the data). Existing teams stay.
+  // league (optional): only that league.
   if (m === 'POST' && path === '/teams/import') {
     const b = await readJson(req) || {}, s = await season(b.season_id);
-    if (!s) return fail(400, 'season');
+    if (!s || (b.league && !leagueOf(b.league))) return fail(400, 'season');
     if (!data || s.nbhpa_season_id !== data.seasonId) return fail(400, 'no_season_data');
     let added = 0;
-    for (const l of data.leagues) for (const t of l.teams) {
+    for (const l of data.leagues.filter((x) => !b.league || x.slug === b.league)) for (const t of l.teams) {
       const r = await DB.prepare('INSERT OR IGNORE INTO teams (season_id, league, name, abb, nbhpa_team_id, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
         .bind(s.id, l.slug, t.name, t.abb, t.id, now(), admin.id).run();
       added += r.meta.changes;
     }
-    await audit('team.import', 'season:' + s.id, { added });
+    await audit('team.import', 'season:' + s.id, { added, league: b.league || null });
     return json({ ok: true, added });
   }
   x = path.match(/^\/teams\/(\d+)$/);
