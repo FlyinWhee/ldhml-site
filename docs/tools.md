@@ -97,7 +97,8 @@ Tables (`migrations/0002_people_rosters.sql`); everything per season except peop
 - `teams`: **our own teams** per season and league. `nbhpa_team_id` is an optional link (a team can exist before NBHPA has it; NBHPA ids change each season). Captain access points to our team (`captain_access.team_ref`).
 - `rosters`: one active team per person per league and season. Removing keeps the row (`removed_at`): a transaction history.
 - `league_rules`: **one row per league and season**: salary cap, minimum ages (men, women, goalies), the rule in words. **No rule engine**: rules change between seasons (last season Retro used "replacements at or below the absent players' salary, plus 1 for the game"); each check is coded when the league confirms it.
-- Admin tabs: Joueurs (list per section: add, edit, salaries, remove from the list, delete), Équipes (teams per league with rosters, payroll against the cap, add/remove players, import teams from the NBHPA data), Règles.
+- Admin tabs: Capitaines (per league, team by team; captains without access in the league in a folded list), Joueurs (list per section with a league filter), Équipes (the chosen league: rosters, payroll against the cap), Règles (the chosen league's row).
+- **Scope bar** on every working tab: season, section, league (badges). **Modals** for every add and edit form (2026-10-16, owner request: a work context that matches how leagues are managed).
 - Local tests: `npm run tools:seed` fills the local database from the stats data (each player on their main team, main position, no salaries or births).
 
 ## Next
