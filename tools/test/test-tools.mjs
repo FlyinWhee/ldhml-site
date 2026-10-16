@@ -94,6 +94,23 @@ assert.equal((await call('/api/admin/captains', { method: 'POST', cookie, body: 
 assert.equal((await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'X', email: 'bad' } })).status, 400);
 assert.equal((await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'X', email: 'x@example.test', person_id: 'DROP TABLE' } })).status, 400);
 
+// ---- edit a captain (typo fix): a new email ends sessions and pending codes ----
+r = await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: { name: 'Marco Normandin', email: 'marco@example.test', person_id: 'L0137' } });
+assert.deepEqual(r.data.changed, [], 'no change: nothing written');
+await DB.prepare("INSERT INTO sessions (token_h, kind, user_id, created_at, expires_at) VALUES ('edit', 'captain', ?, 0, 9999999999)").bind(capId).run();
+await DB.prepare("INSERT INTO login_codes (kind, email_h, user_id, code_h, created_at, expires_at) VALUES ('captain', 'old', ?, 'x', 0, 9999999999)").bind(capId).run();
+r = await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: { name: 'Marc Normandn', email: 'marc@example.test', person_id: 'L0137' } });
+assert.equal(r.status, 200); assert.deepEqual(r.data.changed.sort(), ['email', 'name']);
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(capId).first('n'), 0, 'new email: sessions end');
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM login_codes WHERE kind = 'captain' AND user_id = ?").bind(capId).first('n'), 0, 'new email: a code sent to the old address is cancelled');
+await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'Other Captain', email: 'other-cap@example.test' } });
+assert.equal((await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: { name: 'X', email: 'other-cap@example.test' } })).status, 409, 'cannot take the email of another captain');
+assert.equal((await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: { name: '', email: 'bad' } })).status, 400);
+assert.equal((await call('/api/admin/captains/99999', { method: 'POST', cookie, body: { name: 'X', email: 'x@example.test' } })).status, 404);
+r = await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: { name: 'Marco Normandin', email: 'Marco@Example.test', person_id: 'L0137' } });
+assert.deepEqual(r.data.changed.sort(), ['email', 'name'], 'fixed back');
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'captain.update'").first('n'), 2, 'edits are logged');
+
 // ---- access per season and team ----
 const lg = season.leagues[0], team = lg.teams[0];
 r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: seasonId, league: lg.slug, team_id: team.id } });
@@ -221,7 +238,14 @@ grant.elements.team.value = team.id;
 grant.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
 const row2 = [...d.querySelectorAll('.ad-tbl tbody tr')].find((tr) => tr.textContent.includes('Nouvelle Capitaine'));
 assert.ok(row2.querySelector('.lgb .lgb-l') && row2.querySelector(`.lgb .abbs a[href$="#team-${team.id}"]`), 'access shown as a league badge with the team chip, linked to the stats site');
-row2.querySelector('[data-delete-cap]').click(); await wait(80);
+row2.querySelector('[data-edit-cap]').click(); await wait(20);
+const ef = d.querySelector('[data-edit]');
+assert.ok(ef && ef.elements.name.value === 'Nouvelle Capitaine', 'Edit opens the form with the current values');
+ef.elements.name.value = 'Nouvelle Capitaine Corrigée';
+ef.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
+const row3 = [...d.querySelectorAll('.ad-tbl tbody tr')].find((tr) => tr.textContent.includes('Nouvelle Capitaine Corrigée'));
+assert.ok(row3 && !d.querySelector('[data-edit]'), 'the new name is saved and the form closes');
+row3.querySelector('[data-delete-cap]').click(); await wait(80);
 assert.ok(![...d.querySelectorAll('.ad-tbl tbody tr')].some((tr) => tr.textContent.includes('Nouvelle Capitaine')), 'Delete removes the captain from the list');
 w.location.hash = '#audit'; await wait(80);
 assert.ok(/access\.grant/.test(d.getElementById('main').textContent), 'log tab lists the grant');

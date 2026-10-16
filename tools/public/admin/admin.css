@@ -46,3 +46,6 @@ body { margin: 0; }
 .ad-del { border: 1px solid var(--bad, #c0392b); background: none; color: var(--bad, #e57373); border-radius: 3px; padding: 4px 10px; cursor: pointer; font: 600 14px/1 var(--f-text); }
 .ad-del:hover { background: var(--bad, #c0392b); color: #fff; }
 .ad-del:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ad-edit { margin: 0; }
+.ad-edit .ctl { min-width: 180px; }
+.ad-edit-note { flex-basis: 100%; margin: 0; font-size: 13px; }

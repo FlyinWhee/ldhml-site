@@ -24,6 +24,7 @@
       seasons: 'Saisons', newSeason: 'Nouvelle saison', nbhpaId: 'No de saison NBHPA', status: 'Statut', st_upcoming: 'À venir', st_active: 'En cours', st_archived: 'Archivée',
       created: 'Créée', key: 'Clé', noSeasons: 'Aucune saison.', seasonHint: 'Chaque outil et chaque accès appartient à une saison. Le no NBHPA lie la saison aux statistiques.',
       audit: 'Journal des actions', when: 'Quand', who: 'Qui', what: 'Action', target: 'Cible', detail: 'Détail', auditNote: 'Les 100 dernières actions.', system: 'Système (script)',
+      edit: 'Modifier', save: 'Enregistrer', cancel: 'Annuler', editEmailNote: 'Un nouveau courriel ferme les sessions ouvertes du capitaine et annule un code en attente.',
       saved: 'Enregistré.', confirmRevoke: 'Retirer cet accès ?', confirmDisable: 'Désactiver ce capitaine ? Ses sessions seront fermées.', del: 'Supprimer', deleted: 'Supprimé.',
       confirmDeleteCap: 'Supprimer définitivement {n} ? Le compte, ses accès (toutes les saisons) et ses données personnelles dans le journal seront effacés. Impossible d’annuler.',
       confirmDeleteSeason: 'Supprimer la saison {n} ? Impossible d’annuler.', e_season_in_use: 'Des capitaines ont encore un accès actif dans cette saison. Retirez ces accès d’abord.',
@@ -49,6 +50,7 @@
       seasons: 'Seasons', newSeason: 'New season', nbhpaId: 'NBHPA season no.', status: 'Status', st_upcoming: 'Upcoming', st_active: 'Active', st_archived: 'Archived',
       created: 'Created', key: 'Key', noSeasons: 'No season.', seasonHint: 'Every tool and every access belongs to a season. The NBHPA no. links the season to the stats.',
       audit: 'Action log', when: 'When', who: 'Who', what: 'Action', target: 'Target', detail: 'Detail', auditNote: 'The last 100 actions.', system: 'System (script)',
+      edit: 'Edit', save: 'Save', cancel: 'Cancel', editEmailNote: 'A new email closes the captain’s open sessions and cancels a pending code.',
       saved: 'Saved.', confirmRevoke: 'Remove this access?', confirmDisable: 'Disable this captain? Their sessions will be closed.', del: 'Delete', deleted: 'Deleted.',
       confirmDeleteCap: 'Delete {n} for good? The account, its access (every season) and its personal data in the log will be erased. This cannot be undone.',
       confirmDeleteSeason: 'Delete the {n} season? This cannot be undone.', e_season_in_use: 'Captains still have active access in this season. Remove that access first.',
@@ -63,7 +65,7 @@
   var t = function (k, v) { var s = STR[lang][k] != null ? STR[lang][k] : k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 
   /* state */
-  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'captains', seasons: [], captains: [], audit: [], data: null, seasonId: null };
+  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'captains', seasons: [], captains: [], audit: [], data: null, seasonId: null, editId: null };
 
   function api(path, method, body) {
     return fetch('/api/admin' + path, { method: method || 'GET', credentials: 'same-origin', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
@@ -122,11 +124,21 @@
     var rows = S.captains.map(function (c) {
       var mine = c.access.filter(function (a) { return a.season_id === S.seasonId; }), other = c.access.length - mine.length;
       var person = c.person_id ? '<div class="note">' + esc(t('profile')) + ' : ' + personLink(c.person_id) + ' (' + esc(c.person_id) + ')</div>' : '';
-      return '<tr' + (c.disabled_at ? ' class="ad-off"' : '') + '><td><b>' + esc(c.name) + '</b>' + person + '<div class="note">' + esc(c.last_login_at ? t('lastLogin', { d: fmt(c.last_login_at) }) : t('never')) + '</div></td>' +
-        '<td>' + esc(c.email) + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</td>' +
+      /* Edit mode: name, email and player link in a small form in place of the first two cells. */
+      var who = S.editId === c.id
+        ? '<td colspan="2"><form class="ad-form ad-edit" data-edit="' + c.id + '">' +
+          '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="80" value="' + esc(c.name) + '"></label>' +
+          '<label>' + t('email') + '<input class="ctl" type="email" name="email" required value="' + esc(c.email) + '"></label>' +
+          '<label>' + t('player') + '<input class="ctl" name="person" list="ad-people" autocomplete="off" value="' + esc(c.person_id ? personName(c.person_id) + ' · ' + c.person_id : '') + '"></label>' +
+          '<button class="ad-btn ad-btn-sm" type="submit">' + t('save') + '</button><button type="button" class="lnk ad-linkbtn" data-act="cancel-edit">' + t('cancel') + '</button>' +
+          '<p class="note ad-edit-note">' + t('editEmailNote') + '</p></form></td>'
+        : '<td><b>' + esc(c.name) + '</b>' + person + '<div class="note">' + esc(c.last_login_at ? t('lastLogin', { d: fmt(c.last_login_at) }) : t('never')) + '</div></td>' +
+          '<td>' + esc(c.email) + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</td>';
+      return '<tr' + (c.disabled_at ? ' class="ad-off"' : '') + '>' + who +
         '<td><div class="lgbs">' + (mine.length ? mine.map(function (a) { return '<span class="ad-acc">' + accessBadge(a) + '<button type="button" class="ad-x" data-revoke="' + a.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></span>'; }).join('') : '<span class="note">' + t('noAccess') + '</span>') +
         (other ? ' <span class="note">' + esc(t('otherSeasons', { n: other })) + '</span>' : '') + '</div>' + (c.disabled_at ? '' : grantForm(c)) + '</td>' +
-        '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
+        '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
+        '<button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
         '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></td></tr>';
     }).join('');
     return '<h1 class="ph">' + t('tabCaptains') + '</h1>' + seasonSelect() +
@@ -204,6 +216,12 @@
         if (!r.ok) { say('err', errMsg(r)); render(); return; }
         S.me = r.data.admin; S.devCode = ''; S.msg = null; refresh();
       });
+    } else if (f.hasAttribute('data-edit')) {
+      var pm = /L\d{4,}/.exec(v('person'));
+      api('/captains/' + f.getAttribute('data-edit'), 'POST', { name: v('name'), email: v('email'), person_id: pm ? pm[0] : null }).then(function (r) {
+        if (r.ok) S.editId = null;
+        done(r);
+      });
     } else if (f.id === 'f-cap') {
       var m = /L\d{4,}/.exec(v('person'));
       api('/captains', 'POST', { name: v('name'), email: v('email'), person_id: m ? m[0] : null }).then(function (r) { done(r); });
@@ -225,7 +243,7 @@
     }
   });
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
@@ -233,6 +251,8 @@
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; render(); }); return; }
     if (b.hasAttribute('data-revoke')) { if (window.confirm(t('confirmRevoke'))) api('/access/' + b.getAttribute('data-revoke') + '/revoke', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-disable')) { if (window.confirm(t('confirmDisable'))) api('/captains/' + b.getAttribute('data-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
+    if (act === 'cancel-edit') { S.editId = null; S.msg = null; render(); return; }
+    if (b.hasAttribute('data-edit-cap')) { S.editId = Number(b.getAttribute('data-edit-cap')); S.msg = null; render(); var n = $('[data-edit] [name=name]'); if (n) n.focus(); return; }
     if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: b.getAttribute('data-name') }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-delete-season')) { if (window.confirm(t('confirmDeleteSeason', { n: b.getAttribute('data-name') }))) api('/seasons/' + b.getAttribute('data-delete-season') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-enable')) api('/captains/' + b.getAttribute('data-enable') + '/enable', 'POST', {}).then(function (r) { done(r); });

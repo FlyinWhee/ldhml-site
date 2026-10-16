@@ -80,7 +80,29 @@ export async function adminApi(req, env, url) {
     await audit(env, admin, 'captain.create', 'captain:' + r.meta.last_row_id, { name, person_id: person });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
-  let x = path.match(/^\/captains\/(\d+)\/(disable|enable)$/);
+  // Edit a captain (typo in the name or email, player link). A new email ends the captain's sessions and pending codes:
+  // a code sent to the old address must not sign in.
+  let x = path.match(/^\/captains\/(\d+)$/);
+  if (m === 'POST' && x) {
+    const id = Number(x[1]);
+    const cur = await env.DB.prepare('SELECT id, email, name, person_id FROM captains WHERE id = ?').bind(id).first();
+    if (!cur) return fail(404, 'captain');
+    const body = await readJson(req) || {};
+    const email = cleanEmail(body.email), name = cleanText(body.name, 80);
+    const person = body.person_id ? String(body.person_id) : null;
+    if (!email || !name || (person && !/^L\d{4,}$/.test(person))) return fail(400, 'captain');
+    if (email !== cur.email && await env.DB.prepare('SELECT 1 FROM captains WHERE email = ? AND id <> ?').bind(email, id).first()) return fail(409, 'captain_exists');
+    const changed = ['name', 'email', 'person_id'].filter((k) => ({ name, email, person_id: person })[k] !== cur[k]);
+    if (!changed.length) return json({ ok: true, changed });
+    const writes = [env.DB.prepare('UPDATE captains SET email = ?, name = ?, person_id = ? WHERE id = ?').bind(email, name, person, id)];
+    if (changed.includes('email')) writes.push(
+      env.DB.prepare("DELETE FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM login_codes WHERE kind = 'captain' AND user_id = ?").bind(id));
+    await env.DB.batch(writes);
+    await audit(env, admin, 'captain.update', 'captain:' + id, { changed, name, person_id: person });
+    return json({ ok: true, changed });
+  }
+  x = path.match(/^\/captains\/(\d+)\/(disable|enable)$/);
   if (m === 'POST' && x) {
     const id = Number(x[1]);
     const r = await env.DB.prepare('UPDATE captains SET disabled_at = ? WHERE id = ?').bind(x[2] === 'disable' ? now() : null, id).run();

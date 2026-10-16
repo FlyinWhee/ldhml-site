@@ -14,7 +14,7 @@ Budget set by the owner: under $100 a year.
 
 ## Addresses (decide at deploy)
 The tools are a small **web app**: one Worker serves the pages (admin now, captain later) **and** their API (`/api/...`) on the same address. Same address = simple and safe cookies, no cross-site setup.
-- Tools: `app.<domain>` (or `outils.` / `gestion.`), both areas: `app.<domain>/admin/`, `app.<domain>/captain/`.
+- Tools: **`app.<domain>` (decided 2026-10-16)**, both areas: `app.<domain>/admin/`, `app.<domain>/captain/`.
 - `api.<domain>`: keep it for the planned **public, read-only data** (the season export and later stats queries, the "MCP-like" layer).
 - Stats site: the root or `www.<domain>` later (today GitHub Pages).
 
@@ -33,6 +33,7 @@ browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/...
 ## Security model
 - **Passwordless:** an admin types their email; an existing, active admin gets a 6-digit code by email; the answer is the same for any email (no account discovery). Code: 10 minutes, single use, 5 tries. Limits: 5 codes per email and 20 per IP per hour.
 - **Nothing readable is stored for sign-in:** codes, emails (in `login_codes`), IPs and session tokens are HMAC-SHA-256 hashes with the `CODE_PEPPER` secret.
+- **Account emails are stored readable** in `admins` and `captains`: the Worker must send codes to them and admins must see them. A hash cannot be emailed. Option (not built): encrypt the `email` column with a Worker secret (AES-GCM) and keep a keyed hash for look-ups; it protects a stolen database export, not a stolen Worker secret.
 - **Sessions:** a random 256-bit token in a cookie `__Host-ldhml_admin` (`HttpOnly; Secure; SameSite=Strict`, 7 days). Captains will get `__Host-ldhml_captain` (60 days). A session of one kind never opens the other area. Disabling an account ends its sessions at once.
 - **CSRF:** a write must carry our own `Origin`.
 - **Headers** (`tools/public/_headers`): strict Content-Security-Policy, no framing, no indexing.
