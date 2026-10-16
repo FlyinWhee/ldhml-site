@@ -49,3 +49,20 @@ body { margin: 0; }
 .ad-edit { margin: 0; }
 .ad-edit .ctl { min-width: 180px; }
 .ad-edit-note { flex-basis: 100%; margin: 0; font-size: 13px; }
+/* ---------- roster layer ---------- */
+.ad-sm { min-width: 0 !important; width: 7.5em; }
+.ad-pair { display: inline-flex; gap: 6px; }
+.ad-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; margin: 10px 0 16px; }
+.ad-team { border: 1px solid var(--line); border-left: 6px solid var(--tc); border-radius: 3px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.ad-team-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.ad-team-h .ad-acts { margin-left: auto; }
+.ad-roster td { padding: 4px 8px; }
+.ad-payroll { margin: 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ad-over { color: var(--bad, #e57373); }
+.ad-rule { align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ad-rule-lg { min-width: 120px; }
+.ad-wide { flex: 1 1 260px; }
+.ad-wide .ctl { width: 100%; }
+.ad-add { margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); padding: 4px 14px; }
+.ad-add > summary { cursor: pointer; padding: 8px 0; font: 600 20px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
+.ad-add[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }

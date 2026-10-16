@@ -5,12 +5,14 @@ The LDHML tools: one Cloudflare Worker with a D1 database. Admin area now; capta
 ```
 src/worker.js      entry: /api/... to the API, everything else to the static assets (dist-tools/, built by ../build.mjs)
 src/admin-api.js   /api/admin/...: sign-in, seasons, captains, access per season and team, audit
+src/roster-api.js  /api/admin/...: people, league player lists, our teams, rosters, league rules (called by admin-api.js)
 src/auth.js        passwordless sign-in (emailed code), sessions, cookies; admin and captain kinds kept apart
 src/email.js       sends the code: "console" (local only) or "resend"
 src/http.js        JSON responses, origin check, input cleaning
 migrations/        D1 schema (SQL). Add a new numbered file; never edit an applied one.
 public/            tool pages (admin/), copied into dist-tools/ by ../build.mjs with the site CSS, look.js and data/season.json
 scripts/add-admin.mjs   add an admin (local or --remote); emails never go into the repo
+scripts/remove-admin.mjs, scripts/seed-local.mjs (LOCAL only: season, teams, people, lists, rosters from the stats data)
 test/              test-tools.mjs (npm test), d1-shim.mjs (D1 on node:sqlite)
 wrangler.jsonc     Worker config. No secrets in it.
 ```
@@ -35,5 +37,6 @@ npm run tools:dev         build, local D1 schema, local Worker at http://localho
 npm run tools:add-admin -- you@example.com "Name"            local database
 npm run tools:add-admin -- you@example.com "Name" --remote   real database
 npm run tools:remove-admin -- someone@example.com [--remote]  delete an admin (no admin screen yet)
+npm run tools:seed        fill the LOCAL database from the current stats data (safe to run again)
 ```
 `tools/.dev.vars` (git-ignored): `CODE_PEPPER=<any 16+ characters>` and `DEV=1`.

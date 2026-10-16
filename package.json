@@ -15,7 +15,8 @@
     "tools:test": "node build.mjs && node tools/test/test-tools.mjs",
     "tools:dev": "node build.mjs && npx wrangler@4.151.1 d1 migrations apply ldhml-tools --local -c tools/wrangler.jsonc && npx wrangler@4.151.1 dev -c tools/wrangler.jsonc --port 8787",
     "tools:add-admin": "node tools/scripts/add-admin.mjs",
-    "tools:remove-admin": "node tools/scripts/remove-admin.mjs"
+    "tools:remove-admin": "node tools/scripts/remove-admin.mjs",
+    "tools:seed": "node build.mjs && node tools/scripts/seed-local.mjs"
   },
   "dependencies": {
     "jsdom": "^26.0.0"

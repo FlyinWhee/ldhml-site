@@ -90,8 +90,19 @@ Source: the owner. Items marked *to validate* are not confirmed by the league ye
 3. **Salary per season** (it can change) and per section or league. Public on the stats site (data nerds) or private to admins and captains?
 4. **Cap per team:** one number per league and season? Does the replacement's salary replace the absent player's salary in the sum?
 
+## Roster layer (built 2026-10-16, admin only)
+Tables (`migrations/0002_people_rosters.sql`); everything per season except people:
+- `people`: one person across seasons. `id` is a database number; `site_id` (`L0137`) links to the stats site; `nid` to NBHPA. Birth **month and year** only.
+- `section_players`: the league player list per section and season, with a **salary per position** (`salary_s`, `salary_g`): a player who changes position is checked at that position's salary.
+- `teams`: **our own teams** per season and league. `nbhpa_team_id` is an optional link (a team can exist before NBHPA has it; NBHPA ids change each season). Captain access points to our team (`captain_access.team_ref`).
+- `rosters`: one active team per person per league and season. Removing keeps the row (`removed_at`): a transaction history.
+- `league_rules`: **one row per league and season**: salary cap, minimum ages (men, women, goalies), the rule in words. **No rule engine**: rules change between seasons (last season Retro used "replacements at or below the absent players' salary, plus 1 for the game"); each check is coded when the league confirms it.
+- Admin tabs: Joueurs (list per section: add, edit, salaries, remove from the list, delete), Équipes (teams per league with rosters, payroll against the cap, add/remove players, import teams from the NBHPA data), Règles.
+- Local tests: `npm run tools:seed` fills the local database from the stats data (each player on their main team, main position, no salaries or births).
+
 ## Next
-- Roster layer (admin only): people and league player lists per section and season, rosters per team, seeded from the current data for local tests; import tool when the league file arrives.
+- Import tool for the league file (Excel or Google Sheet) when the owner has it.
+- Replacement requests by captains, with the automatic checks (cap, age) and an admin approval queue, once the Retro rules are confirmed.
 - Captain area (`/captain/`, `/api/captain/...`): sign-in with the captain kind, "my teams this season".
 - First captain tool: substitute request with pre-validation (needs the sub rules from the owner) and an admin approval queue.
 - Manage admins from the admin area (today: the `add-admin` script).

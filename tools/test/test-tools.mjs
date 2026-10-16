@@ -111,23 +111,36 @@ r = await call('/api/admin/captains/' + capId, { method: 'POST', cookie, body: {
 assert.deepEqual(r.data.changed.sort(), ['email', 'name'], 'fixed back');
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'captain.update'").first('n'), 2, 'edits are logged');
 
-// ---- access per season and team ----
+// ---- our teams: imported from the stats data for the current season; created by hand for any season ----
 const lg = season.leagues[0], team = lg.teams[0];
-r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: seasonId, league: lg.slug, team_id: team.id } });
+r = await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId } });
+assert.equal(r.data.added, season.leagues.reduce((a, l) => a + l.teams.length, 0), 'every team of the data is imported');
+assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId } })).data.added, 0, 'import twice: nothing new');
+assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: futureId } })).data.error, 'no_season_data', 'no stats data for a future season');
+const teamsNow = (await call('/api/admin/teams?season=' + seasonId, { cookie })).data.teams;
+const ref = (l, t) => teamsNow.find((x) => x.league === l.slug && x.nbhpa_team_id === t.id).id;
+const teamRef = ref(lg, team);
+r = await call('/api/admin/teams', { method: 'POST', cookie, body: { season_id: futureId, league: lg.slug, name: 'Équipe Future', abb: 'fut' } });
+assert.equal(r.status, 201, 'a team can exist before NBHPA has it'); const futureTeam = r.data.id;
+
+// ---- access per season and team (our team) ----
+r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, team_ref: teamRef } });
 assert.equal(r.status, 201); const accId = r.data.id;
-assert.equal((await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: seasonId, league: lg.slug, team_id: team.id } })).status, 409, 'same access twice');
-assert.equal((await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: seasonId, league: lg.slug, team_id: '999999999' } })).status, 400, 'unknown team');
-r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: futureId, league: lg.slug, team_id: team.id } });
-assert.equal(r.data.error, 'no_season_data', 'a season without team data cannot get team access');
+assert.equal((await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, team_ref: teamRef } })).status, 409, 'same access twice');
+assert.equal((await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, team_ref: 999999 } })).status, 400, 'unknown team');
+r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, team_ref: futureTeam } });
+assert.equal(r.status, 201, 'access to a team without NBHPA id (future season)');
+await call('/api/admin/access/' + r.data.id + '/revoke', { method: 'POST', cookie, body: {} });
 r = await call('/api/admin/captains', { cookie });
 const cap = r.data.captains.find((c) => c.id === capId);
 assert.equal(cap.email, 'marco@example.test'); assert.equal(cap.access.length, 1);
+assert.equal(cap.access[0].team_ref, teamRef);
 assert.deepEqual([cap.access[0].season_id, cap.access[0].league, cap.access[0].team_id, cap.access[0].team_abb], [seasonId, lg.slug, team.id, team.abb]);
 assert.equal((await call('/api/admin/access/' + accId + '/revoke', { method: 'POST', cookie, body: {} })).status, 200);
 assert.equal((await call('/api/admin/access/' + accId + '/revoke', { method: 'POST', cookie, body: {} })).status, 404, 'revoked once');
-r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, season_id: seasonId, league: lg.slug, team_id: team.id } });
+r = await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: capId, team_ref: teamRef } });
 assert.equal(r.status, 201, 'access can be given again after a revoke (history stays)');
-assert.equal((await DB.prepare('SELECT COUNT(*) AS n FROM captain_access WHERE captain_id = ?').bind(capId).first('n')), 2);
+assert.equal((await DB.prepare('SELECT COUNT(*) AS n FROM captain_access WHERE captain_id = ?').bind(capId).first('n')), 3);
 
 // disable a captain: their sessions end
 await DB.prepare("INSERT INTO sessions (token_h, kind, user_id, created_at, expires_at) VALUES ('x', 'captain', ?, 0, 9999999999)").bind(capId).run();
@@ -135,10 +148,75 @@ assert.equal((await call('/api/admin/captains/' + capId + '/disable', { method: 
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(capId).first('n'), 0);
 assert.equal((await call('/api/admin/captains/' + capId + '/enable', { method: 'POST', cookie, body: {} })).status, 200);
 
+// ---- roster layer: the local seed from the stats data (safe to run twice) ----
+const { seedSql } = await import('../scripts/seed-local.mjs');
+const regJson = JSON.parse(await readFile(path.join(root, 'registry/people.json'), 'utf8'));
+const count = async (tb) => DB.prepare(`SELECT COUNT(*) AS n FROM ${tb}`).first('n');
+DB.raw.exec(seedSql(season, regJson));
+const seeded = { people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams') };
+assert.equal(seeded.people, season.people.length, 'one person per player of the data');
+const secOf = Object.fromEntries(season.leagues.map((l) => [l.slug, l.section]));
+assert.equal(seeded.lists, season.people.reduce((a, p) => a + new Set(Object.keys(p.lg).map((s) => secOf[s])).size, 0), 'each person on the list of each section they play in');
+assert.equal(seeded.rosters, season.people.reduce((a, p) => a + Object.keys(p.lg).length, 0), 'each person on their main team, in each league');
+DB.raw.exec(seedSql(season, regJson));
+assert.deepEqual({ people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams') }, seeded, 'running the seed again changes nothing');
+const marco = await DB.prepare("SELECT id FROM people WHERE site_id = 'L0137'").first('id');
+const retro = season.leagues.find((l) => l.slug === 'retro');
+const mainAbb = season.people.find((p) => p.id === 'L0137').lg.retro[0];
+
+// people and the league player list
+r = await call('/api/admin/people?season=' + seasonId + '&section=draft', { cookie });
+assert.equal(r.data.players.length, await DB.prepare("SELECT COUNT(*) AS n FROM section_players WHERE section = 'draft'").first('n'));
+const mp = r.data.players.find((p) => p.id === marco);
+assert.ok(mp.rosters.some((x) => x.league === 'retro' && x.abb === mainAbb), 'Marco is on his main Retro team');
+assert.ok(mp.rosters.every((x) => secOf[x.league] === 'draft'), 'the Draft list shows only rosters of Draft-section leagues');
+const mpDraftPos = mp.rosters.find((x) => x.league === 'draft');
+if (mpDraftPos) assert.equal(mpDraftPos.pos, season.people.find((p) => p.id === 'L0137').pos.draft === 'g' ? 'g' : 's', 'the seed keeps the position (a goalie stays a goalie)');
+assert.equal((await call('/api/admin/people?season=' + seasonId + '&section=nope', { cookie })).status, 400);
+
+// rosters: one team per league and season; removing keeps history
+const tRef = (abb) => teamsNow.find((x) => x.league === 'retro' && x.abb === abb).id;
+const otherAbb = retro.teams.find((x) => x.abb !== mainAbb).abb;
+r = await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tRef(otherAbb), person_id: marco, pos: 's' } });
+assert.equal(r.status, 409); assert.equal(r.data.error, 'already_on_roster'); assert.ok(r.data.team, 'says which team');
+const marcoRow = await DB.prepare("SELECT id FROM rosters WHERE person_id = ? AND league = 'retro' AND removed_at IS NULL").bind(marco).first('id');
+assert.equal((await call('/api/admin/rosters/' + marcoRow + '/remove', { method: 'POST', cookie, body: {} })).status, 200);
+assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tRef(otherAbb), person_id: marco, pos: 'g' } })).status, 201, 'moved to another team, as a goalie');
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM rosters WHERE person_id = ? AND league = 'retro'").bind(marco).first('n'), 2, 'the move keeps the history');
+assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tRef(otherAbb), person_id: marco, pos: 'x' } })).status, 400);
+
+// a new person (not in the NBHPA data yet), birth month and year, salaries per position
+r = await call('/api/admin/people', { method: 'POST', cookie, body: { name: 'Nouvelle Joueuse', sex: 'f', birth_month: 3, birth_year: 1984 } });
+assert.equal(r.status, 201); const nj = r.data.id;
+assert.equal((await call('/api/admin/people', { method: 'POST', cookie, body: { name: 'X', birth_month: 3 } })).status, 400, 'a birth month needs a year');
+assert.equal((await call('/api/admin/people', { method: 'POST', cookie, body: { name: 'X', site_id: 'L0137' } })).status, 409, 'site id taken');
+assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tRef(mainAbb), person_id: nj, pos: 'g' } })).data.error, 'not_registered', 'must be on the section list first');
+assert.equal((await call('/api/admin/section-players', { method: 'POST', cookie, body: { season_id: seasonId, section: 'draft', person_id: nj, salary_s: 4, salary_g: -1 } })).status, 400, 'salaries are positive');
+assert.equal((await call('/api/admin/section-players', { method: 'POST', cookie, body: { season_id: seasonId, section: 'draft', person_id: nj, salary_s: 4, salary_g: 6.5 } })).status, 200);
+assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tRef(mainAbb), person_id: nj, pos: 'g' } })).status, 201);
+r = await call('/api/admin/teams?season=' + seasonId, { cookie });
+const njRow = r.data.teams.find((x) => x.id === tRef(mainAbb)).roster.find((x) => x.person_id === nj);
+assert.deepEqual([njRow.pos, njRow.salary_g, njRow.salary_s], ['g', 6.5, 4], 'the team view carries both salaries; the position decides which counts');
+assert.equal((await call('/api/admin/section-players/' + (await DB.prepare("SELECT id FROM section_players WHERE person_id = ?").bind(nj).first('id')) + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'on_roster');
+assert.equal((await call('/api/admin/people/' + nj, { method: 'POST', cookie, body: { name: 'Nouvelle Joueuse', sex: 'f', birth_month: 4, birth_year: 1984 } })).status, 200, 'edit a person');
+
+// league rules: one row per league and season (upsert)
+assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: 25, min_age_m: 40, min_age_f: 35, min_age_g: 30, notes: 'Plafond et âge pour les remplaçants' } })).status, 200);
+assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: 26, min_age_m: 40, min_age_f: 35, min_age_g: 30 } })).status, 200);
+r = await call('/api/admin/rules?season=' + seasonId, { cookie });
+assert.equal(r.data.rules.length, 1); assert.equal(r.data.rules[0].salary_cap, 26, 'the second save updates the same row');
+assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: -5 } })).status, 400);
+assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'nope', salary_cap: 5 } })).status, 400);
+
+// teams: a team with players cannot be deleted; a person delete takes their rows with them
+assert.equal((await call('/api/admin/teams/' + tRef(mainAbb) + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'team_in_use');
+assert.equal((await call('/api/admin/people/' + nj + '/delete', { method: 'POST', cookie, body: {} })).status, 200);
+assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM rosters WHERE person_id = ?').bind(nj).first('n') + await DB.prepare('SELECT COUNT(*) AS n FROM section_players WHERE person_id = ?').bind(nj).first('n'), 0, 'person delete: lists and rosters gone');
+
 // ---- full delete of a captain: account, access (every season), sessions; audit keeps the actions without personal details ----
 r = await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'Test Record', email: 'test-record@example.test', person_id: 'L0001' } });
 const delId = r.data.id;
-await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: delId, season_id: seasonId, league: lg.slug, team_id: lg.teams[1].id } });
+await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: delId, team_ref: ref(lg, lg.teams[1]) } });
 await DB.prepare("INSERT INTO sessions (token_h, kind, user_id, created_at, expires_at) VALUES ('del', 'captain', ?, 0, 9999999999)").bind(delId).run();
 assert.equal((await call('/api/admin/captains/' + delId + '/delete', { method: 'POST', cookie, body: {} })).status, 200);
 assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM captains WHERE id = ?').bind(delId).first('n'), 0, 'captain row gone');
@@ -160,7 +238,9 @@ assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.length,
 r = await call('/api/admin/audit', { cookie });
 const actions = r.data.audit.map((a) => a.action);
 for (const a of ['admin.login', 'season.create', 'captain.create', 'access.grant', 'access.revoke', 'captain.disable', 'captain.enable']) assert.ok(actions.includes(a), 'audit has ' + a);
-assert.ok(r.data.audit.every((a) => a.actor_name === 'Boss'), 'audit names the admin');
+assert.ok(r.data.audit.filter((a) => a.actor_kind === 'admin').every((a) => a.actor_name === 'Boss'), 'audit names the admin');
+assert.ok(r.data.audit.some((a) => a.action === 'seed.local' && a.actor_kind === 'system'), 'the seed logs itself as the system');
+for (const a of ['roster.add', 'roster.remove', 'person.create', 'person.update', 'person.delete', 'list.set', 'rules.set', 'team.import', 'team.create']) assert.ok(actions.includes(a), 'audit has ' + a);
 
 // ---- sessions end: logout, expiry, disabled admin ----
 r = await call('/api/admin/login/start', { method: 'POST', body: { email: 'ops@example.test' } });
@@ -234,7 +314,7 @@ assert.ok(row, 'new captain is listed');
 const grant = row.querySelector('[data-grant]');
 grant.elements.league.value = lg.slug; grant.elements.league.dispatchEvent(new w.Event('change', { bubbles: true }));
 assert.ok(!grant.elements.team.disabled && grant.elements.team.options.length === lg.teams.length + 1, 'team list follows the league');
-grant.elements.team.value = team.id;
+grant.elements.team.value = String(teamRef);
 grant.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
 const row2 = [...d.querySelectorAll('.ad-tbl tbody tr')].find((tr) => tr.textContent.includes('Nouvelle Capitaine'));
 assert.ok(row2.querySelector('.lgb .lgb-l') && row2.querySelector(`.lgb .abbs a[href$="#team-${team.id}"]`), 'access shown as a league badge with the team chip, linked to the stats site');
@@ -247,6 +327,25 @@ const row3 = [...d.querySelectorAll('.ad-tbl tbody tr')].find((tr) => tr.textCon
 assert.ok(row3 && !d.querySelector('[data-edit]'), 'the new name is saved and the form closes');
 row3.querySelector('[data-delete-cap]').click(); await wait(80);
 assert.ok(![...d.querySelectorAll('.ad-tbl tbody tr')].some((tr) => tr.textContent.includes('Nouvelle Capitaine')), 'Delete removes the captain from the list');
+// the roster layer tabs
+w.location.hash = '#players'; await wait(120);
+const draftList = await DB.prepare("SELECT COUNT(*) AS n FROM section_players WHERE section = 'draft' AND season_id = ?").bind(seasonId).first('n');
+assert.equal(d.querySelectorAll('.ad-tbl tbody tr').length, draftList, 'Players tab lists the Draft section list');
+const pq = d.getElementById('ad-pq'); pq.value = 'normandin'; pq.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
+assert.ok([...d.querySelectorAll('.ad-tbl tbody tr')].length >= 1 && [...d.querySelectorAll('.ad-tbl tbody tr')].every((tr) => /normandin/i.test(tr.textContent)), 'name filter');
+assert.ok(d.querySelector('.ad-tbl .lgb .abbs a'), 'rosters shown as league badges with team chips');
+const pq2 = d.getElementById('ad-pq'); pq2.value = ''; pq2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
+d.querySelector('[data-sec="teams"]').click(); await wait(120);
+assert.equal(d.querySelectorAll('.ad-tbl tbody tr').length, await DB.prepare("SELECT COUNT(*) AS n FROM section_players WHERE section = 'teams' AND season_id = ?").bind(seasonId).first('n'), 'switch to the Équipes section list');
+w.location.hash = '#teams'; await wait(120);
+const teamsSec = season.leagues.filter((l) => l.section === 'teams').map((l) => l.slug);
+assert.equal(d.querySelectorAll('.ad-team').length, (await DB.prepare('SELECT league FROM teams WHERE season_id = ?').bind(seasonId).all()).results.filter((x) => teamsSec.includes(x.league)).length, 'one card per team of the section');
+assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
+w.location.hash = '#rules'; await wait(120);
+const rf = d.querySelector('[data-rules="retro"]');
+assert.equal(rf.elements.salary_cap.value, '26', 'rules tab shows the saved row');
+rf.elements.salary_cap.value = '30'; rf.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
+assert.equal(await DB.prepare("SELECT salary_cap FROM league_rules WHERE league = 'retro' AND season_id = ?").bind(seasonId).first('salary_cap'), 30, 'rules saved from the page');
 w.location.hash = '#audit'; await wait(80);
 assert.ok(/access\.grant/.test(d.getElementById('main').textContent), 'log tab lists the grant');
 d.querySelector('[data-act="logout"]').click(); await wait(80);

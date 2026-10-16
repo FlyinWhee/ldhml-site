@@ -241,7 +241,8 @@ const seasonExport = {
   leagues: leagues.map(({ lg, data }) => ({ slug: lg.slug, section: lg.section, path: pathOf(lg), sectionPath: sectionLinks[lg.section].path, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
     teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })) })),
   people: Object.values(people).filter((p) => /^L\d+$/.test(p.id)).map((p) => ({ id: p.id, name: p.name, sex: p.sex,
-    lg: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, m.teams]))) }))
+    lg: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, m.teams]))),   // teams, main team first
+    pos: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, (m.s ? 's' : '') + (m.g ? 'g' : '')]))) }))
 };
 await mkdir(path.join(root, 'dist/api'), { recursive: true });
 await writeFile(path.join(root, 'dist/api/season.json'), JSON.stringify(seasonExport));
