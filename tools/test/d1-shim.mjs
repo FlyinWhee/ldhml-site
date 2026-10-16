@@ -6,6 +6,7 @@ import path from 'node:path';
 
 export async function makeD1(migrationsDir) {
   const db = new DatabaseSync(':memory:');
+  db.exec('PRAGMA foreign_keys = ON'); // D1 enforces foreign keys; the tests must too (a delete bug hid here once)
   for (const f of (await readdir(migrationsDir)).filter((x) => x.endsWith('.sql')).sort()) db.exec(await readFile(path.join(migrationsDir, f), 'utf8'));
   const plain = (r) => (r ? { ...r } : null);
   const stmt = (sql, args = []) => ({

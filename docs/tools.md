@@ -12,6 +12,15 @@ Phase 2 of the project: tools that cut admin work. Captains act on their own wit
 | Domains | Cloudflare Registrar | about $10–20 a year each |
 Budget set by the owner: under $100 a year.
 
+## Addresses (decide at deploy)
+The tools are a small **web app**: one Worker serves the pages (admin now, captain later) **and** their API (`/api/...`) on the same address. Same address = simple and safe cookies, no cross-site setup.
+- Tools: `app.<domain>` (or `outils.` / `gestion.`), both areas: `app.<domain>/admin/`, `app.<domain>/captain/`.
+- `api.<domain>`: keep it for the planned **public, read-only data** (the season export and later stats queries, the "MCP-like" layer).
+- Stats site: the root or `www.<domain>` later (today GitHub Pages).
+
+## Account
+Cloudflare account owner: **Mathieu (personal account), for now** (2026-10-16). Turn on two-factor sign-in. Later: move to a league-owned account, or add a second member, so the league keeps access.
+
 ## Design
 ```
 browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/... ──> Worker ──> D1
@@ -28,6 +37,7 @@ browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/...
 - **CSRF:** a write must carry our own `Origin`.
 - **Headers** (`tools/public/_headers`): strict Content-Security-Policy, no framing, no indexing.
 - **Audit:** every admin change (and sign-in) is a row in `audit`.
+- **Delete vs disable:** disable is reversible (sessions end at once). Delete is permanent: account, access of every season, sessions, codes; audit rows about it stay as actions without details (no names). Admins: `npm run tools:remove-admin` (no admin screen yet).
 - **Personal data** (Quebec Law 25): emails and names of admins and captains only. Never in git. Before going live: a short privacy note, a named person in charge, and a way to delete an account.
 
 ## Try it on this computer (owner)

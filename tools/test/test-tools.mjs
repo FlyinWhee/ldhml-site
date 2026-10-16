@@ -118,6 +118,27 @@ assert.equal((await call('/api/admin/captains/' + capId + '/disable', { method: 
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(capId).first('n'), 0);
 assert.equal((await call('/api/admin/captains/' + capId + '/enable', { method: 'POST', cookie, body: {} })).status, 200);
 
+// ---- full delete of a captain: account, access (every season), sessions; audit keeps the actions without personal details ----
+r = await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'Test Record', email: 'test-record@example.test', person_id: 'L0001' } });
+const delId = r.data.id;
+await call('/api/admin/access', { method: 'POST', cookie, body: { captain_id: delId, season_id: seasonId, league: lg.slug, team_id: lg.teams[1].id } });
+await DB.prepare("INSERT INTO sessions (token_h, kind, user_id, created_at, expires_at) VALUES ('del', 'captain', ?, 0, 9999999999)").bind(delId).run();
+assert.equal((await call('/api/admin/captains/' + delId + '/delete', { method: 'POST', cookie, body: {} })).status, 200);
+assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM captains WHERE id = ?').bind(delId).first('n'), 0, 'captain row gone');
+assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM captain_access WHERE captain_id = ?').bind(delId).first('n'), 0, 'access rows gone');
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(delId).first('n'), 0, 'sessions gone');
+const auditDump = JSON.stringify((await DB.prepare('SELECT * FROM audit').all()).results);
+assert.ok(!auditDump.includes('Test Record') && !auditDump.includes('test-record@'), 'no personal data of a deleted captain left in the audit');
+assert.ok((await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'captain.delete' AND target = ?").bind('captain:' + delId).first('n')) === 1, 'the delete itself is logged');
+assert.equal((await call('/api/admin/captains/' + delId + '/delete', { method: 'POST', cookie, body: {} })).status, 404, 'deleted once');
+r = await call('/api/admin/captains', { cookie });
+assert.ok(!r.data.captains.some((c) => c.id === delId), 'not listed any more');
+
+// ---- delete a season: refused while active access exists, then allowed ----
+assert.equal((await call('/api/admin/seasons/' + seasonId + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'season_in_use');
+assert.equal((await call('/api/admin/seasons/' + futureId + '/delete', { method: 'POST', cookie, body: {} })).status, 200, 'an unused season can be deleted');
+assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.length, 1);
+
 // ---- audit: every change is logged with its author ----
 r = await call('/api/admin/audit', { cookie });
 const actions = r.data.audit.map((a) => a.action);
@@ -139,6 +160,19 @@ r = await call('/api/admin/login/start', { method: 'POST', body: { email: 'boss@
 const cookie3 = (await call('/api/admin/login/verify', { method: 'POST', body: { email: 'boss@example.test', code: r.data.devCode } })).cookie.split(';')[0];
 await DB.prepare('UPDATE sessions SET expires_at = 1').run();
 assert.equal((await call('/api/admin/me', { cookie: cookie3 })).status, 401, 'an expired session is refused');
+
+// ---- removing an admin (script): works with foreign keys on, even when the admin created seasons, captains and access ----
+{
+  const { removeAdminSql } = await import('../scripts/remove-admin.mjs');
+  await DB.prepare("UPDATE admins SET disabled_at = NULL WHERE email = 'ops@example.test'").run();
+  const opsId = await DB.prepare("SELECT id FROM admins WHERE email = 'ops@example.test'").first('id');
+  await DB.prepare("INSERT INTO seasons (key, name, created_at, created_by) VALUES ('ops-season', 'Ops season', 0, ?)").bind(opsId).run();
+  await DB.prepare("INSERT INTO captains (email, name, created_at, created_by) VALUES ('ops-cap@example.test', 'Ops cap', 0, ?)").bind(opsId).run();
+  DB.raw.exec(removeAdminSql('ops@example.test'));
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM admins WHERE email = 'ops@example.test'").first('n'), 0, 'admin removed');
+  assert.equal(await DB.prepare("SELECT created_by FROM seasons WHERE key = 'ops-season'").first('created_by'), null, 'its rows keep existing, without the link');
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'admin.remove'").first('n'), 1, 'the removal is logged');
+}
 
 // ---- static pages and headers ----
 r = await worker.fetch(new Request(ORIGIN + '/admin/'), env);
@@ -187,6 +221,8 @@ grant.elements.team.value = team.id;
 grant.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
 const row2 = [...d.querySelectorAll('.ad-tbl tbody tr')].find((tr) => tr.textContent.includes('Nouvelle Capitaine'));
 assert.ok(row2.querySelector('.lgb .lgb-l') && row2.querySelector(`.lgb .abbs a[href$="#team-${team.id}"]`), 'access shown as a league badge with the team chip, linked to the stats site');
+row2.querySelector('[data-delete-cap]').click(); await wait(80);
+assert.ok(![...d.querySelectorAll('.ad-tbl tbody tr')].some((tr) => tr.textContent.includes('Nouvelle Capitaine')), 'Delete removes the captain from the list');
 w.location.hash = '#audit'; await wait(80);
 assert.ok(/access\.grant/.test(d.getElementById('main').textContent), 'log tab lists the grant');
 d.querySelector('[data-act="logout"]').click(); await wait(80);

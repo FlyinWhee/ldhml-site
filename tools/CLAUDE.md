@@ -24,6 +24,8 @@ wrangler.jsonc     Worker config. No secrets in it.
 6. Sign-in security (do not weaken without a decision): same answer for any email; codes 6 digits, 10 min, single use, 5 tries; 5 codes per email and 20 per IP per hour; only HMAC hashes stored (CODE_PEPPER secret); cookie `HttpOnly; Secure; SameSite=Strict`; writes need our own `Origin`.
 7. The pages follow `../docs/presentation.md` (league badges, team chips, links to the stats site) and are fr/en (`STR` in `public/admin/admin.js`).
 8. `EMAIL_MODE: "console"` and `DEV=1` (the code in the API answer) work on localhost only. Keep it so.
+9. **Delete is a full delete** (test records; right to deletion, Law 25): the row, its dependent rows, its sessions and codes; audit rows stay but lose their details. Disable is the reversible option. A season can be deleted only without active access.
+10. **D1 enforces foreign keys.** Delete dependent rows first, or clear `created_by` / `revoked_by` links (see `scripts/remove-admin.mjs`). The test D1 (`test/d1-shim.mjs`) enforces them too; keep it so.
 
 ## Commands
 ```
@@ -32,5 +34,6 @@ scripts\tools-dev.bat     Windows one click: .dev.vars, local admin, build, loca
 npm run tools:dev         build, local D1 schema, local Worker at http://localhost:8787/admin/ (needs tools/.dev.vars)
 npm run tools:add-admin -- you@example.com "Name"            local database
 npm run tools:add-admin -- you@example.com "Name" --remote   real database
+npm run tools:remove-admin -- someone@example.com [--remote]  delete an admin (no admin screen yet)
 ```
 `tools/.dev.vars` (git-ignored): `CODE_PEPPER=<any 16+ characters>` and `DEV=1`.

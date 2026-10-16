@@ -24,7 +24,9 @@
       seasons: 'Saisons', newSeason: 'Nouvelle saison', nbhpaId: 'No de saison NBHPA', status: 'Statut', st_upcoming: 'À venir', st_active: 'En cours', st_archived: 'Archivée',
       created: 'Créée', key: 'Clé', noSeasons: 'Aucune saison.', seasonHint: 'Chaque outil et chaque accès appartient à une saison. Le no NBHPA lie la saison aux statistiques.',
       audit: 'Journal des actions', when: 'Quand', who: 'Qui', what: 'Action', target: 'Cible', detail: 'Détail', auditNote: 'Les 100 dernières actions.', system: 'Système (script)',
-      saved: 'Enregistré.', confirmRevoke: 'Retirer cet accès ?', confirmDisable: 'Désactiver ce capitaine ? Ses sessions seront fermées.',
+      saved: 'Enregistré.', confirmRevoke: 'Retirer cet accès ?', confirmDisable: 'Désactiver ce capitaine ? Ses sessions seront fermées.', del: 'Supprimer', deleted: 'Supprimé.',
+      confirmDeleteCap: 'Supprimer définitivement {n} ? Le compte, ses accès (toutes les saisons) et ses données personnelles dans le journal seront effacés. Impossible d’annuler.',
+      confirmDeleteSeason: 'Supprimer la saison {n} ? Impossible d’annuler.', e_season_in_use: 'Des capitaines ont encore un accès actif dans cette saison. Retirez ces accès d’abord.',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
       e_season: 'Saison invalide : un nom est requis, et le no NBHPA doit être un nombre.', e_season_exists: 'Cette saison existe déjà.',
       e_captain: 'Capitaine invalide : un nom et un courriel sont requis.', e_captain_exists: 'Un capitaine a déjà ce courriel.', e_access: 'Accès invalide.',
@@ -47,7 +49,9 @@
       seasons: 'Seasons', newSeason: 'New season', nbhpaId: 'NBHPA season no.', status: 'Status', st_upcoming: 'Upcoming', st_active: 'Active', st_archived: 'Archived',
       created: 'Created', key: 'Key', noSeasons: 'No season.', seasonHint: 'Every tool and every access belongs to a season. The NBHPA no. links the season to the stats.',
       audit: 'Action log', when: 'When', who: 'Who', what: 'Action', target: 'Target', detail: 'Detail', auditNote: 'The last 100 actions.', system: 'System (script)',
-      saved: 'Saved.', confirmRevoke: 'Remove this access?', confirmDisable: 'Disable this captain? Their sessions will be closed.',
+      saved: 'Saved.', confirmRevoke: 'Remove this access?', confirmDisable: 'Disable this captain? Their sessions will be closed.', del: 'Delete', deleted: 'Deleted.',
+      confirmDeleteCap: 'Delete {n} for good? The account, its access (every season) and its personal data in the log will be erased. This cannot be undone.',
+      confirmDeleteSeason: 'Delete the {n} season? This cannot be undone.', e_season_in_use: 'Captains still have active access in this season. Remove that access first.',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
       e_season: 'Invalid season: a name is required, and the NBHPA no. must be a number.', e_season_exists: 'This season already exists.',
       e_captain: 'Invalid captain: a name and an email are required.', e_captain_exists: 'A captain already has this email.', e_access: 'Invalid access.',
@@ -122,7 +126,8 @@
         '<td>' + esc(c.email) + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</td>' +
         '<td><div class="lgbs">' + (mine.length ? mine.map(function (a) { return '<span class="ad-acc">' + accessBadge(a) + '<button type="button" class="ad-x" data-revoke="' + a.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></span>'; }).join('') : '<span class="note">' + t('noAccess') + '</span>') +
         (other ? ' <span class="note">' + esc(t('otherSeasons', { n: other })) + '</span>' : '') + '</div>' + (c.disabled_at ? '' : grantForm(c)) + '</td>' +
-        '<td><button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button></td></tr>';
+        '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
+        '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></td></tr>';
     }).join('');
     return '<h1 class="ph">' + t('tabCaptains') + '</h1>' + seasonSelect() +
       '<section class="sec"><div class="sec-h"><h2>' + t('newCaptain') + '</h2></div><form id="f-cap" class="ad-form ad-row">' +
@@ -136,14 +141,14 @@
   }
   function viewSeasons() {
     var d = S.data || {};
-    var rows = S.seasons.map(function (s) { return '<tr><td><b>' + esc(s.name) + '</b></td><td>' + esc(s.key) + '</td><td class="num">' + esc(s.nbhpa_season_id || '') + '</td><td>' + esc(t('st_' + s.status)) + '</td><td>' + esc(fmt(s.created_at)) + '</td></tr>'; }).join('');
+    var rows = S.seasons.map(function (s) { return '<tr><td><b>' + esc(s.name) + '</b></td><td>' + esc(s.key) + '</td><td class="num">' + esc(s.nbhpa_season_id || '') + '</td><td>' + esc(t('st_' + s.status)) + '</td><td>' + esc(fmt(s.created_at)) + '</td><td><button type="button" class="ad-del" data-delete-season="' + s.id + '" data-name="' + esc(s.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
     return '<h1 class="ph">' + t('seasons') + '</h1><p class="lede">' + t('seasonHint') + '</p>' +
       '<section class="sec"><div class="sec-h"><h2>' + t('newSeason') + '</h2></div><form id="f-season" class="ad-form ad-row">' +
       '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="60" value="' + esc(S.seasons.some(function (s) { return s.nbhpa_season_id === d.seasonId; }) ? '' : (d.seasonName || '')) + '"></label>' +
       '<label>' + t('nbhpaId') + '<input class="ctl" name="nbhpa" inputmode="numeric" value="' + esc(S.seasons.some(function (s) { return s.nbhpa_season_id === d.seasonId; }) ? '' : (d.seasonId || '')) + '"></label>' +
       '<label>' + t('status') + '<select class="ctl" name="status">' + ['active', 'upcoming', 'archived'].map(function (k) { return '<option value="' + k + '">' + t('st_' + k) + '</option>'; }).join('') + '</select></label>' +
       '<button class="ad-btn" type="submit">' + t('create') + '</button></form></section>' +
-      '<section class="sec">' + (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
+      '<section class="sec">' + (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
   }
   function viewAudit() {
     var rows = S.audit.map(function (a) { return '<tr><td>' + esc(fmt(a.at)) + '</td><td>' + esc(a.actor_name || (a.actor_kind === 'system' ? t('system') : a.actor_kind + ':' + a.actor_id)) + '</td><td><code>' + esc(a.action) + '</code></td><td>' + esc(a.target || '') + '</td><td class="ad-detail">' + esc(a.detail || '') + '</td></tr>'; }).join('');
@@ -220,7 +225,7 @@
     }
   });
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
@@ -228,6 +233,8 @@
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; render(); }); return; }
     if (b.hasAttribute('data-revoke')) { if (window.confirm(t('confirmRevoke'))) api('/access/' + b.getAttribute('data-revoke') + '/revoke', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-disable')) { if (window.confirm(t('confirmDisable'))) api('/captains/' + b.getAttribute('data-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
+    if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: b.getAttribute('data-name') }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
+    if (b.hasAttribute('data-delete-season')) { if (window.confirm(t('confirmDeleteSeason', { n: b.getAttribute('data-name') }))) api('/seasons/' + b.getAttribute('data-delete-season') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-enable')) api('/captains/' + b.getAttribute('data-enable') + '/enable', 'POST', {}).then(function (r) { done(r); });
   });
   window.addEventListener('hashchange', function () {

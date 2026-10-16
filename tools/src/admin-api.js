@@ -90,6 +90,39 @@ export async function adminApi(req, env, url) {
     return json({ ok: true });
   }
 
+  // Full delete of a captain (test records, and the right to deletion under Quebec's Law 25): the account, all its access
+  // (every season), its sessions and codes. Audit rows about it stay (who did what, when) but lose their details (names).
+  x = path.match(/^\/captains\/(\d+)\/delete$/);
+  if (m === 'POST' && x) {
+    const id = Number(x[1]);
+    if (!await env.DB.prepare('SELECT 1 FROM captains WHERE id = ?').bind(id).first()) return fail(404, 'captain');
+    const accessIds = (await env.DB.prepare('SELECT id FROM captain_access WHERE captain_id = ?').bind(id).all()).results.map((r) => 'access:' + r.id);
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM login_codes WHERE kind = 'captain' AND user_id = ?").bind(id),
+      env.DB.prepare('DELETE FROM captain_access WHERE captain_id = ?').bind(id),
+      env.DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('captain:' + id),
+      ...accessIds.map((a) => env.DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind(a)),
+      env.DB.prepare('DELETE FROM captains WHERE id = ?').bind(id)
+    ]);
+    await audit(env, admin, 'captain.delete', 'captain:' + id);
+    return json({ ok: true });
+  }
+
+  // Delete a season: refused while a captain still has active access in it. Revoked access rows of the season go with it.
+  x = path.match(/^\/seasons\/(\d+)\/delete$/);
+  if (m === 'POST' && x) {
+    const id = Number(x[1]);
+    if (!await env.DB.prepare('SELECT 1 FROM seasons WHERE id = ?').bind(id).first()) return fail(404, 'season');
+    if (await env.DB.prepare('SELECT 1 FROM captain_access WHERE season_id = ? AND revoked_at IS NULL').bind(id).first()) return fail(409, 'season_in_use');
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM captain_access WHERE season_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM seasons WHERE id = ?').bind(id)
+    ]);
+    await audit(env, admin, 'season.delete', 'season:' + id);
+    return json({ ok: true });
+  }
+
   // ---- access: a captain manages one team of one league, for one season ----
   if (m === 'POST' && path === '/access') {
     const body = await readJson(req) || {};
