@@ -117,3 +117,6 @@
   .bd-q { font-size: 26px; }
   .bd-nav .ad-btn { flex: 1; }
 }
+/* league rules: a link at the top, the text in a small window */
+.bd-topacts { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: flex-end; }
+.bd-rlist { display: grid; gap: 8px; padding-left: 20px; margin: 4px 0 8px; }

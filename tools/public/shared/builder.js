@@ -37,6 +37,12 @@
       noneOk: 'Aucun remplaçant admissible. Cherchez un nom, ou voyez « À vérifier ».', suggested: 'Suggestions : admissibles, meilleur salaire d’abord',
       fits: 'admissible', noTeam: 'sans équipe', nAbsent: '{n} absent(s)', nSubs: '{n} remplaçant(s)', changeTeam: 'Changer d’équipe',
       sameSex: 'remplaçant du même sexe',
+      rulesLink: 'Règles de la ligue', rulesTitle: 'Règles · {l}', close: 'Fermer',
+      rl_sex: 'Le remplaçant est du même sexe que le joueur absent (toutes les ligues).',
+      rl_list: 'Le remplaçant est sur la liste des joueurs de la section cette saison, et ne joue pas à la même heure.',
+      rl_cap: 'Plafond salarial : {c} par équipe. Masse salariale − salaires des absents + salaires des remplaçants (au salaire de la position jouée) doit rester sous le plafond.',
+      rl_age: 'Âge minimum des remplaçants : hommes {m}, femmes {f}, gardiens {g}, {when}.', rl_ageGame: 'à la date du match', rl_ageYear: 'atteint dans l’année du match',
+      rl_send: 'Une demande non conforme peut quand même être envoyée, avec une note : l’administration décide.',
       k_sex: 'Même sexe', x_sex: '{s} n’est pas du même sexe que {a} : un remplacement est toujours du même sexe.', x_sexUnknown: 'Sexe inconnu ({who}) : à vérifier.', rSex: 'sexe inconnu',
       allChecks: 'Vérifications : {ok} ✓ · {warn} à vérifier · {fail} ✗', allOk: 'Toutes les vérifications passent ({n})', back: 'Retour',
       k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon',
@@ -74,6 +80,12 @@
       noneOk: 'No eligible replacement. Search a name, or see “To check”.', suggested: 'Suggestions: eligible, best salary first',
       fits: 'eligible', noTeam: 'no team', nAbsent: '{n} absent', nSubs: '{n} replacement(s)', changeTeam: 'Change team',
       sameSex: 'replacement of the same sex',
+      rulesLink: 'League rules', rulesTitle: 'Rules · {l}', close: 'Close',
+      rl_sex: 'The replacement is the same sex as the absent player (every league).',
+      rl_list: 'The replacement is on the section’s player list this season, and does not play at the same time.',
+      rl_cap: 'Salary cap: {c} per team. Payroll − absent players’ salaries + replacements’ salaries (at the salary of the position played) must stay under the cap.',
+      rl_age: 'Minimum age of replacements: men {m}, women {f}, goalies {g}, {when}.', rl_ageGame: 'on the game date', rl_ageYear: 'reached during the game’s year',
+      rl_send: 'A request that does not pass can still be sent, with a note: the admins decide.',
       k_sex: 'Same sex', x_sex: '{s} is not the same sex as {a}: a replacement is always the same sex.', x_sexUnknown: 'Unknown sex ({who}): to check.', rSex: 'sex unknown',
       allChecks: 'Checks: {ok} ✓ · {warn} to check · {fail} ✗', allOk: 'Every check passes ({n})', back: 'Back',
       k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate',
@@ -431,16 +443,24 @@
     if (!d) return h + (b.loading ? '<p class="note">' + esc(t(L, 'loading')) + '</p>' : '');
     h += '<div class="bd-top"><p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league) +
       (b.teams && b.teams.length > 1 ? ' <button type="button" class="lnk ad-linkbtn" data-b-team="">' + esc(t(L, 'changeTeam')) + '</button>' : '') + '</p>' +
-      '<button type="button" class="lnk ad-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></div>' + rulesLine(b) + stepper(b);
+      '<span class="bd-topacts"><button type="button" class="lnk ad-linkbtn" data-b-rules data-b-key="rules">' + esc(t(L, 'rulesLink')) + '</button>' +
+      '<button type="button" class="lnk ad-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></span></div>' + stepper(b);
     h += '<div class="bd-body">' + (b.step === 1 ? step1(b) : b.step === 2 ? step2(b) : b.step === 3 ? step3(b) : step4(b)) + '</div>';
+    if (b.rulesOpen) h += rulesModal(b);
     return h;
   }
-  function rulesLine(b) {
-    var r = b.d.rules, L = b.ctx.lang;
-    var parts = [t(L, 'sameSex')];
-    if (r && r.salary_cap != null) parts.push(t(L, 'capRule', { c: money(r.salary_cap) }));
-    if (r && (r.min_age_m != null || r.min_age_f != null || r.min_age_g != null)) parts.push(t(L, 'ageRule', { m: r.min_age_m == null ? '—' : r.min_age_m, f: r.min_age_f == null ? '—' : r.min_age_f, g: r.min_age_g == null ? '—' : r.min_age_g }) + ' ' + t(L, r.age_on === 'year' ? 'ageYear' : 'ageGame'));
-    return '<p class="note bd-rules"><b>' + esc(t(L, 'rules')) + ' :</b> ' + esc(parts.join(' · ')) + (r && r.notes ? ' · ' + esc(r.notes) : '') + '</p>';
+  /* The league rules: a link at the top (most people know them by heart), the full text in a small window. */
+  function rulesModal(b) {
+    var r = b.d.rules || {}, L = b.ctx.lang, l = leagueOf(b.ctx, b.d.team.league) || {}, dash = function (v) { return v == null ? '—' : v; };
+    var items = [t(L, 'rl_sex'), t(L, 'rl_list')];
+    if (r.salary_cap != null) items.push(t(L, 'rl_cap', { c: money(r.salary_cap) }));
+    if (r.min_age_m != null || r.min_age_f != null || r.min_age_g != null) items.push(t(L, 'rl_age', { m: dash(r.min_age_m), f: dash(r.min_age_f), g: dash(r.min_age_g), when: t(L, r.age_on === 'year' ? 'rl_ageYear' : 'rl_ageGame') }));
+    items.push(t(L, 'rl_send'));
+    return '<div class="ad-modal-back" data-b-rules-close></div><div class="ad-modal bd-rmodal" role="dialog" aria-modal="true" aria-labelledby="bd-rt">' +
+      '<div class="ad-modal-h"><h2 id="bd-rt">' + esc(t(L, 'rulesTitle', { l: l.short || b.d.team.league })) + '</h2><button type="button" class="ad-x" data-b-rules-close data-b-key="rules-x" aria-label="' + esc(t(L, 'close')) + '">×</button></div>' +
+      '<ul class="bd-rlist">' + items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+      (r.notes ? '<p class="bd-note">' + esc(r.notes) + '</p>' : '') +
+      '<div class="ad-modal-f"><button type="button" class="ad-btn" data-b-rules-close>' + esc(t(L, 'close')) + '</button></div></div>';
   }
   function draw(b) {
     var el = b.el;
@@ -460,10 +480,12 @@
     if (el.__ldbBound) return;
     el.__ldbBound = true;
     el.addEventListener('click', function (e) {
-      var b = el.__ldb, x = e.target.closest && e.target.closest('[data-b-team],[data-b-game],[data-b-absent],[data-b-pick],[data-b-unpick],[data-b-pos],[data-b-more],[data-b-step],[data-b-cancel]');
+      var b = el.__ldb, x = e.target.closest && e.target.closest('[data-b-rules],[data-b-rules-close],[data-b-team],[data-b-game],[data-b-absent],[data-b-pick],[data-b-unpick],[data-b-pos],[data-b-more],[data-b-step],[data-b-cancel]');
       if (!x || x.disabled) return;
       var v = function (a) { return x.getAttribute(a); }, ln = function (id) { return b.lines.filter(function (l) { return l.absent_id === Number(id); })[0]; };
       if (x.hasAttribute('data-b-cancel')) { if (b.ctx.onCancel) b.ctx.onCancel(); return; }
+      if (x.hasAttribute('data-b-rules')) { b.rulesOpen = true; draw(b); var cx = el.querySelector('[data-b-key="rules-x"]'); if (cx) cx.focus(); return; }
+      if (x.hasAttribute('data-b-rules-close')) { b.rulesOpen = false; draw(b); var rl = el.querySelector('[data-b-rules]'); if (rl) rl.focus(); return; }
       if (x.hasAttribute('data-b-team')) { b.teamId = Number(v('data-b-team')) || null; b.d = null; b.slot = ''; b.lines = []; b.check = null; b.msg = null; b.step = 1; load(b); return; }
       if (x.hasAttribute('data-b-game')) { b.slot = v('data-b-game'); b.check = null; b.msg = null; b.step = 2; load(b); return; }
       if (x.hasAttribute('data-b-step')) { go(b, Number(v('data-b-step'))); return; }
@@ -478,6 +500,7 @@
       if (x.hasAttribute('data-b-pos')) { var pp = v('data-b-pos').split(':'); ln(pp[0]).sub_pos = pp[1] === 'g' ? 'g' : 's'; draw(b); check(b); return; }
       if (x.hasAttribute('data-b-more')) { b.more[v('data-b-more')] = true; draw(b); }
     });
+    el.addEventListener('keydown', function (e) { var b = el.__ldb; if (e.key === 'Escape' && b.rulesOpen) { e.stopPropagation(); b.rulesOpen = false; draw(b); } });
     el.addEventListener('change', function (e) {
       var b = el.__ldb, x = e.target;
       if (x.hasAttribute('data-b-slot')) { b.slot = x.value; b.check = null; b.msg = null; if (b.slot && b.slot !== 'manual') { b.step = 2; load(b); } else { if (b.d) b.d.candidates = null; draw(b); } return; }
