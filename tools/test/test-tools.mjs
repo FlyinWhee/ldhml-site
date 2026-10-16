@@ -307,8 +307,9 @@ d.querySelector('#f-email [name=email]').value = 'boss@example.test'; await subm
 const devHint = d.querySelector('.ad-dev').textContent.match(/\d{6}/)[0];
 d.querySelector('#f-code [name=code]').value = devHint; await submit('#f-code');
 assert.ok(/Boss|boss@example\.test/.test(d.getElementById('top').textContent), 'signed in');
-// captains: scoped to a league, team by team; every add and edit in a modal
-assert.ok(d.querySelector('.ad-scope [data-lg="' + lg.slug + '"][aria-pressed="true"]'), 'captains tab: scoped to the first league of the first section');
+// Teams tab (default): scoped to a league; each team card has its captains and roster; every add and edit in a modal
+assert.ok(d.querySelector('.ad-scope [data-lg="' + lg.slug + '"][aria-pressed="true"]'), 'Teams tab first: scoped to the first league of the first section');
+assert.ok(!d.querySelector('.nav a[href="#captains"]'), 'no separate Captains tab');
 const ateams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, lg.slug).first('n');
 assert.equal(d.querySelectorAll('.ad-team').length, ateams, 'one card per team of the league');
 d.querySelector('[data-act="new-cap"]').click(); await wait(20);
@@ -316,8 +317,8 @@ assert.ok(d.querySelector('#modal .ad-modal #f-cap') && d.documentElement.classL
 d.querySelector('#f-cap [name=name]').value = 'Nouvelle Capitaine'; d.querySelector('#f-cap [name=email]').value = 'cap2@example.test';
 await submit('#f-cap');
 assert.ok(!d.querySelector('#modal .ad-modal') && !d.documentElement.classList.contains('ad-modal-open'), 'the modal closes after saving');
-const nocap = () => [...d.querySelectorAll('#ad-nocap .ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
-assert.ok(nocap(), 'a new captain without access is in the "without access" list');
+const nocap = () => [...d.querySelectorAll('#ad-accounts .ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+assert.ok(nocap(), 'a new captain is in the captain accounts panel');
 nocap().querySelector('[data-access-cap]').click(); await wait(20);
 const af = d.querySelector('#f-access');
 assert.ok(af && af.elements.team.options.length === ateams + 1, 'the access modal offers the teams of this league');
@@ -327,9 +328,15 @@ const card = () => d.querySelector('.ad-team[data-team="' + teamRef + '"]');
 assert.ok(card() && card().textContent.includes('Nouvelle Capitaine') && card().querySelector('a[href$="#team-' + team.id + '"]'), 'the captain is listed under the team (team linked to the stats site)');
 card().querySelector('[data-access-team]').click(); await wait(20);
 assert.ok(d.querySelector('#f-access select[name=captain]') && d.querySelector('#f-access input[name=team]').value === String(teamRef), 'team-side access modal: team fixed, captain to choose');
+await submit('#f-access');
+assert.ok(d.querySelector('#modal .ad-msg.ad-err'), 'no captain picked and no new one: an error in the modal');
+d.querySelector('#f-access [name=name]').value = 'Capitaine Express'; d.querySelector('#f-access [name=email]').value = 'express@example.test';
+await submit('#f-access');
+assert.ok(card().textContent.includes('Capitaine Express') && !d.querySelector('#modal .ad-modal'), 'a new captain created from the team gets the access in the same step');
+card().querySelector('[data-access-team]').click(); await wait(20);
 d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
 assert.ok(!d.querySelector('#modal .ad-modal'), 'Escape closes the modal');
-const line = () => [...d.querySelectorAll('.ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+const line = () => [...d.querySelectorAll('#ad-accounts .ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 line().querySelector('[data-edit-cap]').click(); await wait(20);
 const ef = d.querySelector('#modal [data-edit]');
 assert.ok(ef && ef.elements.name.value === 'Nouvelle Capitaine', 'Edit opens a modal with the current values');

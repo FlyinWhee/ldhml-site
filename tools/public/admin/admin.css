@@ -105,3 +105,10 @@ html.ad-modal-open, html.ad-modal-open body { overflow: hidden; }
 .ad-lgset-h { display: flex; align-items: center; gap: 12px; }
 .ad-h3 { margin: 14px 0 4px; font: 600 16px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .ad-lgset .ad-rule { border-bottom: 0; padding: 0; margin: 4px 0; }
+/* ---------- captains in the team cards ---------- */
+.ad-tcaps { border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.ad-tcaps .ad-h3, .ad-team .ad-h3 { margin-top: 4px; }
+.ad-cap-sm { padding: 4px 0; border-top: 0; align-items: center; }
+.ad-or { border: 1px dashed var(--line); border-radius: 3px; padding: 6px 12px 10px; display: grid; gap: 10px; }
+.ad-or legend { padding: 0 6px; font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+#ad-accounts .lgbs { margin-top: 4px; }
