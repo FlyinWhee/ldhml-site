@@ -244,6 +244,7 @@ const oppIds = new Set((await DB.prepare('SELECT person_id FROM rosters WHERE te
 assert.ok(cands.filter((c) => oppIds.has(c.id)).every((c) => c.busy && c.busy.abb), 'the opponents are busy at that time');
 const free = cands.filter((c) => !c.busy);
 const absentA = rosterA.find((x) => x.pos === 's' && x.salary === 2).person_id;
+await DB.prepare("UPDATE people SET sex = 'm' WHERE id = ?").bind(absentA).run();
 const [sub1, sub2, sub3, sub4, sub5] = free.slice(0, 5).map((c) => c.id);
 const setP = (id, sex, y, mo) => DB.prepare('UPDATE people SET sex = ?, birth_year = ?, birth_month = ? WHERE id = ?').bind(sex, y, mo, id).run();
 const gy = Number(gameA.date.slice(0, 4)), gm = Number(gameA.date.slice(5, 7));
@@ -254,7 +255,9 @@ const chk = async (b, c = cookie, area = 'admin') => (await call('/api/' + area 
 const st = (res, k) => (res.checks.find((x) => x.k === k) || {}).s;
 r = { data: await chk(body(sub1)) };
 assert.equal(r.data.result, 'ok', 'a fitting replacement passes every check: ' + JSON.stringify(r.data.checks.filter((x) => x.s !== 'ok')));
-assert.deepEqual(['absent', 'listed', 'own', 'busy', 'age', 'salary', 'cap'].map((k) => st(r.data, k)), ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'], 'every check runs');
+assert.deepEqual(['absent', 'listed', 'sex', 'own', 'busy', 'age', 'salary', 'cap'].map((k) => st(r.data, k)), ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'], 'every check runs');
+assert.equal(st(await chk(body(sub3)), 'sex'), 'fail', 'a replacement is always the same sex (every league)');
+assert.equal(st(await chk(body(sub5)), 'sex'), 'warn', 'unknown sex: to check');
 assert.deepEqual([r.data.payroll.before, r.data.payroll.after, r.data.payroll.cap], [payrollA, payrollA, payrollA], 'cap: payroll - absent + replacement');
 let c2 = await chk(body(sub2));
 assert.equal(st(c2, 'cap'), 'fail'); assert.equal(c2.payroll.after, payrollA + 3, 'over the cap by the salary difference');
@@ -317,7 +320,9 @@ assert.deepEqual([st(c2, 'busy'), c2.checks.find((x) => x.k === 'busy').d.req], 
 r = await call('/api/captain/replacements', { cookie: ccookie });
 assert.equal(r.data.replacements.find((q) => q.id === rqA).decision_note, 'Plafond dépassé', 'the captain sees the decision and its note');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain can cancel');
-assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).data.error, 'not_open');
+assert.equal(await DB.prepare('SELECT (SELECT COUNT(*) FROM replacements WHERE id = ?) + (SELECT COUNT(*) FROM replacement_lines WHERE replacement_id = ?) AS n').bind(rqB, rqB).first('n'), 0, 'a cancelled request is deleted, with its lines');
+assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 404, 'gone');
+assert.equal((await call('/api/admin/replacements/' + rqA + '/cancel', { method: 'POST', cookie, body: {} })).data.error, 'not_open', 'a refused request is not cancelled (it stays in the history)');
 r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(sub1), game_id: gameA2.id, approve: true, note: 'Fait pour le capitaine' } });
 assert.equal(r.data.status, 'approved', 'an admin making the request for a captain can approve it at once');
 assert.equal((await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.find((q) => q.id === r.data.id).decided_name, 'Boss');
@@ -483,42 +488,54 @@ assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COU
 d.querySelector('[data-lg="' + lg.slug + '"]').click(); await wait(20);
 line().querySelector('[data-delete-cap]').click(); await wait(80);
 assert.ok(!line(), 'Delete removes the captain');
-// Replacements in the admin page: from a team card, the builder in a modal; then the queue and a decision
+await DB.prepare('UPDATE people SET birth_year = 1970, birth_month = 1 WHERE birth_year IS NULL AND id <> ?').bind(sub5).run();   // eligible suggestions to pick from
+// Replacements in the admin page: from a team card, the guided builder on its own page; then the queue and a decision
 const cardA = () => d.querySelector('.ad-team[data-team="' + teamA + '"]');
-cardA().querySelector('[data-sub-team]').click(); await wait(150);
-const slotSel = d.querySelector('#modal .ad-modal-wide #ad-builder [data-b-slot]');
-assert.ok(slotSel && [...slotSel.options].some((o) => o.value === gameA.id), 'the builder opens in a wide modal with the team’s games');
-assert.ok(d.querySelector('#ad-builder [data-b-slot] optgroup'), 'games grouped (upcoming, past)');
-slotSel.value = gameA2.id; slotSel.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(150);
-const absBox = d.querySelector('#ad-builder [data-b-absent="' + absentA + '"]');
-assert.ok(absBox, 'the roster, each player with an Absent box');
-absBox.checked = true; absBox.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(80);
-const subSel = d.querySelector('#ad-builder [data-b-sub="' + absentA + '"]');
-assert.ok(subSel && subSel.querySelector('optgroup'), 'replacement list grouped by eligibility');
-assert.ok(![...subSel.options].some((o) => Number(o.value) === absentA), 'the team’s own players are not offered');
-assert.ok(d.querySelector('#ad-builder button[type=submit]').disabled, 'no replacement chosen: cannot save');
-const pick = subSel.querySelector('optgroup option').value;
-subSel.value = pick; subSel.dispatchEvent(new w.Event('change', { bubbles: true })); await wait(150);
-assert.ok(d.querySelector('#ad-builder .bd-checks .bd-chk') && d.querySelector('#ad-builder .bd-res'), 'live checks with a summary');
-assert.ok(d.querySelector('#ad-builder [data-b-approve]').checked, 'admin builder: approve now, ticked by default');
-const nb = d.querySelector('#ad-builder [data-b-note]'); nb.value = 'Pour le capitaine'; nb.dispatchEvent(new w.Event('input', { bubbles: true }));
-d.querySelector('#ad-builder [data-b-approve]').checked = false; d.querySelector('#ad-builder [data-b-approve]').dispatchEvent(new w.Event('change', { bubbles: true }));
-d.querySelector('#ad-builder [data-b-form]').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(200);
-assert.ok(!d.querySelector('#modal .ad-modal') && d.querySelector('#main .ad-msg.ad-ok'), 'saved: modal closed, message shown');
+const q = (sel) => d.querySelector('#ad-builder ' + sel);
+const pickGame = async (doc, root, ev, id) => {
+  const card = doc.querySelector(root + ' [data-b-game="' + id + '"]');
+  if (card) card.click(); else { const sel = doc.querySelector(root + ' [data-b-slot]'); sel.value = id; sel.dispatchEvent(new ev('change', { bubbles: true })); }
+  await wait(200);
+};
+cardA().querySelector('[data-sub-team]').click(); await wait(250);
+assert.equal(w.location.hash, '#subs/new/' + teamA, 'the builder is a page of its own');
+assert.ok(!d.querySelector('#modal .ad-modal') && q('.bd-steps') && q('.bd-sp.bd-now [data-b-step="1"]'), 'a guided page: four steps, the first one open');
+assert.ok(q('.bd-gcard') || q('[data-b-slot]'), 'step 1: the next games as cards (others in a fold)');
+assert.ok(q('[data-b-step="3"]').disabled, 'later steps wait');
+await pickGame(d, '#ad-builder', w.Event, gameA2.id);
+assert.ok(q('.bd-sp.bd-now [data-b-step="2"]'), 'a game chosen: on to step 2');
+q('[data-b-absent="' + absentA + '"]').click(); await wait(80);
+assert.ok(q('[data-b-absent="' + absentA + '"]').classList.contains('bd-on'), 'tap a player: absent');
+q('.bd-nav [data-b-step="3"]').click(); await wait(60);
+assert.ok(q('[data-b-pick^="' + absentA + ':"]'), 'step 3: suggested replacements as cards');
+assert.ok(q('.bd-cands').querySelectorAll('.bd-cand').length <= 6, 'a few suggestions, not the whole list');
+assert.ok(!q('[data-b-pick="' + absentA + ':' + sub3 + '"]'), 'the other sex is never offered');
+const sq3 = q('[data-b-q="' + absentA + '"]'); sq3.value = (await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub3).first('name')); sq3.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(40);
+assert.ok(!q('[data-b-pick="' + absentA + ':' + sub3 + '"]'), 'not even in the search');
+const sq2 = q('[data-b-q="' + absentA + '"]'); sq2.value = ''; sq2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(40);
+q('.bd-cand.bd-ok').click(); await wait(200);
+assert.ok(q('.bd-line.bd-set') && q('[data-b-unpick]'), 'chosen, can be changed');
+q('.bd-nav [data-b-step="4"]').click(); await wait(150);
+assert.ok(q('.bd-verdict .bd-res') && q('.bd-sum'), 'step 4: summary and the verdict');
+assert.ok(q('[data-b-approve]').checked, 'admin builder: approve now, ticked by default');
+const nb = q('[data-b-note]'); nb.value = 'Pour le capitaine'; nb.dispatchEvent(new w.Event('input', { bubbles: true }));
+q('[data-b-approve]').checked = false; q('[data-b-approve]').dispatchEvent(new w.Event('change', { bubbles: true }));
+q('[data-b-form]').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
+assert.equal(w.location.hash, '#teams', 'saved: back where the admin came from');
+assert.ok(d.querySelector('#main .ad-msg.ad-ok'), 'with a message');
 assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="#subs"]').textContent), 'the Replacements tab counts the pending request');
 assert.ok(d.querySelector('[data-lg="retro"] .ad-cnt'), 'the league button shows its pending count');
 w.location.hash = '#subs'; await wait(200);
 const pendingCards = d.querySelectorAll('.bd-req.bd-st-pending');
 assert.equal(pendingCards.length, 1, 'Replacements tab: the pending queue of the league');
-assert.ok(pendingCards[0].querySelector('.bd-checks') && pendingCards[0].querySelector('.bd-lines a.lnk, .bd-lines b'), 'a card: lines and checks');
+assert.ok(pendingCards[0].querySelector('.bd-lines li') && pendingCards[0].querySelector('details.bd-more'), 'a compact card: lines, the checks in a fold');
 pendingCards[0].querySelector('[name=dnote]').value = 'OK pour ce match';
 pendingCards[0].querySelector('[data-decide="approve"]').click(); await wait(200);
 assert.equal(d.querySelectorAll('.bd-req.bd-st-pending').length, 0, 'approved: out of the pending queue');
 d.querySelector('[data-sf="approved"]').click(); await wait(30);
 assert.ok([...d.querySelectorAll('.bd-req.bd-st-approved')].some((c) => c.textContent.includes('OK pour ce match')), 'approved list, with the decision note');
-d.querySelector('[data-act="sub-new"]').click(); await wait(80);
-assert.ok(d.querySelector('#ad-builder [data-b-team]'), 'from the tab: choose the team first');
-d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
+d.querySelector('[data-act="sub-new"]').click(); await wait(200);
+assert.ok(q('[data-b-team]'), 'from the tab: choose the team first');
 w.location.hash = '#teams'; await wait(150);
 // players: the section list, with a league filter
 w.location.hash = '#players'; await wait(120);
@@ -579,6 +596,8 @@ assert.deepEqual(errors, [], 'page errors:\n' + errors.join('\n'));
 await DB.prepare('DELETE FROM login_codes').run();
 r = await call('/api/admin/login/start', { method: 'POST', body: { email: 'boss@example.test' } });
 const cookie3b = (await call('/api/admin/login/verify', { method: 'POST', body: { email: 'boss@example.test', code: r.data.devCode } })).cookie.split(';')[0];
+const payNow = (await call('/api/admin/replacements/builder?team=' + teamA, { cookie: cookie3b })).data.roster.reduce((x, p) => x + (p.salary || 0), 0);
+await call('/api/admin/rules', { method: 'POST', cookie: cookie3b, body: { season_id: seasonId, league: 'retro', salary_cap: payNow, min_age_m: 40, min_age_f: 35, min_age_g: 30 } });   // the team is at the cap
 const cjar = {};   // one browser: the session cookie stays across page loads
 const openCaptainPage = async () => {
   const chtml = await readFile(path.join(root, 'dist-tools/captain/index.html'), 'utf8');
@@ -611,19 +630,26 @@ assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no secti
 assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ?').bind(teamA).first('n')), 'their team’s requests (current and past)');
 assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
-cd.querySelector('[data-act="ask"]').click(); await wait(150);
-const cslot = cd.querySelector('#cp-builder [data-b-slot]');
-assert.ok(cslot && !cd.querySelector('#cp-builder [data-b-team]') && !cd.querySelector('#cp-builder [data-b-approve]'), 'captain builder: their team, no team choice, no approve box');
-cslot.value = gameA.id; cslot.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(150);
-const cabs = cd.querySelector('#cp-builder [data-b-absent="' + absentA + '"]'); cabs.checked = true; cabs.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(60);
-const csub = cd.querySelector('#cp-builder [data-b-sub="' + absentA + '"]');
-csub.value = String(sub3); csub.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(150);
-assert.ok(cd.querySelector('#cp-builder .bd-res.bd-fail') && cd.querySelector('#cp-builder .bd-why.bd-fail'), 'a failing check is shown in words');
-cd.querySelector('#cp-builder [data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(150);
-assert.ok(cd.querySelector('#cp-builder .ad-msg.ad-err'), 'failing without a note: refused, the builder stays open');
-const cnote = cd.querySelector('#cp-builder [data-b-note]'); cnote.value = 'Seule disponible ce soir'; cnote.dispatchEvent(new cw.Event('input', { bubbles: true }));
-cd.querySelector('#cp-builder [data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(200);
-assert.ok(!cd.querySelector('#modal .ad-modal') && cd.querySelector('#main .ad-msg.ad-ok'), 'sent: confirmation shown');
+cd.querySelector('[data-act="ask"]').click(); await wait(250);
+const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
+assert.equal(cw.location.hash, '#demande', 'the request is a page of its own');
+assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');
+await pickGame(cd, '#cp-builder', cw.Event, gameA.id);
+cq('[data-b-absent="' + absentA + '"]').click(); await wait(80);
+cq('.bd-nav [data-b-step="3"]').click(); await wait(60);
+const csq = cq('[data-b-q="' + absentA + '"]'); csq.value = (await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub2).first('name'));
+csq.dispatchEvent(new cw.Event('input', { bubbles: true })); await wait(40);
+const c2card = cq('[data-b-pick="' + absentA + ':' + sub2 + '"]');
+assert.ok(c2card && c2card.classList.contains('bd-fail') && /plafond/.test(c2card.textContent), 'the search finds anyone of the same sex, with the reason they do not fit');
+c2card.click(); await wait(200);
+cq('.bd-nav [data-b-step="4"]').click(); await wait(150);
+assert.ok(cq('.bd-verdict .bd-res.bd-fail') && cq('.bd-issues .bd-fail') && !cq('[data-b-approve]'), 'step 4: the failing check in words; no approve box for a captain');
+cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(150);
+assert.ok(cq('.ad-msg.ad-err'), 'failing without a note: refused, the builder stays');
+const cnote = cq('[data-b-note]'); cnote.value = 'Seule disponible ce soir'; cnote.dispatchEvent(new cw.Event('input', { bubbles: true }));
+cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
+assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ad-msg.ad-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
+assert.ok(!cd.querySelector('.bd-req .bd-req-h .tcell'), 'compact cards on the team page (no team repeated)');
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE created_kind = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue');
 // a second team: now the switcher shows
 await call('/api/admin/access', { method: 'POST', cookie: cookie3b, body: { captain_id: capRetro, team_ref: oppTeam } });

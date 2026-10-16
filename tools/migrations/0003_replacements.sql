@@ -22,7 +22,7 @@ CREATE TABLE replacements (
   decided_at    INTEGER,
   decided_by    INTEGER REFERENCES admins(id),
   decision_note TEXT,
-  cancelled_at  INTEGER                                 -- who cancelled: the audit row
+  cancelled_at  INTEGER                                 -- unused: a cancelled request is deleted (the audit row stays)
 );
 CREATE INDEX replacements_season ON replacements (season_id, league, status);
 CREATE INDEX replacements_team ON replacements (team_id, game_date);

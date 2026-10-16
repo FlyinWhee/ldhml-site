@@ -113,11 +113,11 @@
       rulesH: 'Règles', teamsSetup: 'Équipes', nTeamsLg: '{n} équipes', playersShort: 'Joueurs', importLeague: 'Importer les équipes depuis NBHPA',
       setupLink: 'Les équipes se créent et se modifient dans',
       tabSubs: 'Remplacements', subsLede: 'Les demandes de remplacement de la ligue choisie, vérifiées avant d’arriver ici. Vous pouvez aussi faire une demande pour un capitaine.',
-      newSub: 'Nouveau remplacement', subForTeam: 'Remplacement', subTitle: 'Remplacement · {l}', subSaved: 'Demande enregistrée.', noSubs: 'Aucune demande.',
-      sf_pending: 'En attente', sf_approved: 'Approuvées', sf_refused: 'Refusées', sf_cancelled: 'Annulées', sf_all: 'Toutes',
+      newSub: 'Nouveau remplacement', backTeams: '← Équipes', backSubs: '← Remplacements', subForTeam: 'Remplacement', subTitle: 'Remplacement · {l}', subSaved: 'Demande enregistrée.', noSubs: 'Aucune demande.',
+      sf_pending: 'En attente', sf_approved: 'Approuvées', sf_refused: 'Refusées', sf_all: 'Toutes',
       approve: 'Approuver', refuse: 'Refuser', cancelReq: 'Annuler la demande', decisionNote: 'Note pour le capitaine (facultatif)',
-      confirmApproveFail: 'Des vérifications échouent pour cette demande. L’approuver quand même ?', confirmCancelReq: 'Annuler cette demande ?',
-      approved: 'Demande approuvée.', refused: 'Demande refusée.', cancelledMsg: 'Demande annulée.',
+      confirmApproveFail: 'Des vérifications échouent pour cette demande. L’approuver quand même ?', confirmCancelReq: 'Annuler cette demande ? Elle sera supprimée.',
+      approved: 'Demande approuvée.', refused: 'Demande refusée.', cancelledMsg: 'Demande annulée et supprimée.',
       e_not_pending: 'Cette demande a déjà été traitée.', e_not_open: 'Cette demande n’est plus ouverte.', e_decision: 'Décision invalide.',
       e_note_required: 'Une vérification échoue : une note est requise.', e_game: 'Match invalide.', e_replacement: 'Demande invalide.',
       ageOn: 'Âge compté', ageOnGame: 'à la date du match', ageOnYear: 'dans l’année du match'
@@ -133,11 +133,11 @@
       rulesH: 'Rules', teamsSetup: 'Teams', nTeamsLg: '{n} teams', playersShort: 'Players', importLeague: 'Import the teams from NBHPA',
       setupLink: 'Teams are created and edited in',
       tabSubs: 'Replacements', subsLede: 'The replacement requests of the chosen league, checked before they get here. You can also make a request for a captain.',
-      newSub: 'New replacement', subForTeam: 'Replacement', subTitle: 'Replacement · {l}', subSaved: 'Request saved.', noSubs: 'No request.',
-      sf_pending: 'Pending', sf_approved: 'Approved', sf_refused: 'Refused', sf_cancelled: 'Cancelled', sf_all: 'All',
+      newSub: 'New replacement', backTeams: '← Teams', backSubs: '← Replacements', subForTeam: 'Replacement', subTitle: 'Replacement · {l}', subSaved: 'Request saved.', noSubs: 'No request.',
+      sf_pending: 'Pending', sf_approved: 'Approved', sf_refused: 'Refused', sf_all: 'All',
       approve: 'Approve', refuse: 'Refuse', cancelReq: 'Cancel the request', decisionNote: 'Note for the captain (optional)',
-      confirmApproveFail: 'Some checks fail for this request. Approve it anyway?', confirmCancelReq: 'Cancel this request?',
-      approved: 'Request approved.', refused: 'Request refused.', cancelledMsg: 'Request cancelled.',
+      confirmApproveFail: 'Some checks fail for this request. Approve it anyway?', confirmCancelReq: 'Cancel this request? It will be deleted.',
+      approved: 'Request approved.', refused: 'Request refused.', cancelledMsg: 'Request cancelled and deleted.',
       e_not_pending: 'This request was already handled.', e_not_open: 'This request is no longer open.', e_decision: 'Invalid decision.',
       e_note_required: 'A check fails: a note is required.', e_game: 'Invalid game.', e_replacement: 'Invalid request.',
       ageOn: 'Age counted', ageOnGame: 'on the game date', ageOnYear: 'during the game’s year'
@@ -150,7 +150,7 @@
    * Scope: season, section, league. Every working tab shows only that context. Section and league are remembered in this browser. */
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'teams', seasons: [], captains: [], audit: [], data: null, seasonId: null,
     section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', modal: null, accountsOpen: false,
-    subs: [], pending: {}, sf: 'pending' };
+    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: 'subs', flash: null };
   var TABS = ['teams', 'subs', 'players', 'setup', 'audit'];
   var OLD_TABS = { seasons: 'setup', rules: 'setup', captains: 'teams' };   // old links still land somewhere sensible
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
@@ -373,7 +373,9 @@
   }
   /* ---------- Replacements: the league's queue and history; admins can also build a request for a captain ---------- */
   var builderCtx = function () {
-    return { lang: lang, data: S.data, api: api, onSaved: function (res) { S.modal = null; say('ok', res.status === 'approved' ? t('approved') : t('subSaved')); refresh(); } };
+    return { lang: lang, data: S.data, api: api,
+      onSaved: function (res) { S.flash = { kind: 'ok', text: res.status === 'approved' ? t('approved') : t('subSaved') }; S.sub = null; location.hash = '#' + S.subFrom; },
+      onCancel: function () { S.sub = null; location.hash = '#' + S.subFrom; } };
   };
   function subActions(q) {
     if (q.status === 'pending') return '<div class="bd-acts" data-decide-box="' + q.id + '"><input class="ctl" name="dnote" maxlength="1000" placeholder="' + esc(t('decisionNote')) + '" aria-label="' + esc(t('decisionNote')) + '">' +
@@ -382,14 +384,25 @@
     if (q.status === 'approved') return '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-cancel-req="' + q.id + '">' + t('cancelReq') + '</button></div>';
     return '';
   }
+  /* The builder, a page of its own (#subs/new, or #subs/new/<team> from a team card). */
+  function viewSubBuild() {
+    var tm = S.sub.teamId && S.teams.filter(function (x) { return x.id === S.sub.teamId; })[0];
+    var l = leagueOf(tm ? tm.league : S.league);
+    S.sub.league = S.league;
+    if (S.sub.pick) { S.sub.teams = leagueTeams(); if (!S.sub.teamId && S.sub.teams.length === 1) S.sub.teamId = S.sub.teams[0].id; }
+    return '<p class="ad-back"><a class="lnk" href="#' + S.subFrom + '">' + t(S.subFrom === 'teams' ? 'backTeams' : 'backSubs') + '</a></p>' +
+      '<h1 class="ph">' + t('newSub') + '</h1>' + (l ? '<p>' + leagueOnly(l) + '</p>' : '') + '<div class="bd-page" id="ad-builder"></div>';
+  }
+  var leagueTeams = function () { return S.teams.filter(function (x) { return x.league === S.league; }).map(function (x) { return { id: x.id, name: x.name, abb: x.abb }; }); };
   function viewSubs() {
+    if (S.sub) return viewSubBuild();
     var s = curSeason(), l = leagueOf(S.league);
     var head = '<h1 class="ph">' + t('tabSubs') + '</h1><p class="lede">' + t('subsLede') + '</p>' + scopeBar('league');
     if (!s || !l) return head;
     var mine = S.subs.filter(function (q) { return q.league === l.slug; });
     var list = mine.filter(function (q) { return !S.sf || q.status === S.sf; });
     var n = function (st) { return mine.filter(function (q) { return q.status === st; }).length; };
-    var seg = '<div class="seg" role="group">' + ['pending', 'approved', 'refused', 'cancelled', ''].map(function (k) {
+    var seg = '<div class="seg" role="group">' + ['pending', 'approved', 'refused', ''].map(function (k) {
       return '<button type="button" data-sf="' + k + '" aria-pressed="' + (S.sf === k) + '">' + esc(t('sf_' + (k || 'all'))) + (k ? ' (' + n(k) + ')' : '') + '</button>';
     }).join('') + '</div>';
     return head + '<p class="ad-btns"><button type="button" class="ad-btn ad-btn-sm" data-act="sub-new">' + t('newSub') + '</button></p>' +
@@ -448,7 +461,6 @@
     if (m.kind === 'team-edit' && tm) return { title: t('editTeamTitle'), body: '<form class="ad-form ad-col" data-edit-team="' + tm.id + '">' + teamFields(tm) + footer() + '</form>' };
     var nl = leagueOf(m.league) || l;
     if (m.kind === 'team-new' && nl) return { title: t('newTeamTitle', { l: nl.name }), body: '<form class="ad-form ad-col" data-newteam="' + esc(nl.slug) + '">' + teamFields() + footer(t('create')) + '</form>' };
-    if (m.kind === 'sub' && l) return { wide: true, title: t('subTitle', { l: l.name }), body: '<div id="ad-builder"></div>' };
     if (m.kind === 'season-new') {
       var d = S.data || {}, known = S.seasons.some(function (x) { return x.nbhpa_season_id === d.seasonId; });
       return { title: t('newSeason'), body: '<form id="f-season" class="ad-form ad-col">' +
@@ -462,7 +474,7 @@
   function modalHtml(msg) {
     var b = S.modal && modalBody(S.modal);
     if (!b) { S.modal = null; return ''; }
-    return '<div class="ad-modal-back" data-act="close-modal"></div><div class="ad-modal' + (b.wide ? ' ad-modal-wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="ad-mt">' +
+    return '<div class="ad-modal-back" data-act="close-modal"></div><div class="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-mt">' +
       '<div class="ad-modal-h"><h2 id="ad-mt">' + esc(b.title) + '</h2><button type="button" class="ad-x" data-act="close-modal" aria-label="' + esc(t('close')) + '">×</button></div>' + msg + b.body + '</div>';
   }
   function openModal(m) {
@@ -483,7 +495,7 @@
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : (views[S.tab] || viewTeams)());
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
     document.documentElement.classList.toggle('ad-modal-open', !!(S.me && S.modal));
-    if (S.me && S.modal && S.modal.kind === 'sub') window.LDBuilder.mount($('#ad-builder'), S.modal.b, builderCtx());
+    if (S.me && S.sub && S.tab === 'subs') window.LDBuilder.mount($('#ad-builder'), S.sub, builderCtx());
     $('#foot').innerHTML = '<p>' + t('foot') + '</p>';
     document.title = 'LDHML | ' + t('title');
   }
@@ -624,9 +636,8 @@
     if (b.hasAttribute('data-team-new')) { openModal({ kind: 'team-new', league: b.getAttribute('data-team-new') }); return; }
     if (act === 'season-new') { openModal({ kind: 'season-new' }); return; }
     /* replacements: the builder in a modal (from a team card: that team; from the tab: a team of the league to choose) */
-    var leagueTeams = function () { return S.teams.filter(function (x) { return x.league === S.league; }).map(function (x) { return { id: x.id, name: x.name, abb: x.abb }; }); };
-    if (b.hasAttribute('data-sub-team')) { openModal({ kind: 'sub', b: window.LDBuilder.state({ area: 'admin', teamId: num('data-sub-team') }) }); return; }
-    if (act === 'sub-new') { var lt = leagueTeams(); openModal({ kind: 'sub', b: window.LDBuilder.state({ area: 'admin', teams: lt, teamId: lt.length === 1 ? lt[0].id : null }) }); return; }
+    if (b.hasAttribute('data-sub-team')) { S.subFrom = 'teams'; location.hash = '#subs/new/' + b.getAttribute('data-sub-team'); return; }
+    if (act === 'sub-new') { S.subFrom = 'subs'; location.hash = '#subs/new'; return; }
     if (b.hasAttribute('data-decide')) {
       var dec = b.getAttribute('data-decide'), box = b.closest('[data-decide-box]'), dn = box ? box.querySelector('[name=dnote]').value.trim() : '';
       if (dec === 'approve' && b.getAttribute('data-result') === 'fail' && !window.confirm(t('confirmApproveFail'))) return;
@@ -646,18 +657,24 @@
     if (b.hasAttribute('data-roster-remove')) { if (window.confirm(t('confirmRemoveRoster', { n: nm }))) api('/rosters/' + b.getAttribute('data-roster-remove') + '/remove', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-del-team')) { if (window.confirm(t('confirmDeleteTeam', { n: nm }))) api('/teams/' + b.getAttribute('data-del-team') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
   });
-  window.addEventListener('hashchange', function () {
-    var h = location.hash.replace('#', '');
-    h = OLD_TABS[h] || h;
+  /* Routes: #<tab>, and #subs/new[/<team id>] for the builder page. */
+  function route() {
+    var parts = location.hash.replace('#', '').split('/'), h = OLD_TABS[parts[0]] || parts[0];
     S.tab = TABS.indexOf(h) >= 0 ? h : 'teams';
-    S.msg = null; S.modal = null;
+    if (S.tab === 'subs' && parts[1] === 'new') {
+      var team = Number(parts[2]) || null;
+      if (!S.sub || S.sub.teamId !== team && !S.sub.pick) S.sub = window.LDBuilder.state({ area: 'admin', teamId: team });
+      S.sub.pick = !team;
+    } else S.sub = null;
+  }
+  window.addEventListener('hashchange', function () {
+    route();
+    S.msg = S.flash; S.flash = null; S.modal = null;
     if (S.me) refresh(); else render();
   });
 
   /* ---------- start ---------- */
-  var h0 = location.hash.replace('#', '');
-  h0 = OLD_TABS[h0] || h0;
-  if (TABS.indexOf(h0) >= 0) S.tab = h0;
+  route();
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me')]).then(function (rs) {
     S.data = rs[0];
     fixScope();

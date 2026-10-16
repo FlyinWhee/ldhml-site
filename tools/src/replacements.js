@@ -7,6 +7,7 @@
 // No rule engine: each check is coded here as a league confirms it, and reads its numbers from league_rules.
 //   absent  the absent player is on the team's roster
 //   listed  the replacement is on the section's player list for the season
+//   sex     the replacement is the same sex as the absent player (every league, always: owner rule, not a setting)
 //   own     the replacement is not already on this team
 //   busy    the replacement does not play at the same time (their own team's game, or another request)
 //   age     minimum age (men, women, goalies), from birth month and year; on the game date or in its year (age_on)
@@ -128,6 +129,7 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
     out.push({ ...l, absent_pos: absentPos, absent_salary: a ? a.salary ?? null : null, sub_salary: p.sp ? subSalary ?? null : null });
     checks.push({ k: 'absent', s: a ? 'ok' : 'fail', line: i });
     checks.push({ k: 'listed', s: p.sp ? 'ok' : 'fail', line: i });
+    if (a) checks.push({ k: 'sex', s: a.sex && p.sex ? (a.sex === p.sex ? 'ok' : 'fail') : 'warn', line: i, d: { absent: a.sex || null, sub: p.sex || null } });
     checks.push({ k: 'own', s: onTeam.has(l.sub_id) ? 'fail' : 'ok', line: i });
     if (slot.time) { const b = busy.get(l.sub_id); checks.push(b ? { k: 'busy', s: 'fail', line: i, d: b } : { k: 'busy', s: 'ok', line: i }); }
     const ag = ageCheck(rules, p, l.sub_pos, slot.date);
@@ -180,7 +182,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (!team) return fail(404, 'team');
     const season = await seasonOf(team.season_id), lg = leagueOf(data, team.league);
     const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM league_rules WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
-    const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, pos: r.pos, salary: r.salary ?? null }));
+    const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null }));
     const games = sameSeason(data, season) && lg && team.nbhpa_team_id
       ? (lg.games || []).filter((g) => !g.cancelled && (g.away === team.nbhpa_team_id || g.home === team.nbhpa_team_id)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)) : [];
     const out = { team: { id: team.id, season_id: team.season_id, league: team.league, name: team.name, abb: team.abb, nbhpa_team_id: team.nbhpa_team_id }, season: season && { id: season.id, name: season.name }, rules, roster, games, today: today(), candidates: null };
@@ -261,7 +263,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
         game_id: r.game_id, game_date: r.game_date, game_time: r.game_time, game_label: r.game_label, status: r.status,
         result: live ? live.result : r.result, checks: live ? live.checks : saved.checks || [], payroll: live ? live.payroll : saved.payroll || null,
         note: r.note, created_at: r.created_at, created_kind: r.created_kind, created_name: r.created_name, decided_at: r.decided_at, decided_name: r.decided_name,
-        decision_note: r.decision_note, cancelled_at: r.cancelled_at,
+        decision_note: r.decision_note,
         lines: ls.map((l) => ({ absent_id: l.absent_id, absent_name: l.absent_name, absent_site: l.absent_site, absent_pos: l.absent_pos, absent_salary: l.absent_salary,
           sub_id: l.sub_id, sub_name: l.sub_name, sub_site: l.sub_site, sub_pos: l.sub_pos, sub_salary: l.sub_salary })) });
     }
@@ -287,13 +289,18 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     return json({ ok: true, status, result: ev.result });
   }
 
-  // Cancel: the team's captain or an admin, while the request is pending or approved.
+  // Cancel: the team's captain or an admin, while the request is pending or approved. A cancelled request serves no
+  // purpose (owner): it is deleted with its lines. The audit row stays (who cancelled what, when), without details.
   x = path.match(/^\/replacements\/(\d+)\/cancel$/);
   if (m === 'POST' && x) {
     const r = await DB.prepare('SELECT * FROM replacements WHERE id = ?').bind(Number(x[1])).first();
     if (!r || (allowed !== null && !allowed.includes(r.team_id))) return fail(404, 'replacement');
     if (!['pending', 'approved'].includes(r.status)) return fail(409, 'not_open');
-    await DB.prepare("UPDATE replacements SET status = 'cancelled', cancelled_at = ? WHERE id = ?").bind(now(), r.id).run();
+    await DB.batch([
+      DB.prepare('DELETE FROM replacement_lines WHERE replacement_id = ?').bind(r.id),
+      DB.prepare('DELETE FROM replacements WHERE id = ?').bind(r.id),
+      DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('replacement:' + r.id)
+    ]);
     await audit('replacement.cancel', 'replacement:' + r.id, { was: r.status });
     return json({ ok: true });
   }

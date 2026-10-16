@@ -4,8 +4,11 @@
  *
  *   var b = LDBuilder.state({ area: 'captain' | 'admin', teamId, teams })   teams: choices [{ id, name, abb }] (admin) or null
  *   LDBuilder.mount(el, b, ctx)   renders into el and keeps its state in b, so the page can re-render around it (mount again)
- *       ctx = { lang, data (season.json), api(path, method, body) -> Promise<{ ok, status, data }>, onSaved(result) }
- *   LDBuilder.requestCard(q, ctx, actionsHtml)   one request (queue, history): the same in both areas
+ *       ctx = { lang, data (season.json), api(path, method, body) -> Promise<{ ok, status, data }>, onSaved(result), onCancel() }
+ *       The builder is a page of its own in both areas (not a modal: it needs the room).
+ *   LDBuilder.requestCard(q, ctx, actionsHtml, o)   one request (queue, history), compact: the problems in words,
+ *       every check in a fold. o = { team: show the team (false on the captain's own team page), result: show the result chip }
+ * Replacements are always the same sex as the absent player (every league): other-sex players are not offered.
  *   LDBuilder.t(lang, key, vars)
  * Leagues, teams and people look and link like the stats site (shared/look.js, docs/presentation.md).
  */
@@ -26,6 +29,16 @@
       approveNow: 'Approuver tout de suite (je fais la demande pour le capitaine)', send: 'Envoyer la demande', save: 'Enregistrer', cancel: 'Annuler',
       needLines: 'Cochez au moins un absent et choisissez son remplaçant.', needSub: 'Choisissez un remplaçant pour chaque absent.',
       rules: 'Règles de la ligue', capRule: 'plafond {c}', ageRule: 'âge minimum : hommes {m}, femmes {f}, gardiens {g}', ageYear: '(dans l’année du match)', ageGame: '(à la date du match)',
+      q0: 'Pour quelle équipe ?', q1: 'Pour quel match ?', q2: 'Qui sera absent ?', q2hint: 'Touchez les joueurs qui seront absents.',
+      q3: 'Qui le remplace ?', q3n: 'Qui les remplace ?', q4: 'Vérifier et envoyer', s1: 'Match', s2: 'Absents', s3: 'Remplaçants', s4: 'Envoi',
+      otherGame: 'Un autre match (passé, plus tard, ou absent du calendrier)', next: 'Continuer', nextN: 'Continuer ({n} absents)', prev: 'Retour',
+      replaceX: 'Remplacer {n}', change: 'Changer de remplaçant', budget: 'Le remplaçant peut coûter jusqu’à {v} (plafond).', seeMore: 'Voir {n} autres admissibles',
+      toCheck: 'À vérifier ({n})', search: 'Chercher un joueur par son nom…', noMatch: 'Aucun joueur trouvé (même sexe seulement).',
+      noneOk: 'Aucun remplaçant admissible. Cherchez un nom, ou voyez « À vérifier ».', suggested: 'Suggestions : admissibles, meilleur salaire d’abord',
+      fits: 'admissible', noTeam: 'sans équipe', nAbsent: '{n} absent(s)', nSubs: '{n} remplaçant(s)', changeTeam: 'Changer d’équipe',
+      sameSex: 'remplaçant du même sexe',
+      k_sex: 'Même sexe', x_sex: '{s} n’est pas du même sexe que {a} : un remplacement est toujours du même sexe.', x_sexUnknown: 'Sexe inconnu ({who}) : à vérifier.', rSex: 'sexe inconnu',
+      allChecks: 'Vérifications : {ok} ✓ · {warn} à vérifier · {fail} ✗', allOk: 'Toutes les vérifications passent ({n})', back: 'Retour',
       k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon',
       x_absent: '{a} n’est pas dans l’alignement de l’équipe.', x_listed: '{s} n’est pas sur la liste des joueurs de la section cette saison. Un administrateur peut l’ajouter.',
       x_own: '{s} est déjà dans l’alignement de cette équipe.', x_busy: '{s} joue à la même heure (avec {abb}).', x_busyReq: '{s} remplace déjà à la même heure (demande no {req}, {abb}).',
@@ -53,6 +66,16 @@
       approveNow: 'Approve now (I am making the request for the captain)', send: 'Send the request', save: 'Save', cancel: 'Cancel',
       needLines: 'Tick at least one absent player and choose their replacement.', needSub: 'Choose a replacement for each absent player.',
       rules: 'League rules', capRule: 'cap {c}', ageRule: 'minimum age: men {m}, women {f}, goalies {g}', ageYear: '(during the game’s year)', ageGame: '(on the game date)',
+      q0: 'Which team?', q1: 'Which game?', q2: 'Who will be absent?', q2hint: 'Tap the players who will be absent.',
+      q3: 'Who replaces them?', q3n: 'Who replaces them?', q4: 'Check and send', s1: 'Game', s2: 'Absent', s3: 'Replacements', s4: 'Send',
+      otherGame: 'Another game (past, later, or not in the schedule)', next: 'Continue', nextN: 'Continue ({n} absent)', prev: 'Back',
+      replaceX: 'Replace {n}', change: 'Change the replacement', budget: 'The replacement can cost up to {v} (cap).', seeMore: 'See {n} more eligible',
+      toCheck: 'To check ({n})', search: 'Search a player by name…', noMatch: 'No player found (same sex only).',
+      noneOk: 'No eligible replacement. Search a name, or see “To check”.', suggested: 'Suggestions: eligible, best salary first',
+      fits: 'eligible', noTeam: 'no team', nAbsent: '{n} absent', nSubs: '{n} replacement(s)', changeTeam: 'Change team',
+      sameSex: 'replacement of the same sex',
+      k_sex: 'Same sex', x_sex: '{s} is not the same sex as {a}: a replacement is always the same sex.', x_sexUnknown: 'Unknown sex ({who}): to check.', rSex: 'sex unknown',
+      allChecks: 'Checks: {ok} ✓ · {warn} to check · {fail} ✗', allOk: 'Every check passes ({n})', back: 'Back',
       k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate',
       x_absent: '{a} is not on the team’s roster.', x_listed: '{s} is not on the section’s player list this season. An admin can add them.',
       x_own: '{s} is already on this team’s roster.', x_busy: '{s} plays at the same time (with {abb}).', x_busyReq: '{s} already replaces at the same time (request no. {req}, {abb}).',
@@ -93,16 +116,16 @@
   var day = function (ctx, d) { try { return new Date(d + 'T12:00:00').toLocaleDateString(locale(ctx), { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return d; } };
   var stamp = function (ctx, sec) { return sec ? new Date(sec * 1000).toLocaleString(locale(ctx), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' }) : ''; };
   /* "jeu. 16 oct. · 18:00 · contre GHO · Surface X 1" from the team's point of view */
-  function gameText(ctx, league, teamNb, g) {
+  function gameText(ctx, league, teamNb, g, noVenue) {
     var l = leagueOf(ctx, league) || { teams: [] };
     var abb = function (id) { return ((l.teams || []).filter(function (x) { return x.id === id; })[0] || {}).abb || '?'; };
     var isHome = g.home === teamNb, opp = abb(isHome ? g.away : g.home);
-    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + (isHome ? t(ctx.lang, 'vs') : t(ctx.lang, 'at')) + ' ' + opp + (g.venue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
+    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + (isHome ? t(ctx.lang, 'vs') : t(ctx.lang, 'at')) + ' ' + opp + (g.venue && !noVenue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
   }
   function requestGame(ctx, q) {
     var l = leagueOf(ctx, q.league), g = q.game_id && l && (l.games || []).filter(function (x) { return x.id === q.game_id; })[0];
-    if (g) return gameText(ctx, q.league, q.team.nbhpa_team_id, g);
-    return day(ctx, q.game_date) + (q.game_time ? ' · ' + q.game_time : '') + (q.game_label ? ' · ' + q.game_label : '');
+    if (g) return gameText(ctx, q.league, q.team.nbhpa_team_id, g, true);   // a card header: no venue (it is in the schedule)
+    return day(ctx, q.game_date) + (q.game_time ? ' · ' + q.game_time : '') + (q.game_label ? ' · ' + q.game_label.split(' · ')[0] : '');
   }
   var posName = function (ctx, p) { return t(ctx.lang, p === 'g' ? 'posG' : 'posS'); };
 
@@ -112,6 +135,7 @@
     if (c.k === 'absent') return t(L, 'x_absent', v);
     if (c.k === 'listed') return t(L, 'x_listed', v);
     if (c.k === 'own') return t(L, 'x_own', v);
+    if (c.k === 'sex') return c.s === 'fail' ? t(L, 'x_sex', v) : t(L, 'x_sexUnknown', { who: [!d.absent ? v.a : null, !d.sub ? v.s : null].filter(Boolean).join(', ') });
     if (c.k === 'busy') return t(L, d.req ? 'x_busyReq' : 'x_busy', { s: v.s, abb: d.abb || '?', req: d.req });
     if (c.k === 'age') {
       var av = { s: v.s, min: d.min, pos: posName(ctx, d.pos).toLowerCase() };
@@ -151,29 +175,43 @@
   }
   var resultChip = function (ctx, r) { return '<span class="bd-res bd-' + r + '"><i aria-hidden="true">' + ICON[r] + '</i>' + esc(t(ctx.lang, 'r_' + r)) + '</span>'; };
 
-  /* ---------- a request: the same card in the queue, the history and the captain's list ---------- */
-  function requestCard(q, ctx, actions) {
+  /* ---------- a request: the same compact card in the queue, the history and the captain's list ----------
+   * Header: (team) game, status (result). One line per replacement. Then only the problems, in words; every check in a fold. */
+  function requestCard(q, ctx, actions, o) {
+    o = o || {};
     var L = ctx.lang;
     var names = q.lines.map(function (l) { return { a: l.absent_name, s: l.sub_name }; });
     var lines = q.lines.map(function (l) {
-      return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site) + ' <span class="note">' + esc(posName(ctx, l.absent_pos)) + ' · ' + esc(money(l.absent_salary)) + '</span>' +
-        ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + person(ctx, q.league, l.sub_name, l.sub_site) + '</b> <span class="note">' + esc(posName(ctx, l.sub_pos)) + ' · ' + esc(money(l.sub_salary)) + '</span></li>';
+      return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + person(ctx, q.league, l.sub_name, l.sub_site) + '</b>' +
+        ' <span class="note">' + esc(posName(ctx, l.sub_pos)) + ' · ' + esc(money(l.absent_salary)) + ' → ' + esc(money(l.sub_salary)) + '</span></li>';
     }).join('');
+    var outSum = 0, inSum = 0; q.lines.forEach(function (l) { outSum += l.absent_salary || 0; inSum += l.sub_salary || 0; });
+    var cs = q.checks || [], n = { ok: 0, warn: 0, fail: 0 };
+    cs.forEach(function (c) { n[c.s]++; });
+    var issues = cs.filter(function (c) { return c.s !== 'ok'; }).map(function (c) {
+      var text = c.k === 'cap' && q.payroll ? capText(ctx, q.payroll, outSum, inSum) : explain(ctx, c, names);
+      return '<li class="bd-' + c.s + '"><i aria-hidden="true">' + ICON[c.s] + '</i> ' + esc(text) + '</li>';
+    }).join('');
+    var more = cs.length ? '<details class="bd-more"><summary>' + esc(n.warn || n.fail ? t(L, 'allChecks', n) : t(L, 'allOk', { n: cs.length })) + '</summary>' + checksHtml(ctx, cs, names, q.lines, q.payroll) + '</details>' : '';
     var who = q.created_kind === 'admin' ? t(L, 'byAdmin', { n: q.created_name || '—', d: stamp(ctx, q.created_at) }) : t(L, 'by', { n: q.created_name || '—', d: stamp(ctx, q.created_at) });
-    var dec = q.decided_at ? t(L, 'decided', { s: t(L, 'st_' + q.status), n: q.decided_name || '—', d: stamp(ctx, q.decided_at) }) : q.cancelled_at ? t(L, 'st_cancelled') + ' · ' + stamp(ctx, q.cancelled_at) : '';
+    var dec = q.decided_at ? t(L, 'decided', { s: t(L, 'st_' + q.status), n: q.decided_name || '—', d: stamp(ctx, q.decided_at) }) : '';
     return '<article class="bd-req bd-st-' + esc(q.status) + '" data-req="' + q.id + '" style="--tc:' + window.LDLook.colorVar(q.league, q.team.abb) + '">' +
-      '<div class="bd-req-h">' + teamHead(ctx, q.team, q.league) + '<span class="bd-st">' + esc(t(L, 'st_' + q.status)) + '</span>' + resultChip(ctx, q.result) + '</div>' +
-      '<p class="bd-game"><b>' + esc(requestGame(ctx, q)) + '</b> <span class="note">' + esc(t(L, 'reqNo', { id: q.id })) + '</span></p>' +
-      '<ul class="bd-lines">' + lines + '</ul>' + checksHtml(ctx, q.checks, names, q.lines, q.payroll) +
-      (q.note ? '<p class="bd-note"><b>' + esc(t(L, 'noteFrom')) + ' :</b> ' + esc(q.note) + '</p>' : '') +
-      '<p class="note">' + esc(who) + (dec ? '<br>' + esc(dec) : '') + '</p>' + (q.decision_note ? '<p class="bd-note">' + esc(q.decision_note) + '</p>' : '') +
-      (actions || '') + '</article>';
+      '<div class="bd-req-h">' + (o.team === false ? '' : teamHead(ctx, q.team, q.league)) + '<b class="bd-game">' + esc(requestGame(ctx, q)) + '</b>' +
+      '<span class="bd-st">' + esc(t(L, 'st_' + q.status)) + '</span>' + (o.result === false ? '' : resultChip(ctx, q.result)) + '</div>' +
+      '<ul class="bd-lines">' + lines + '</ul>' + (issues ? '<ul class="bd-issues">' + issues + '</ul>' : '') +
+      (q.note ? '<p class="bd-note">' + esc(q.note) + '</p>' : '') + (q.decision_note ? '<p class="bd-note bd-dnote">' + esc(q.decision_note) + '</p>' : '') +
+      more + '<p class="bd-meta">' + esc(t(L, 'reqNo', { id: q.id })) + ' · ' + esc(who) + (dec ? ' · ' + esc(dec) : '') + '</p>' + (actions || '') + '</article>';
   }
 
-  /* ---------- the builder ---------- */
+  /* ---------- the builder: a guided page, one question per step ----------
+   * 1 the game (the next games as cards; any other game or a typed date in a fold), 2 who is absent (tap the players),
+   * 3 a replacement for each (a few suggestions: eligible, best salary that fits; a search for anyone else),
+   * 4 check and send. The stepper on top opens any step already reached. */
+  var GAME_CARDS = 4, SUGGEST = 6;
   function state(o) {
     return { area: o.area || 'captain', teamId: o.teamId || null, teams: o.teams || null, d: null, loading: false, slot: '', date: '', time: '',
-      lines: [], note: '', approve: o.area === 'admin', check: null, msg: null, seq: 0, cseq: 0, saving: false, el: null, ctx: null };
+      lines: [], note: '', approve: o.area === 'admin', check: null, msg: null, seq: 0, cseq: 0, saving: false, el: null, ctx: null,
+      step: 1, q: {}, more: {}, league: o.league || null };
   }
   var slotQuery = function (b) {
     if (b.slot && b.slot !== 'manual') return '&game=' + encodeURIComponent(b.slot);
@@ -183,6 +221,8 @@
   var slotReady = function (b) { return !!slotQuery(b); };
   var complete = function (b) { return b.lines.filter(function (l) { return l.sub_id; }); };
   var errText = function (b, r) { return t(b.ctx.lang, 'e_' + ((r.data && r.data.error) || 'server')); };
+  /* The furthest step the request can be at now. */
+  var reach = function (b) { return !slotReady(b) || !b.d || !b.d.candidates ? 1 : !b.lines.length ? 2 : complete(b).length < b.lines.length ? 3 : 4; };
 
   function load(b) {
     if (!b.teamId) { draw(b); return; }
@@ -194,6 +234,7 @@
       b.d = r.data;
       var on = {}; (b.d.roster || []).forEach(function (p) { on[p.person_id] = 1; });
       b.lines = b.lines.filter(function (l) { return on[l.absent_id]; });
+      if (b.step > reach(b)) b.step = reach(b);
       draw(b); check(b);
     });
   }
@@ -213,11 +254,15 @@
     if (b.slot && b.slot !== 'manual') o.game_id = b.slot; else { o.game_date = b.date; o.game_time = b.time || null; }
     return o;
   }
+  var rosterOf = function (b, id) { return b.d.roster.filter(function (r) { return r.person_id === id; })[0] || {}; };
+  var candOf = function (b, id) { return (b.d.candidates || []).filter(function (c) { return c.id === id; })[0]; };
+  var fold = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
 
-  /* A candidate for one line: 'ok' | 'warn' | 'fail' and why. The server checks again; this only sorts the list. */
+  /* A candidate for one line: 'ok' | 'warn' | 'fail' and why. The server checks again; this only sorts and explains. */
   function judge(b, c, line) {
     var d = b.d, L = b.ctx.lang, why = [], s = 'ok';
     var worse = function (x) { if (x === 'fail' || (x === 'warn' && s === 'ok')) s = x; };
+    if (!c.sex || !rosterOf(b, line.absent_id).sex) { worse('warn'); why.push(t(L, 'rSex')); }
     var age = c.age && c.age[line.sub_pos];
     if (age === 'fail') { worse('fail'); why.push(t(L, 'rAge')); } else if (age === 'warn') { worse('warn'); why.push(t(L, 'rAgeWarn')); }
     if (c.busy) { worse('fail'); why.push(t(L, 'rBusy') + ' (' + c.busy.abb + ')'); }
@@ -233,124 +278,221 @@
   function budget(b, line) {
     var d = b.d, cap = d.rules.salary_cap, pay = 0, sal = {};
     d.roster.forEach(function (r) { pay += r.salary || 0; sal[r.person_id] = r.salary || 0; });
-    var cands = {}; (d.candidates || []).forEach(function (c) { cands[c.id] = c; });
     b.lines.forEach(function (l) {
       pay -= sal[l.absent_id] || 0;
-      if (l !== line && l.sub_id && cands[l.sub_id]) pay += (l.sub_pos === 'g' ? cands[l.sub_id].salary_g : cands[l.sub_id].salary_s) || 0;
+      var c = l !== line && l.sub_id && candOf(b, l.sub_id);
+      if (c) pay += (l.sub_pos === 'g' ? c.salary_g : c.salary_s) || 0;
     });
     return cap - pay;
   }
-  function subSelect(b, line) {
-    var L = b.ctx.lang, used = {};
+  /* The candidates of a line, same sex only, judged: { ok: [], warn: [], fail: [] }; ok sorted by salary (best first). */
+  function groups(b, line) {
+    var used = {}, absSex = rosterOf(b, line.absent_id).sex, g = { ok: [], warn: [], fail: [] };
     b.lines.forEach(function (l) { if (l !== line && l.sub_id) used[l.sub_id] = 1; });
-    var groups = { ok: [], warn: [], fail: [] };
     (b.d.candidates || []).forEach(function (c) {
-      if (used[c.id]) return;
+      if (used[c.id] || (absSex && c.sex && c.sex !== absSex)) return;   // a replacement is always the same sex
       var j = judge(b, c, line);
-      groups[j.s].push('<option value="' + c.id + '"' + (line.sub_id === c.id ? ' selected' : '') + '>' + esc(c.name + ' · ' + (j.sal == null ? t(L, 'noSalary') : money(j.sal)) +
-        (c.team ? ' · ' + c.team.abb : '') + (j.why.length ? ' (' + j.why.join(', ') + ')' : '')) + '</option>');
+      g[j.s].push({ c: c, j: j });
     });
-    var og = function (k, label) { return groups[k].length ? '<optgroup label="' + esc(t(L, label, { n: groups[k].length })) + '">' + groups[k].join('') + '</optgroup>' : ''; };
-    return '<select class="ctl" data-b-sub="' + line.absent_id + '" data-b-key="sub-' + line.absent_id + '" aria-label="' + esc(t(L, 'chooseSub')) + '"><option value="">' + esc(t(L, 'chooseSub')) + '</option>' +
-      og('ok', 'gOk') + og('warn', 'gWarn') + og('fail', 'gFail') + '</select>';
+    var bySal = function (x, y) { return (y.j.sal == null ? -1 : y.j.sal) - (x.j.sal == null ? -1 : x.j.sal) || x.c.name.localeCompare(y.c.name); };
+    g.ok.sort(bySal); g.warn.sort(bySal);
+    return g;
   }
-  function gameSelect(b) {
-    var L = b.ctx.lang, d = b.d, today = d.today, up = [], past = [];
-    d.games.forEach(function (g) {
-      var o = '<option value="' + esc(g.id) + '"' + (b.slot === g.id ? ' selected' : '') + '>' + esc(gameText(b.ctx, d.team.league, d.team.nbhpa_team_id, g)) + '</option>';
-      (g.date >= today ? up : past).push(o);
-    });
-    past.reverse();
-    var sel = '<label>' + esc(t(L, 'game')) + '<select class="ctl" data-b-slot data-b-key="slot"><option value="">' + esc(t(L, 'chooseGame')) + '</option>' +
-      (up.length ? '<optgroup label="' + esc(t(L, 'upcoming')) + '">' + up.join('') + '</optgroup>' : '') +
-      (past.length ? '<optgroup label="' + esc(t(L, 'past')) + '">' + past.join('') + '</optgroup>' : '') +
-      '<option value="manual"' + (b.slot === 'manual' ? ' selected' : '') + '>' + esc(t(L, 'manual')) + '</option></select></label>';
-    var manual = b.slot === 'manual' ? '<span class="ad-pair"><label>' + esc(t(L, 'date')) + '<input class="ctl" type="date" data-b-date data-b-key="date" value="' + esc(b.date) + '"></label>' +
-      '<label>' + esc(t(L, 'time')) + '<input class="ctl" type="time" data-b-time data-b-key="time" value="' + esc(b.time) + '"></label></span>' : '';
-    return sel + manual + (!d.games.length ? '<p class="note">' + esc(t(L, 'noGames')) + '</p>' : '');
+
+  /* ---------- the four steps ---------- */
+  var LABELS = ['s1', 's2', 's3', 's4'];
+  function stepper(b) {
+    var L = b.ctx.lang, r = reach(b), d = b.d;
+    var done = [d && slotReady(b) ? slotText(b) : '', b.lines.length ? t(L, 'nAbsent', { n: b.lines.length }) : '', complete(b).length && complete(b).length === b.lines.length ? t(L, 'nSubs', { n: complete(b).length }) : '', ''];
+    return '<ol class="bd-steps">' + LABELS.map(function (k, i) {
+      var n = i + 1, cls = n === b.step ? ' bd-now' : n < b.step || (n <= r && done[i]) ? ' bd-done' : '';
+      return '<li class="bd-sp' + cls + '"><button type="button" data-b-step="' + n + '"' + (n > r ? ' disabled' : '') + (n === b.step ? ' aria-current="step"' : '') + '>' +
+        '<span class="bd-sn">' + (cls === ' bd-done' ? '✓' : n) + '</span><span class="bd-sl"><b>' + esc(t(L, k)) + '</b>' + (done[i] ? '<small>' + esc(done[i]) + '</small>' : '') + '</span></button></li>';
+    }).join('') + '</ol>';
   }
-  function rulesLine(b) {
-    var r = b.d.rules, L = b.ctx.lang;
-    if (!r) return '';
-    var parts = [];
-    if (r.salary_cap != null) parts.push(t(L, 'capRule', { c: money(r.salary_cap) }));
-    if (r.min_age_m != null || r.min_age_f != null || r.min_age_g != null) parts.push(t(L, 'ageRule', { m: r.min_age_m == null ? '—' : r.min_age_m, f: r.min_age_f == null ? '—' : r.min_age_f, g: r.min_age_g == null ? '—' : r.min_age_g }) + ' ' + t(L, r.age_on === 'year' ? 'ageYear' : 'ageGame'));
-    if (!parts.length && !r.notes) return '';
-    return '<p class="note bd-rules"><b>' + esc(t(L, 'rules')) + ' :</b> ' + esc(parts.join(' · ')) + (r.notes ? (parts.length ? ' · ' : '') + esc(r.notes) : '') + '</p>';
+  function slotText(b) {
+    var d = b.d;
+    if (b.slot === 'manual') return day(b.ctx, b.date) + (b.time ? ' · ' + b.time : '');
+    var g = d.games.filter(function (x) { return x.id === b.slot; })[0];
+    return g ? day(b.ctx, g.date) + (g.time ? ' · ' + g.time : '') : '';
+  }
+  function gameCard(b, g) {
+    var d = b.d, l = leagueOf(b.ctx, d.team.league) || { teams: [] }, isHome = g.home === d.team.nbhpa_team_id;
+    var opp = (l.teams || []).filter(function (x) { return x.id === (isHome ? g.away : g.home); })[0] || { abb: '?' };
+    return '<button type="button" class="bd-gcard' + (b.slot === g.id ? ' bd-on' : '') + '" data-b-game="' + esc(g.id) + '" aria-pressed="' + (b.slot === g.id) + '">' +
+      '<span class="bd-gday">' + esc(day(b.ctx, g.date)) + '</span><span class="bd-gtime">' + esc(g.time || '') + '</span>' +
+      '<span class="bd-gopp">' + esc(t(b.ctx.lang, isHome ? 'vs' : 'at')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, d.team.league, 'sm') + '<b>' + esc(opp.name || opp.abb) + '</b></span>' +
+      (g.venue ? '<span class="note">' + esc(g.venue + (g.court ? ' ' + g.court : '')) + '</span>' : '') + '</button>';
+  }
+  function step1(b) {
+    var L = b.ctx.lang, d = b.d, up = d.games.filter(function (g) { return g.date >= d.today; }), past = d.games.filter(function (g) { return g.date < d.today; }).reverse();
+    var cards = up.slice(0, GAME_CARDS), inCards = cards.some(function (g) { return g.id === b.slot; });
+    var opt = function (g) { return '<option value="' + esc(g.id) + '"' + (b.slot === g.id ? ' selected' : '') + '>' + esc(gameText(b.ctx, d.team.league, d.team.nbhpa_team_id, g)) + '</option>'; };
+    var other = '<label>' + esc(t(L, 'game')) + '<select class="ctl" data-b-slot data-b-key="slot"><option value="">' + esc(t(L, 'chooseGame')) + '</option>' +
+      (up.length > GAME_CARDS ? '<optgroup label="' + esc(t(L, 'upcoming')) + '">' + up.slice(GAME_CARDS).map(opt).join('') + '</optgroup>' : '') +
+      (past.length ? '<optgroup label="' + esc(t(L, 'past')) + '">' + past.map(opt).join('') + '</optgroup>' : '') +
+      '<option value="manual"' + (b.slot === 'manual' ? ' selected' : '') + '>' + esc(t(L, 'manual')) + '</option></select></label>' +
+      (b.slot === 'manual' ? '<span class="ad-pair"><label>' + esc(t(L, 'date')) + '<input class="ctl" type="date" data-b-date data-b-key="date" value="' + esc(b.date) + '"></label>' +
+        '<label>' + esc(t(L, 'time')) + '<input class="ctl" type="time" data-b-time data-b-key="time" value="' + esc(b.time) + '"></label></span>' : '');
+    return '<h2 class="bd-q">' + esc(t(L, 'q1')) + '</h2>' +
+      (cards.length ? '<div class="bd-gcards">' + cards.map(function (g) { return gameCard(b, g); }).join('') + '</div>' : '<p class="note">' + esc(t(L, 'noGames')) + '</p>') +
+      '<details class="bd-other"' + (!cards.length || (b.slot && !inCards) ? ' open' : '') + '><summary>' + esc(t(L, 'otherGame')) + '</summary><div class="bd-row">' + other + '</div></details>' +
+      nav(b, 0, slotReady(b) && b.d.candidates ? 2 : 0);
+  }
+  function step2(b) {
+    var L = b.ctx.lang, d = b.d;
+    if (!d.roster.length) return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'emptyRoster')) + '</p>' + nav(b, 1, 0);
+    return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'q2hint')) + '</p><div class="bd-tiles">' + d.roster.map(function (p) {
+      var on = b.lines.some(function (l) { return l.absent_id === p.person_id; });
+      return '<button type="button" class="bd-tile' + (on ? ' bd-on' : '') + '" data-b-absent="' + p.person_id + '" data-b-key="abs-' + p.person_id + '" aria-pressed="' + on + '">' +
+        '<span class="bd-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></span></button>';
+    }).join('') + '</div>' + nav(b, 1, b.lines.length ? 3 : 0, b.lines.length ? t(L, 'nextN', { n: b.lines.length }) : '');
+  }
+  function candCard(b, line, x, chosen) {
+    var c = x.c, j = x.j, L = b.ctx.lang;
+    var tag = c.team ? '<span class="bd-ctm">' + window.LDLook.crest({ abb: c.team.abb }, b.d.team.league, 'sm') + esc(c.team.abb) + '</span>' : '<span class="bd-ctm note">' + esc(t(L, 'noTeam')) + '</span>';
+    return '<button type="button" class="bd-cand bd-' + j.s + (chosen ? ' bd-on' : '') + '" data-b-pick="' + line.absent_id + ':' + c.id + '"' + (chosen ? ' aria-pressed="true"' : '') + '>' +
+      '<span class="bd-cn"><b>' + esc(c.name) + '</b>' + tag + '</span><span class="bd-cs">' + esc(j.sal == null ? t(L, 'noSalary') : money(j.sal)) + '</span>' +
+      (j.why.length ? '<span class="bd-cw">' + ICON[j.s] + ' ' + esc(j.why.join(', ')) + '</span>' : '<span class="bd-cw bd-ok">✓ ' + esc(t(L, 'fits')) + '</span>') + '</button>';
+  }
+  function lineBlock(b, line) {
+    var L = b.ctx.lang, p = rosterOf(b, line.absent_id), g = groups(b, line), key = line.absent_id;
+    var head = '<div class="bd-lh"><h3>' + esc(t(L, 'replaceX', { n: p.name })) + ' <small>' + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></h3>' +
+      '<div class="seg bd-pos" role="group" aria-label="' + esc(t(L, 'subPos')) + '">' + ['s', 'g'].map(function (k) {
+        return '<button type="button" data-b-pos="' + key + ':' + k + '" aria-pressed="' + (line.sub_pos === k) + '">' + esc(posName(b.ctx, k)) + '</button>'; }).join('') + '</div></div>';
+    var cap = b.d.rules && b.d.rules.salary_cap != null;
+    var bud = cap ? '<p class="note">' + esc(t(L, 'budget', { v: money(budget(b, line)) })) + '</p>' : '';
+    if (line.sub_id) {
+      var c = candOf(b, line.sub_id);
+      return '<section class="bd-line bd-set">' + head + (c ? candCard(b, line, { c: c, j: judge(b, c, line) }, true) : '') +
+        '<button type="button" class="lnk ad-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
+    }
+    var q = b.q[key] || '', list;
+    if (q) {
+      var all = g.ok.concat(g.warn, g.fail).filter(function (x) { return fold(x.c.name).indexOf(fold(q)) >= 0; }).slice(0, 12);
+      list = all.length ? '<div class="bd-cands">' + all.map(function (x) { return candCard(b, line, x); }).join('') + '</div>' : '<p class="note">' + esc(t(L, 'noMatch')) + '</p>';
+    } else {
+      var shown = b.more[key] ? g.ok : g.ok.slice(0, SUGGEST);
+      list = (shown.length ? '<p class="bd-sub-h">' + esc(t(L, 'suggested')) + '</p><div class="bd-cands">' + shown.map(function (x) { return candCard(b, line, x); }).join('') + '</div>' : '<p class="note">' + esc(t(L, 'noneOk')) + '</p>') +
+        (g.ok.length > shown.length ? '<button type="button" class="lnk ad-linkbtn" data-b-more="' + key + '">' + esc(t(L, 'seeMore', { n: g.ok.length - shown.length })) + '</button>' : '') +
+        (g.warn.length ? '<details class="bd-other"><summary>' + esc(t(L, 'toCheck', { n: g.warn.length })) + '</summary><div class="bd-cands">' + g.warn.map(function (x) { return candCard(b, line, x); }).join('') + '</div></details>' : '');
+    }
+    return '<section class="bd-line">' + head + bud +
+      '<input class="ctl bd-search" type="search" data-b-q="' + key + '" data-b-key="q-' + key + '" value="' + esc(q) + '" placeholder="' + esc(t(L, 'search')) + '" aria-label="' + esc(t(L, 'search')) + '">' + list + '</section>';
+  }
+  function step3(b) {
+    var L = b.ctx.lang, n = complete(b).length;
+    return '<h2 class="bd-q">' + esc(t(L, b.lines.length > 1 ? 'q3n' : 'q3')) + '</h2>' + b.lines.map(function (l) { return lineBlock(b, l); }).join('') +
+      nav(b, 2, n && n === b.lines.length ? 4 : 0);
+  }
+  function step4(b) {
+    var L = b.ctx.lang, d = b.d, c = b.check, lines = complete(b);
+    var names = lines.map(function (l) { return { a: rosterOf(b, l.absent_id).name, s: (candOf(b, l.sub_id) || {}).name }; });
+    var sums = lines.map(function (l) { var x = candOf(b, l.sub_id) || {}; return { absent_salary: rosterOf(b, l.absent_id).salary, sub_salary: l.sub_pos === 'g' ? x.salary_g : x.salary_s }; });
+    var summary = '<div class="bd-sum"><p><b>' + esc(slotText(b)) + '</b>' + (b.slot !== 'manual' ? ' · ' + esc(gameText(b.ctx, d.team.league, d.team.nbhpa_team_id, d.games.filter(function (g) { return g.id === b.slot; })[0] || {}).split(' · ').slice(2).join(' · ')) : '') + '</p>' +
+      '<ul class="bd-lines">' + lines.map(function (l, i) {
+        return '<li>' + esc(names[i].a) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + esc(names[i].s) + '</b> <span class="note">' + esc(posName(b.ctx, l.sub_pos)) + ' · ' + esc(money(sums[i].absent_salary)) + ' → ' + esc(money(sums[i].sub_salary)) + '</span></li>';
+      }).join('') + '</ul></div>';
+    var checks = '';
+    if (!c) checks = '<p class="note">' + esc(t(L, 'loading')) + '</p>';
+    else {
+      var outSum = 0, inSum = 0; sums.forEach(function (x) { outSum += x.absent_salary || 0; inSum += x.sub_salary || 0; });
+      var issues = c.checks.filter(function (x) { return x.s !== 'ok'; }).map(function (x) {
+        return '<li class="bd-' + x.s + '"><i aria-hidden="true">' + ICON[x.s] + '</i> ' + esc(x.k === 'cap' && c.payroll ? capText(b.ctx, c.payroll, outSum, inSum) : explain(b.ctx, x, names)) + '</li>'; }).join('');
+      var capOk = c.checks.filter(function (x) { return x.k === 'cap' && x.s === 'ok'; })[0];
+      checks = '<div class="bd-verdict bd-' + c.result + '">' + resultChip(b.ctx, c.result) + '</div>' +
+        (issues ? '<ul class="bd-issues">' + issues + '</ul>' : '') + (capOk ? '<p class="note">' + esc(capText(b.ctx, c.payroll, outSum, inSum)) + '</p>' : '') +
+        '<details class="bd-more"><summary>' + esc(t(L, 'allChecks', countBy(c.checks))) + '</summary>' + checksHtml(b.ctx, c.checks, names, sums, c.payroll) + '</details>';
+    }
+    var noteReq = c && c.result === 'fail';
+    return '<h2 class="bd-q">' + esc(t(L, 'q4')) + '</h2>' + summary + checks +
+      '<label class="bd-notel">' + esc(t(L, 'note')) + '<textarea class="ctl" rows="2" maxlength="1000" data-b-note data-b-key="note">' + esc(b.note) + '</textarea></label>' +
+      (noteReq ? '<p class="note bd-fail">' + esc(t(L, 'noteReq')) + '</p>' : '') +
+      (b.area === 'admin' ? '<label class="bd-check"><input type="checkbox" data-b-approve' + (b.approve ? ' checked' : '') + '> ' + esc(t(L, 'approveNow')) + '</label>' : '') +
+      '<div class="bd-nav"><button type="button" class="lnk ad-linkbtn" data-b-step="3">← ' + esc(t(L, 'prev')) + '</button>' +
+      '<button class="ad-btn" type="submit"' + (!c || b.saving ? ' disabled' : '') + '>' + esc(t(L, b.area === 'admin' ? 'save' : 'send')) + '</button></div>';
+  }
+  var countBy = function (cs) { var n = { ok: 0, warn: 0, fail: 0 }; cs.forEach(function (c) { n[c.s]++; }); return n; };
+  /* Back / next buttons of a step. next = the step to go to (0: not yet). */
+  function nav(b, prev, next, label) {
+    var L = b.ctx.lang;
+    return '<div class="bd-nav">' + (prev ? '<button type="button" class="lnk ad-linkbtn" data-b-step="' + prev + '">← ' + esc(t(L, 'prev')) + '</button>' : '<span></span>') +
+      '<button type="button" class="ad-btn" data-b-step="' + (next || b.step + 1) + '"' + (next ? '' : ' disabled') + '>' + esc(label || t(L, 'next')) + '</button></div>';
   }
   function html(b) {
     var L = b.ctx.lang, d = b.d, h = '';
     if (b.msg) h += '<p class="ad-msg ad-err" role="alert">' + esc(b.msg) + '</p>';
-    if (b.teams && b.teams.length > 1) {
-      h += '<label class="bd-team">' + esc(t(L, 'team')) + '<select class="ctl" data-b-team data-b-key="team"><option value="">' + esc(t(L, 'chooseTeam')) + '</option>' + b.teams.map(function (x) {
-        return '<option value="' + x.id + '"' + (x.id === b.teamId ? ' selected' : '') + '>' + esc(x.name + ' (' + x.abb + ')') + '</option>'; }).join('') + '</select></label>';
+    if (b.teams && b.teams.length > 1 && !b.teamId) {
+      return h + '<h2 class="bd-q">' + esc(t(L, 'q0')) + '</h2><div class="bd-tiles">' + b.teams.map(function (x) {
+        return '<button type="button" class="bd-tile" data-b-team="' + x.id + '"><span>' + (b.league ? window.LDLook.crest({ abb: x.abb }, b.league, 'sm') : '') + '<b>' + esc(x.name) + '</b><small>' + esc(x.abb) + '</small></span></button>';
+      }).join('') + '</div>';
     }
     if (!b.teamId) return h;
     if (!d) return h + (b.loading ? '<p class="note">' + esc(t(L, 'loading')) + '</p>' : '');
-    if (!(b.teams && b.teams.length > 1)) h += '<p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league) + '</p>';
-    h += rulesLine(b);
-    h += '<section class="bd-step"><h3 class="ad-h3">' + esc(t(L, 'step1')) + '</h3><div class="bd-row">' + gameSelect(b) + '</div></section>';
-    h += '<section class="bd-step"><h3 class="ad-h3">' + esc(t(L, 'step2')) + '</h3>';
-    if (!d.roster.length) h += '<p class="note">' + esc(t(L, 'emptyRoster')) + '</p>';
-    else if (!slotReady(b)) h += '<p class="note">' + esc(t(L, 'pickGameFirst')) + '</p>';
-    else if (!d.candidates) h += '<p class="note">' + esc(t(L, 'loading')) + '</p>';
-    else h += '<ul class="bd-roster">' + d.roster.map(function (p) {
-      var line = b.lines.filter(function (l) { return l.absent_id === p.person_id; })[0];
-      return '<li class="bd-pl' + (line ? ' bd-on' : '') + '"><label class="bd-abs"><input type="checkbox" data-b-absent="' + p.person_id + '" data-b-key="abs-' + p.person_id + '"' + (line ? ' checked' : '') + '>' +
-        '<span><b>' + esc(p.name) + '</b> <span class="note">' + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</span></span></label>' +
-        (line ? '<div class="bd-sub">' + subSelect(b, line) + '<select class="ctl ad-sm" data-b-pos="' + p.person_id + '" data-b-key="pos-' + p.person_id + '" aria-label="' + esc(t(L, 'subPos')) + '">' +
-          '<option value="s"' + (line.sub_pos === 's' ? ' selected' : '') + '>' + esc(t(L, 'posS')) + '</option><option value="g"' + (line.sub_pos === 'g' ? ' selected' : '') + '>' + esc(t(L, 'posG')) + '</option></select></div>' : '') + '</li>';
-    }).join('') + '</ul>';
-    h += '</section>';
-    var c = b.check, lines = complete(b);
-    if (c) {
-      var cands = {}; (d.candidates || []).forEach(function (x) { cands[x.id] = x; });
-      var ros = {}; d.roster.forEach(function (x) { ros[x.person_id] = x; });
-      var names = lines.map(function (l) { return { a: (ros[l.absent_id] || {}).name, s: (cands[l.sub_id] || {}).name }; });
-      var sums = lines.map(function (l) { var x = cands[l.sub_id] || {}; return { absent_salary: (ros[l.absent_id] || {}).salary, sub_salary: l.sub_pos === 'g' ? x.salary_g : x.salary_s }; });
-      h += '<section class="bd-step"><h3 class="ad-h3">' + esc(t(L, 'step3')) + ' ' + resultChip(b.ctx, c.result) + '</h3>' + checksHtml(b.ctx, c.checks, names, sums, c.payroll) + '</section>';
-    }
-    var need = !slotReady(b) ? '' : !b.lines.length ? t(L, 'needLines') : lines.length < b.lines.length ? t(L, 'needSub') : '';
-    var noteReq = c && c.result === 'fail';
-    h += '<label class="bd-notel">' + esc(t(L, 'note')) + '<textarea class="ctl" rows="2" maxlength="1000" data-b-note data-b-key="note"' + (noteReq ? ' required' : '') + '>' + esc(b.note) + '</textarea></label>' +
-      (noteReq ? '<p class="note bd-fail">' + esc(t(L, 'noteReq')) + '</p>' : '') +
-      (b.area === 'admin' ? '<label class="bd-check"><input type="checkbox" data-b-approve' + (b.approve ? ' checked' : '') + '> ' + esc(t(L, 'approveNow')) + '</label>' : '') +
-      (need ? '<p class="note">' + esc(need) + '</p>' : '') +
-      '<div class="ad-modal-f"><button type="button" class="lnk ad-linkbtn" data-act="close-modal">' + esc(t(L, 'cancel')) + '</button>' +
-      '<button class="ad-btn" type="submit"' + (need || !slotReady(b) || !lines.length || b.saving ? ' disabled' : '') + '>' + esc(t(L, b.area === 'admin' ? 'save' : 'send')) + '</button></div>';
+    h += '<div class="bd-top"><p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league) +
+      (b.teams && b.teams.length > 1 ? ' <button type="button" class="lnk ad-linkbtn" data-b-team="">' + esc(t(L, 'changeTeam')) + '</button>' : '') + '</p>' +
+      '<button type="button" class="lnk ad-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></div>' + rulesLine(b) + stepper(b);
+    h += '<div class="bd-body">' + (b.step === 1 ? step1(b) : b.step === 2 ? step2(b) : b.step === 3 ? step3(b) : step4(b)) + '</div>';
     return h;
+  }
+  function rulesLine(b) {
+    var r = b.d.rules, L = b.ctx.lang;
+    var parts = [t(L, 'sameSex')];
+    if (r && r.salary_cap != null) parts.push(t(L, 'capRule', { c: money(r.salary_cap) }));
+    if (r && (r.min_age_m != null || r.min_age_f != null || r.min_age_g != null)) parts.push(t(L, 'ageRule', { m: r.min_age_m == null ? '—' : r.min_age_m, f: r.min_age_f == null ? '—' : r.min_age_f, g: r.min_age_g == null ? '—' : r.min_age_g }) + ' ' + t(L, r.age_on === 'year' ? 'ageYear' : 'ageGame'));
+    return '<p class="note bd-rules"><b>' + esc(t(L, 'rules')) + ' :</b> ' + esc(parts.join(' · ')) + (r && r.notes ? ' · ' + esc(r.notes) : '') + '</p>';
   }
   function draw(b) {
     var el = b.el;
     if (!el || !el.isConnected) return;
-    var a = document.activeElement, key = a && el.contains(a) ? a.getAttribute('data-b-key') : null;
+    var a = document.activeElement, key = a && el.contains(a) ? a.getAttribute('data-b-key') : null, pos = null;
+    try { pos = key && a.selectionStart; } catch (e) { pos = null; }
     el.innerHTML = '<form class="ad-form ad-col bd" data-b-form novalidate>' + html(b) + '</form>';
-    if (key) { var n = el.querySelector('[data-b-key="' + key + '"]'); if (n) n.focus(); }
+    if (key) { var n = el.querySelector('[data-b-key="' + key + '"]'); if (n) { n.focus(); try { if (pos != null) n.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
+  }
+  function go(b, n) {
+    b.step = Math.max(1, Math.min(n, reach(b)));
+    draw(b);
+    var s = b.el && b.el.querySelector('.bd-steps');
+    if (s && s.scrollIntoView && s.getBoundingClientRect && s.getBoundingClientRect().top < 0) s.scrollIntoView({ block: 'start' });
   }
   function bind(el) {
     if (el.__ldbBound) return;
     el.__ldbBound = true;
-    el.addEventListener('change', function (e) {
-      var b = el.__ldb, x = e.target;
-      if (x.hasAttribute('data-b-team')) { b.teamId = Number(x.value) || null; b.d = null; b.slot = ''; b.lines = []; b.check = null; b.msg = null; load(b); return; }
-      if (x.hasAttribute('data-b-slot')) { b.slot = x.value; b.check = null; b.msg = null; if (b.slot !== 'manual' || slotReady(b)) load(b); else { b.d.candidates = null; draw(b); } return; }
-      if (x.hasAttribute('data-b-date') || x.hasAttribute('data-b-time')) { b.date = el.querySelector('[data-b-date]').value; b.time = el.querySelector('[data-b-time]').value; if (slotReady(b)) load(b); return; }
+    el.addEventListener('click', function (e) {
+      var b = el.__ldb, x = e.target.closest && e.target.closest('[data-b-team],[data-b-game],[data-b-absent],[data-b-pick],[data-b-unpick],[data-b-pos],[data-b-more],[data-b-step],[data-b-cancel]');
+      if (!x || x.disabled) return;
+      var v = function (a) { return x.getAttribute(a); }, ln = function (id) { return b.lines.filter(function (l) { return l.absent_id === Number(id); })[0]; };
+      if (x.hasAttribute('data-b-cancel')) { if (b.ctx.onCancel) b.ctx.onCancel(); return; }
+      if (x.hasAttribute('data-b-team')) { b.teamId = Number(v('data-b-team')) || null; b.d = null; b.slot = ''; b.lines = []; b.check = null; b.msg = null; b.step = 1; load(b); return; }
+      if (x.hasAttribute('data-b-game')) { b.slot = v('data-b-game'); b.check = null; b.msg = null; b.step = 2; load(b); return; }
+      if (x.hasAttribute('data-b-step')) { go(b, Number(v('data-b-step'))); return; }
       if (x.hasAttribute('data-b-absent')) {
-        var pid = Number(x.getAttribute('data-b-absent'));
-        if (x.checked) { var p = b.d.roster.filter(function (r) { return r.person_id === pid; })[0]; b.lines.push({ absent_id: pid, sub_id: null, sub_pos: p ? p.pos : 's' }); }
-        else b.lines = b.lines.filter(function (l) { return l.absent_id !== pid; });
+        var pid = Number(v('data-b-absent'));
+        if (ln(pid)) b.lines = b.lines.filter(function (l) { return l.absent_id !== pid; });
+        else b.lines.push({ absent_id: pid, sub_id: null, sub_pos: rosterOf(b, pid).pos || 's' });
         draw(b); check(b); return;
       }
-      var ln = function (a) { var id = Number(x.getAttribute(a)); return b.lines.filter(function (l) { return l.absent_id === id; })[0]; };
-      if (x.hasAttribute('data-b-sub')) { ln('data-b-sub').sub_id = Number(x.value) || null; draw(b); check(b); return; }
-      if (x.hasAttribute('data-b-pos')) { ln('data-b-pos').sub_pos = x.value === 'g' ? 'g' : 's'; draw(b); check(b); return; }
-      if (x.hasAttribute('data-b-approve')) { b.approve = x.checked; }
+      if (x.hasAttribute('data-b-pick')) { var pk = v('data-b-pick').split(':'); ln(pk[0]).sub_id = Number(pk[1]); b.q[pk[0]] = ''; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-unpick')) { ln(v('data-b-unpick')).sub_id = null; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-pos')) { var pp = v('data-b-pos').split(':'); ln(pp[0]).sub_pos = pp[1] === 'g' ? 'g' : 's'; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-more')) { b.more[v('data-b-more')] = true; draw(b); }
     });
-    el.addEventListener('input', function (e) { if (e.target.hasAttribute('data-b-note')) el.__ldb.note = e.target.value; });
+    el.addEventListener('change', function (e) {
+      var b = el.__ldb, x = e.target;
+      if (x.hasAttribute('data-b-slot')) { b.slot = x.value; b.check = null; b.msg = null; if (b.slot && b.slot !== 'manual') { b.step = 2; load(b); } else { if (b.d) b.d.candidates = null; draw(b); } return; }
+      if (x.hasAttribute('data-b-date') || x.hasAttribute('data-b-time')) { b.date = el.querySelector('[data-b-date]').value; b.time = el.querySelector('[data-b-time]').value; if (slotReady(b)) load(b); return; }
+      if (x.hasAttribute('data-b-approve')) b.approve = x.checked;
+    });
+    el.addEventListener('input', function (e) {
+      var b = el.__ldb, x = e.target;
+      if (x.hasAttribute('data-b-note')) b.note = x.value;
+      if (x.hasAttribute('data-b-q')) { b.q[x.getAttribute('data-b-q')] = x.value; draw(b); }
+    });
     el.addEventListener('submit', function (e) {
       e.preventDefault();
       var b = el.__ldb;
-      if (b.saving) return;
+      if (b.saving || b.step !== 4) return;
       var o = body(b); o.note = b.note.trim() || null; if (b.area === 'admin') o.approve = !!b.approve;
       b.saving = true; b.msg = null; draw(b);
       b.ctx.api('/replacements', 'POST', o).then(function (r) {
