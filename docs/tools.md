@@ -73,7 +73,25 @@ If it says "address in use", another copy is still running: close that window fi
 - Queues (1 million operations a month) and Durable Objects: background jobs and notifications later.
 See the pricing pages before relying on numbers; they change.
 
+## Requirements from the owner: league player lists, rosters, salary, replacements (2026-10-16)
+Source: the owner. Items marked *to validate* are not confirmed by the league yet.
+- **The league keeps the truth:** a player list and the team rosters, today in an Excel file. The site today only knows who played (NBHPA game sheets); a registered player who has not played is invisible.
+- **Goal:** the league maintains its player lists and rosters **in the app**, with an **import tool** (Excel first; maybe a public Google Sheet). The owner does not have the file yet; the import format waits for it.
+- **Player list per section and per season**, with **persistence across seasons** (one person, many seasons: history for data nerds).
+- **Rosters:** per season, per team. **Admins only** edit them. Captains **submit replacements** (subs) for admin approval.
+- **Draft "salary"** = our internal rating of a player, the big item. *Retro today (to validate):* a **salary cap per team**; a replacement must **fit under the cap**; and the replacement must meet an **age rule**: men 40+, women 35+, goalies 30+ (*goalie age to validate*). Other leagues may use age, salary, both or neither.
+- **Game-night lineups:** come from NBHPA data once NBHPA accounts are required (next season). This season: optional, from the league data.
+- **Next season:** an NBHPA account is required for every player (official launch). API access is under discussion with NBHPA.
+- **Later: a draft platform:** captains (or admins on their behalf) see ratings, stats, availability, picks and draft order, and make picks. For now only the resulting teams matter.
+
+### Open design questions
+1. **Who gives person ids** once admins can add people the NBHPA data has not seen (registered, not played)? Today `scraper/registry.mjs` assigns them into a public git file. Proposal: D1 becomes the source of truth for people when the tools go live; `registry/people.json` becomes an export for the static site.
+2. **Age data is sensitive personal data** (Law 25). Store the least that works: a birth year, or only "meets the age rule" per season, set by an admin. Which cut-off date (season start? January 1)?
+3. **Salary per season** (it can change) and per section or league. Public on the stats site (data nerds) or private to admins and captains?
+4. **Cap per team:** one number per league and season? Does the replacement's salary replace the absent player's salary in the sum?
+
 ## Next
+- Roster layer (admin only): people and league player lists per section and season, rosters per team, seeded from the current data for local tests; import tool when the league file arrives.
 - Captain area (`/captain/`, `/api/captain/...`): sign-in with the captain kind, "my teams this season".
 - First captain tool: substitute request with pre-validation (needs the sub rules from the owner) and an admin approval queue.
 - Manage admins from the admin area (today: the `add-admin` script).
