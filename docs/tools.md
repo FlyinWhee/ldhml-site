@@ -30,6 +30,15 @@ browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/...
 - **Audit:** every admin change (and sign-in) is a row in `audit`.
 - **Personal data** (Quebec Law 25): emails and names of admins and captains only. Never in git. Before going live: a short privacy note, a named person in charge, and a way to delete an account.
 
+## Try it on this computer (owner)
+1. Double-click `scripts\tools-dev.bat` (or run it in a terminal).
+2. The first time, it asks for an email: type yours. It becomes a **local** admin (only on this PC; nothing is sent). Press Enter to skip on later runs.
+3. The browser opens http://localhost:8787/admin/ after a few seconds (reload if it was too early).
+4. Type the same email, click "Recevoir un code". No email is sent locally: the code shows in a dashed box on the page and in the black window. Type it.
+5. Try it: create the season (the name and NBHPA number are filled in), create a captain, give access to a team, look at the Log tab.
+6. Stop with Ctrl+C in the black window (answer O/Y if asked). The data stays in `tools\.wrangler\` on this PC (git-ignored); delete that folder to start from zero.
+If it says "address in use", another copy is still running: close that window first.
+
 ## Local development and tests
 - `npm test` includes `tools/test/test-tools.mjs`: the real Worker on an in-memory SQLite that behaves like D1 (`node:sqlite`, Node 22.5+), plus the admin page in jsdom wired to the Worker.
 - `npm run tools:dev` runs the Worker in Cloudflare's real runtime (`workerd`, via `wrangler dev`) with a local D1. Create `tools/.dev.vars` first (see `tools/CLAUDE.md`), then `npm run tools:add-admin -- you@example.com "Name"`. The code appears in the terminal and, on localhost only, on the page.
@@ -46,6 +55,7 @@ browser ── /admin/ (pages, static assets: dist-tools/) ── /api/admin/...
 8. Later: deploy from GitHub Actions on push to `main` (a Cloudflare API token as a GitHub secret). Deploying to Cloudflare is fine; only fetching NBHPA from the cloud is blocked.
 
 ## Workers Paid ($5 a month): what it adds for us
+**Decided (2026-10-16): we will use Workers Paid and Cloudflare Email Service (no Resend), set up later.** Until then everything is built and tested locally.
 - Email Service: 3,000 outbound emails a month included (one vendor instead of Resend).
 - No daily request cap (10 million a month included), CPU up to 30 s per request (Free: 10 ms) and longer Cron Triggers: room for heavier checks (sub pre-validation, imports).
 - D1: 10 GB per database (Free: 500 MB), 25 billion rows read and 50 million written a month, 30 days of Time Travel (point-in-time restore; Free: 7).

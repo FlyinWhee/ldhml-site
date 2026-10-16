@@ -28,6 +28,7 @@ wrangler.jsonc     Worker config. No secrets in it.
 ## Commands
 ```
 npm run tools:test        build + tools tests (also part of npm test; Node 22.5+)
+scripts\tools-dev.bat     Windows one click: .dev.vars, local admin, build, local Worker, opens the browser
 npm run tools:dev         build, local D1 schema, local Worker at http://localhost:8787/admin/ (needs tools/.dev.vars)
 npm run tools:add-admin -- you@example.com "Name"            local database
 npm run tools:add-admin -- you@example.com "Name" --remote   real database

@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const WRANGLER = 'wrangler@4.151.1'; // same version as the npm scripts (package.json)
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const remote = process.argv.includes('--remote');
 const email = String(args[0] || '').trim().toLowerCase(), name = String(args[1] || '').trim();
@@ -22,6 +23,6 @@ const config = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'wr
 // The SQL goes through a temporary file: shells (Windows cmd especially) mangle quotes on the command line.
 const file = path.join(mkdtempSync(path.join(tmpdir(), 'ldhml-')), 'add-admin.sql');
 writeFileSync(file, sql);
-const r = spawnSync('npx', ['wrangler', 'd1', 'execute', 'ldhml-tools', remote ? '--remote' : '--local', '-c', config, '--file', file], { stdio: 'inherit', shell: process.platform === 'win32' });
+const r = spawnSync('npx', [WRANGLER, 'd1', 'execute', 'ldhml-tools', remote ? '--remote' : '--local', '-c', config, '--file', file], { stdio: 'inherit', shell: process.platform === 'win32' });
 rmSync(path.dirname(file), { recursive: true, force: true });
 process.exit(r.status ?? 1);
