@@ -239,7 +239,9 @@ const seasonExport = {
   generatedAt: new Date().toISOString(), leagueId: cfg.leagueId, seasonId: cfg.seasonId, seasonName: cfg.seasonName, siteUrl: cfg.siteUrl,
   sections: cfg.sections.map((s) => ({ key: s.key, path: s.path, name: s.name })),
   leagues: leagues.map(({ lg, data }) => ({ slug: lg.slug, section: lg.section, path: pathOf(lg), sectionPath: sectionLinks[lg.section].path, name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
-    teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })) })),
+    teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })),
+    // The schedule (the replacement builder offers the team's games). Times are Toronto local time.
+    games: (data.games || []).map((g) => ({ id: g.id, date: g.date, time: g.time || null, venue: g.venue || '', court: g.court || '', away: g.away, home: g.home, cancelled: !!g.cancelled })) })),
   people: Object.values(people).filter((p) => /^L\d+$/.test(p.id)).map((p) => ({ id: p.id, name: p.name, sex: p.sex,
     lg: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, m.teams]))),   // teams, main team first
     pos: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, (m.s ? 's' : '') + (m.g ? 'g' : '')]))) }))

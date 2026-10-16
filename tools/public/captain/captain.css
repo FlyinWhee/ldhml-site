@@ -1,0 +1,12 @@
+/* LDHML captain area. On top of assets/site.css, admin/admin.css (the tool look) and shared/builder.css. */
+.cp-team { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 6px 0 4px; }
+.cp-team .tcell { font-size: 22px; }
+.cp-switch { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.cp-switch button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 3px; padding: 4px 10px 4px 4px; cursor: pointer; font: 500 15px/1.2 var(--f-text); }
+.cp-switch button[aria-pressed="true"] { border-color: var(--ball); outline: 2px solid var(--ball); outline-offset: -1px; }
+.cp-switch button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cp-ask { margin: 12px 0 18px; }
+.cp-ask .ad-btn { min-height: 52px; font-size: 22px; padding: 0 26px; }
+.cp-roster { max-width: 560px; }
+@media (max-width: 600px) { .cp-ask .ad-btn { width: 100%; } }
+@media (max-width: 520px) { .cp-team .tcell .crest { display: inline-grid; } }

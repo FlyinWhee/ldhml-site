@@ -112,3 +112,8 @@ html.ad-modal-open, html.ad-modal-open body { overflow: hidden; }
 .ad-or { border: 1px dashed var(--line); border-radius: 3px; padding: 6px 12px 10px; display: grid; gap: 10px; }
 .ad-or legend { padding: 0 6px; font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 #ad-accounts .lgbs { margin-top: 4px; }
+/* ---------- replacements ---------- */
+.ad-lgbtn { position: relative; }
+.ad-cnt { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ball); color: var(--on-ball); font: 700 12px/18px var(--f-text); text-align: center; }
+.ad-h3-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ad-h3-row .ad-btn { letter-spacing: .04em; }

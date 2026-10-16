@@ -3,6 +3,7 @@ import { json, fail, readJson, cleanEmail, cleanText, isLocal, now } from './htt
 import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearCookie } from './auth.js';
 import { sendCode } from './email.js';
 import { rosterApi } from './roster-api.js';
+import { replacementApi } from './replacements.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -124,6 +125,7 @@ export async function adminApi(req, env, url) {
       env.DB.prepare("DELETE FROM sessions WHERE kind = 'captain' AND user_id = ?").bind(id),
       env.DB.prepare("DELETE FROM login_codes WHERE kind = 'captain' AND user_id = ?").bind(id),
       env.DB.prepare('DELETE FROM captain_access WHERE captain_id = ?').bind(id),
+      env.DB.prepare("UPDATE replacements SET created_by = NULL WHERE created_kind = 'captain' AND created_by = ?").bind(id),
       env.DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('captain:' + id),
       ...accessIds.map((a) => env.DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind(a)),
       env.DB.prepare('DELETE FROM captains WHERE id = ?').bind(id)
@@ -140,8 +142,10 @@ export async function adminApi(req, env, url) {
     if (!await env.DB.prepare('SELECT 1 FROM seasons WHERE id = ?').bind(id).first()) return fail(404, 'season');
     if (await env.DB.prepare('SELECT 1 FROM captain_access WHERE season_id = ? AND revoked_at IS NULL').bind(id).first() ||
         await env.DB.prepare('SELECT 1 FROM rosters WHERE season_id = ? AND removed_at IS NULL').bind(id).first()) return fail(409, 'season_in_use');
-    await env.DB.batch(['captain_access', 'rosters', 'section_players', 'league_rules', 'teams', 'seasons'].map((tb) =>
-      env.DB.prepare(`DELETE FROM ${tb} WHERE ${tb === 'seasons' ? 'id' : 'season_id'} = ?`).bind(id)));
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE season_id = ?)').bind(id),
+      ...['replacements', 'captain_access', 'rosters', 'section_players', 'league_rules', 'teams', 'seasons'].map((tb) =>
+        env.DB.prepare(`DELETE FROM ${tb} WHERE ${tb === 'seasons' ? 'id' : 'season_id'} = ?`).bind(id))]);
     await audit(env, admin, 'season.delete', 'season:' + id);
     return json({ ok: true });
   }
@@ -172,9 +176,15 @@ export async function adminApi(req, env, url) {
   const roster = await rosterApi({ req, env, url, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail), seasonData: () => seasonData(env, url) });
   if (roster) return roster;
 
+  // ---- replacement requests: the builder, the queue, decisions (replacements.js; the captain area uses the same code) ----
+  const rep = await replacementApi({ req, env, url, path, m, actor: { kind: 'admin', id: admin.id }, teamIds: async () => null,
+    audit: (action, target, detail) => audit(env, admin, action, target, detail), seasonData: () => seasonData(env, url) });
+  if (rep) return rep;
+
   // ---- audit (read) ----
   if (m === 'GET' && path === '/audit') {
-    const { results } = await env.DB.prepare('SELECT a.id, a.at, a.actor_kind, a.actor_id, ad.name AS actor_name, a.action, a.target, a.detail FROM audit a LEFT JOIN admins ad ON a.actor_kind = \'admin\' AND ad.id = a.actor_id ORDER BY a.id DESC LIMIT 100').all();
+    const { results } = await env.DB.prepare(`SELECT a.id, a.at, a.actor_kind, a.actor_id, COALESCE(ad.name, c.name) AS actor_name, a.action, a.target, a.detail FROM audit a
+      LEFT JOIN admins ad ON a.actor_kind = 'admin' AND ad.id = a.actor_id LEFT JOIN captains c ON a.actor_kind = 'captain' AND c.id = a.actor_id ORDER BY a.id DESC LIMIT 100`).all();
     return json({ audit: results });
   }
   return fail(404, 'not_found');

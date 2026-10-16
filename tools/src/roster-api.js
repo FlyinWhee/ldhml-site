@@ -63,12 +63,15 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     await audit('person.update', 'person:' + id, { name: f.name });
     return json({ ok: true });
   }
-  // Full delete of a person: rosters (all seasons), league lists, the person. Audit rows stay without details.
+  // Full delete of a person: rosters (all seasons), league lists, replacement lines (a request left without lines goes too),
+  // the person. Audit rows stay without details.
   x = path.match(/^\/people\/(\d+)\/delete$/);
   if (m === 'POST' && x) {
     const id = Number(x[1]);
     if (!await DB.prepare('SELECT 1 FROM people WHERE id = ?').bind(id).first()) return fail(404, 'person');
     await DB.batch([
+      DB.prepare('DELETE FROM replacement_lines WHERE absent_id = ? OR sub_id = ?').bind(id, id),
+      DB.prepare('DELETE FROM replacements WHERE NOT EXISTS (SELECT 1 FROM replacement_lines l WHERE l.replacement_id = replacements.id)'),
       DB.prepare('DELETE FROM rosters WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM section_players WHERE person_id = ?').bind(id),
       DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('person:' + id),
@@ -150,7 +153,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     await audit('team.update', 'team:' + id, { name, abb });
     return json({ ok: true });
   }
-  // Delete a team: refused while it has players or active captain access. Its past roster rows go with it.
+  // Delete a team: refused while it has players or active captain access. Its past roster rows and requests go with it.
   x = path.match(/^\/teams\/(\d+)\/delete$/);
   if (m === 'POST' && x) {
     const id = Number(x[1]);
@@ -158,6 +161,8 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (await DB.prepare('SELECT 1 FROM rosters WHERE team_id = ? AND removed_at IS NULL').bind(id).first() ||
         await DB.prepare('SELECT 1 FROM captain_access WHERE team_ref = ? AND revoked_at IS NULL').bind(id).first()) return fail(409, 'team_in_use');
     await DB.batch([
+      DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE team_id = ?)').bind(id),
+      DB.prepare('DELETE FROM replacements WHERE team_id = ?').bind(id),
       DB.prepare('DELETE FROM rosters WHERE team_id = ?').bind(id),
       DB.prepare('UPDATE captain_access SET team_ref = NULL WHERE team_ref = ?').bind(id),
       DB.prepare('DELETE FROM teams WHERE id = ?').bind(id)
@@ -201,13 +206,13 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
   if (m === 'POST' && path === '/rules') {
     const b = await readJson(req) || {}, s = await season(b.season_id);
     const cap = num(b.salary_cap), am = int(b.min_age_m, 0, 99), af = int(b.min_age_f, 0, 99), ag = int(b.min_age_g, 0, 99);
-    const notes = b.notes ? cleanText(b.notes, 500) : null;
-    if (!s || !leagueOf(b.league) || bad(cap, am, af, ag) || (b.notes && !notes)) return fail(400, 'rules');
-    await DB.prepare(`INSERT INTO league_rules (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, notes, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    const notes = b.notes ? cleanText(b.notes, 500) : null, ageOn = b.age_on === 'year' ? 'year' : b.age_on == null || b.age_on === '' || b.age_on === 'game' ? null : NaN;
+    if (!s || !leagueOf(b.league) || bad(cap, am, af, ag, ageOn) || (b.notes && !notes)) return fail(400, 'rules');
+    await DB.prepare(`INSERT INTO league_rules (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (season_id, league) DO UPDATE SET salary_cap = excluded.salary_cap, min_age_m = excluded.min_age_m, min_age_f = excluded.min_age_f,
-      min_age_g = excluded.min_age_g, notes = excluded.notes, updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
-      .bind(s.id, b.league, cap, am, af, ag, notes, now(), admin.id).run();
-    await audit('rules.set', 'season:' + s.id, { league: b.league, salary_cap: cap, min_age_m: am, min_age_f: af, min_age_g: ag });
+      min_age_g = excluded.min_age_g, age_on = excluded.age_on, notes = excluded.notes, updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
+      .bind(s.id, b.league, cap, am, af, ag, ageOn, notes, now(), admin.id).run();
+    await audit('rules.set', 'season:' + s.id, { league: b.league, salary_cap: cap, min_age_m: am, min_age_f: af, min_age_g: ag, age_on: ageOn });
     return json({ ok: true });
   }
   return null;

@@ -86,7 +86,7 @@ Source: the owner. Items marked *to validate* are not confirmed by the league ye
 
 ### Open design questions
 1. **Who gives person ids** once admins can add people the NBHPA data has not seen (registered, not played)? Today `scraper/registry.mjs` assigns them into a public git file. Proposal: D1 becomes the source of truth for people when the tools go live; `registry/people.json` becomes an export for the static site.
-2. **Age data is sensitive personal data** (Law 25). Store the least that works: a birth year, or only "meets the age rule" per season, set by an admin. Which cut-off date (season start? January 1)?
+2. **Age data is sensitive personal data** (Law 25). Stored: birth month and year only, never shown to captains. Cut-off: a league setting (`age_on`: the game date, default, or the game's year); *to confirm with the league.*
 3. **Salary per season** (it can change) and per section or league. Public on the stats site (data nerds) or private to admins and captains?
 4. **Cap per team:** one number per league and season? Does the replacement's salary replace the absent player's salary in the sum?
 
@@ -102,9 +102,19 @@ Tables (`migrations/0002_people_rosters.sql`); everything per season except peop
 - **Scope bar** on every working tab: season, section, league (badges). **Modals** for every add and edit form (2026-10-16, owner request: a work context that matches how leagues are managed).
 - Local tests: `npm run tools:seed` fills the local database from the stats data (each player on their main team, main position, no salaries or births).
 
+## Replacements and the captain area (built 2026-10-16)
+The main captain tool. **The same builder in both areas** (`tools/public/shared/builder.js`): captains use it at `/captain/`, and admins use it for captains who are less at ease with tech (Remplacements tab, or "Remplacement…" on a team card).
+- **A request = one game of one team** (`replacements`), with **one line per absent player** (`replacement_lines`: absent, replacement, position played, both salaries copied). The game is an NBHPA game of the team (the season export now carries each league's schedule) or a date typed by hand.
+- **Checks** (`tools/src/replacements.js`, no rule engine, numbers from `league_rules`): absent is on the roster; replacement is on the section list, not on this team, not playing at that time (own team's game or another open request); **age** (men, women, goalies; on the game date, or in the game's year: `age_on`; a goalie without a goalie rule follows the rule of their sex); **cap** (payroll − absent salaries + replacement salaries at the position played); duplicate requests. Missing data (salary, birth date, sex, a birthday in the game's month) gives **"to check"**, never a silent pass.
+- The checks run **while building** (the replacement list is grouped eligible / to check / not eligible, with the reason), **when saving**, **again on every pending request** in the queue, and **at the decision** (kept with it). A request with a failing check can still be sent, **with a note** (the admin decides).
+- **Admin:** Remplacements tab (scope bar; pending / approved / refused / cancelled; pending counts on the tab and on the league buttons), approve or refuse with a note for the captain. An admin's own request can be approved at once ("approve now", ticked by default).
+- **Captain area** (owner rule: streamline): sign-in lands **straight on the captain's team**; no sections, no setup. A team switcher shows only for a captain with several teams (remembered in the browser). The page: the team, "Demander un remplacement", the team's requests (cancel while open and before the game), the roster with salaries and the cap.
+- **Privacy:** birth dates never leave the server; captains see only whether the age minimum is met. Salaries are shown to captains (the cap needs them; public or not on the stats site is still open).
+- Local tests: `node tools/scripts/seed-local.mjs --demo` adds **fake** salaries derived from the stats (skaters 2 to 6 by points per game, goalies 4, every Retro team under the 41 cap) and fake birth dates, only where empty, plus Retro demo rules if none, to try the checks. Never real data.
+
 ## Next
-- Import tool for the league file (Excel or Google Sheet) when the owner has it.
-- Replacement requests by captains, with the automatic checks (cap, age) and an admin approval queue, once the Retro rules are confirmed.
-- Captain area (`/captain/`, `/api/captain/...`): sign-in with the captain kind, "my teams this season".
-- First captain tool: substitute request with pre-validation (needs the sub rules from the owner) and an admin approval queue.
+- Import tool for the league file (Excel or Google Sheet) when the owner has it (salaries, birth dates, rosters).
+- Confirm the Retro rules with the league (cap sum, ages, goalie age, age date) and whether other leagues use them.
+- Emails on decisions ("your request was approved") with the Cloudflare email mode at deploy.
+- Later: auto-approve per league when every check passes (once the league trusts the checks).
 - Manage admins from the admin area (today: the `add-admin` script).
