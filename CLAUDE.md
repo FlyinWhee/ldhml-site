@@ -71,6 +71,7 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 11. **Never change, reuse or delete an id in `registry/people.json`.** Do not regenerate the file. See `registry/CLAUDE.md`.
 13. **The tools are their own operational system** (owner, 2026-10-17). They must work fully without NBHPA: their schedule, teams, rosters, players and rules live in the tools database. NBHPA is an optional source (richer data, easier loading) through imports, never a hard dependency. The stats site stays NBHPA-based; the tools may feed it some of their data (regular lineups, salaries).
    **The tools are never public** (owner, 2026-10-17): admins do everything (sign-ups included) and offer some of it to captains. No public form, no player accounts.
+   **Light for the admins** (owner, 2026-10-17): the tools must never make an admin's life harder through technical rigidity. Prefer a warning to a block, no limit the admin must work around, and setup and upkeep by import (NBHPA, the league's Excel file) rather than typing. We cannot prove value if setup and maintenance are hard.
 12. **No personal data in git** (the repo is public): admin and captain emails, sessions and requests live only in the tools database (D1). Every tools feature is **per season** and **audited**. See `tools/CLAUDE.md`.
 
 ## Commands

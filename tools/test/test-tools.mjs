@@ -273,45 +273,42 @@ assert.equal(r.data.rules.length, 1); assert.equal(r.data.rules[0].salary_cap, 2
 assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: -5 } })).status, 400);
 assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'nope', salary_cap: 5 } })).status, 400);
 
-// ---- sign-ups: who plays in a league this season (draft leagues: an admin signs people up; places per team, captain included) ----
+// ---- sign-ups: who plays in a league this season. Simple on purpose: no limits, no waiting list; admins manage ----
 {
   const su = (league) => call('/api/admin/league-players?season=' + seasonId + '&league=' + league, { cookie });
   r = await su('retro');
   const openRetro = await DB.prepare("SELECT COUNT(*) AS n FROM rosters WHERE season_id = ? AND league = 'retro' AND removed_at IS NULL").bind(seasonId).first('n');
   assert.equal(r.data.counts.m + r.data.counts.f + r.data.counts.g, openRetro, 'everyone on a team plays in the league (the seed and a roster add write the sign-up)');
   assert.equal(r.data.pool, 0, 'nobody signed up without a team');
-  assert.equal(r.data.places.m, null, 'no places set: no limit');
-  await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: 26, min_age_m: 40, min_age_f: 35, min_age_g: 30, places_m: 4, places_f: 4, places_g: 1 } });
-  r = await su('retro');
-  assert.deepEqual([r.data.places.m, r.data.places.f, r.data.places.g], [4 * r.data.teams, 4 * r.data.teams, r.data.teams], 'places = teams × places per team');
-  assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', places_g: 9 } })).status, 400, 'places: small whole numbers');
-  // the other draft league: a new person, signed up by an admin; full -> waiting list
+  // a draft league: an admin signs a new person up (no team yet = the draft pool)
   const pd = (await call('/api/admin/people', { method: 'POST', cookie, body: { name: 'Repêché Test', sex: 'm' } })).data.id;
-  await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'draft', places_m: 0 } });
   r = await call('/api/admin/league-players', { method: 'POST', cookie, body: { season_id: seasonId, league: 'draft', person_id: pd, pos: 's' } });
-  assert.equal(r.status, 201); assert.equal(r.data.status, 'wait', 'the league is full for men: the waiting list');
-  const suId = r.data.id;
+  assert.equal(r.status, 201); const suId = r.data.id;
   assert.ok(await DB.prepare("SELECT 1 FROM section_players WHERE season_id = ? AND section = 'draft' AND person_id = ?").bind(seasonId, pd).first(), 'a sign-up puts the person on the section list');
   assert.equal((await call('/api/admin/league-players', { method: 'POST', cookie, body: { season_id: seasonId, league: 'draft', person_id: pd, pos: 's' } })).data.error, 'signup_exists', 'one sign-up per league');
   assert.equal((await call('/api/admin/league-players', { method: 'POST', cookie, body: { season_id: seasonId, league: 'draft', person_id: pd, pos: 'x' } })).status, 400);
-  assert.equal((await call('/api/admin/league-players/' + suId, { method: 'POST', cookie, body: { status: 'maybe' } })).status, 400);
-  assert.equal((await call('/api/admin/league-players/' + suId, { method: 'POST', cookie, body: { status: 'in' } })).status, 200, 'from the waiting list to signed up');
   r = await su('draft');
-  assert.ok(r.data.signups.some((x) => x.person_id === pd && x.status === 'in' && !x.team) && r.data.pool >= 1, 'signed up, no team yet: the draft pool');
-  // the draft puts them on a team: then they cannot withdraw
+  assert.ok(r.data.signups[0].person_id === pd && !r.data.signups[0].team && r.data.pool === 1, 'the draft pool first');
+  // the draft (or an admin) puts them on a team; off the team in a draft league = back in the pool
   const draftTeam = teamsNow.find((x) => x.league === 'draft').id;
   assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: draftTeam, person_id: pd, pos: 's' } })).status, 201);
   assert.ok((await su('draft')).data.signups.find((x) => x.person_id === pd).team, 'the sign-up shows the team');
-  assert.equal((await call('/api/admin/league-players/' + suId, { method: 'POST', cookie, body: { status: 'out' } })).data.error, 'on_roster', 'on a team: take them off the team first');
-  assert.equal((await call('/api/admin/league-players/' + suId + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'on_roster');
-  await call('/api/admin/rosters/' + (await DB.prepare('SELECT id FROM rosters WHERE person_id = ? AND removed_at IS NULL').bind(pd).first('id')) + '/remove', { method: 'POST', cookie, body: {} });
-  assert.equal((await call('/api/admin/league-players/' + suId, { method: 'POST', cookie, body: { status: 'out' } })).status, 200, 'withdrew');
+  assert.equal((await call('/api/admin/league-players/' + suId + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'on_roster', 'on a team: take them off the team first');
+  const rosterOf = () => DB.prepare('SELECT id FROM rosters WHERE person_id = ? AND removed_at IS NULL').bind(pd).first('id');
+  await call('/api/admin/rosters/' + await rosterOf() + '/remove', { method: 'POST', cookie, body: {} });
+  assert.equal((await su('draft')).data.pool, 1, 'a draft league: off the team, back in the pool');
   r = await call('/api/admin/people?season=' + seasonId + '&section=draft', { cookie });
-  assert.deepEqual(r.data.players.find((p) => p.id === pd).signups, [{ league: 'draft', pos: 's', status: 'out' }], 'the section list says where each person plays (none "in" = a replacement player)');
-  assert.equal((await call('/api/admin/league-players/' + suId + '/delete', { method: 'POST', cookie, body: {} })).status, 200, 'a sign-up made by mistake is deleted');
+  assert.deepEqual(r.data.players.find((p) => p.id === pd).signups, [{ league: 'draft', pos: 's' }], 'the section list says where each person plays (none = a replacement player)');
+  assert.equal((await call('/api/admin/league-players/' + suId + '/delete', { method: 'POST', cookie, body: {} })).status, 200, 'remove the sign-up');
   assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM league_players WHERE person_id = ?').bind(pd).first('n'), 0);
-  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action LIKE 'signup.%'").first('n'), 4, 'every sign-up change is logged');
-  await DB.prepare("DELETE FROM season_leagues WHERE season_id = ? AND league = 'draft'").bind(seasonId).run();
+  // the old way still works with no sign-up step: put a person on a team (here a team league), take them off
+  const tl = season.leagues.find((l) => l.section !== 'draft'), tlTeam = teamsNow.find((x) => x.league === tl.slug).id;
+  await call('/api/admin/section-players', { method: 'POST', cookie, body: { season_id: seasonId, section: tl.section, person_id: pd } });
+  assert.equal((await call('/api/admin/rosters', { method: 'POST', cookie, body: { team_id: tlTeam, person_id: pd, pos: 's' } })).status, 201, 'teams and players, as before: no sign-up step');
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM league_players WHERE person_id = ? AND league = ?').bind(pd, tl.slug).first('n'), 1, 'the roster add signs them up');
+  await call('/api/admin/rosters/' + await rosterOf() + '/remove', { method: 'POST', cookie, body: {} });
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM league_players WHERE person_id = ?').bind(pd).first('n'), 0, 'a team league: off the team = out of the league');
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action LIKE 'signup.%'").first('n'), 2, 'sign-ups are logged');
 }
 
 // ---- replacement requests: the builder data, each check, the captain flow and the admin flow ----
@@ -588,7 +585,7 @@ d.querySelector('#tabbar [data-act="more"]').click(); await wait(20);
 w.location.hash = '#teams'; await wait(200);
 assert.ok(!d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-team .ad-ed'), 'Équipes opens in read mode: the controls that change things are hidden');
 assert.ok(d.querySelector('.ad-team [data-sub-team]:not(.ad-ed)'), '"Remplacement…" stays (daily work, not editing)');
-assert.ok(d.querySelectorAll('#ad-su .ad-su-k').length === 3 && d.querySelector('#ad-su [data-addsignup].ad-ed'), 'a draft league: the sign-ups (men, women, goalies against the places); sign up in edit mode');
+assert.ok(d.querySelectorAll('#ad-su .ad-su-k').length === 4 && d.querySelector('#ad-su [data-addsignup].ad-ed'), 'a draft league: the sign-ups (men, women, goalies, no team); sign up in edit mode');
 d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
 assert.ok(d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-edbadge'), 'Modifier: edit mode, clearly marked');
 // Teams tab (default): scoped to a league; each team card has its captains and roster; every add and edit in a modal
@@ -749,7 +746,7 @@ d.querySelector('[data-plf="free"]').click(); await wait(20);
 assert.equal(rowsN(), draftList - inLg, 'filter: without a team in this league');
 {
   const subsN = await DB.prepare(`SELECT COUNT(*) AS n FROM section_players sp WHERE sp.season_id = ? AND sp.section = 'draft'
-    AND NOT EXISTS (SELECT 1 FROM league_players u WHERE u.season_id = sp.season_id AND u.person_id = sp.person_id AND u.status = 'in' AND u.league IN ('retro', 'draft'))`).bind(seasonId).first('n');
+    AND NOT EXISTS (SELECT 1 FROM league_players u WHERE u.season_id = sp.season_id AND u.person_id = sp.person_id AND u.league IN ('retro', 'draft'))`).bind(seasonId).first('n');
   d.querySelector('[data-plf="sub"]').click(); await wait(20);
   assert.ok(subsN > 0 && rowsN() === subsN && d.querySelector('.ad-players .ad-chip-sub'), 'filter: replacement players (on the list, signed up nowhere)');
 }

@@ -244,9 +244,6 @@ a.ad-kpi:hover { border-color: var(--ball); }
 .ad-su-h { margin: 0; display: inline; }
 .ad-su-ks { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
 .ad-su-k b { font-size: 1.05em; }
-.ad-su-k.ad-su-full b { color: var(--ok, #3fb67a); }
-.ad-su-k.ad-over b { color: var(--bad, #e5484d); }
-.ad-su-out td { opacity: .55; }
 .ad-chip { display: inline-block; padding: 1px 8px; border: 1px solid var(--line, #33404d); border-radius: 999px; font-size: .8em; white-space: nowrap; }
 .ad-chip-sub { border-style: dashed; }
 .ad-su-t td:first-child, .ad-su-t td:first-child a { overflow-wrap: break-word; }

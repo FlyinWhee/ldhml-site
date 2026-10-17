@@ -130,16 +130,12 @@
       gamesImported: 'Calendrier importé : {a} nouveaux matchs, {u} changements ({k} modifiés à la main, laissés tels quels).',
       todoNoGames: 'Aucun match au calendrier.', todoNbhpa: 'Calendrier NBHPA : {a} nouveaux matchs, {u} changements à importer.',
       e_game: 'Match invalide (date, et deux équipes différentes de la ligue).', e_no_season_data: 'Le calendrier NBHPA de cette saison n’est pas dans les données du site.', e_game_in_use: 'Des remplacements visent ce match : annulez-le plutôt.',
-      posSs: 'J', posGs: 'G', suTitle: 'Inscriptions', suMen: 'hommes', suWomen: 'femmes', suGoalies: 'gardiens', suFree: '{n} libre(s)',
-      suPlaces: 'Places par équipe, capitaine compris : {m} H, {f} F, {g} G × {n} équipes.', suNoPlaces: 'Places par équipe non définies (Configuration, règles de la ligue).',
-      suPool: '{n} inscrit(s) sans équipe (repêchage)', suWaiting: '{n} en liste d’attente',
-      suHow: 'Un admin inscrit les joueurs. Ligue complète : le joueur va en liste d’attente. Un remplaçant ne s’inscrit pas : il est sur la liste de la section, avec son salaire.',
-      suAdd: 'Inscrire', suNone: 'Aucune inscription pour cette ligue.', suNoTeam: 'Sans équipe',
-      suH_in: 'Inscrits ({n})', suH_wait: 'Liste d’attente ({n})', suH_out: 'Retirés ({n})',
-      suToWait: 'En attente', suToOut: 'Retirer', suToIn: 'Inscrire', suAddedWait: 'Ligue complète pour cette place : le joueur est en liste d’attente.',
-      confirmDelSignup: 'Supprimer l’inscription de {n} ? (Une erreur de saisie. Pour un départ, utilisez Retirer.)',
-      suChipPool: 'inscrit, sans équipe', suChipWait: 'liste d’attente', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
-      placesM: 'Places H / équipe', placesF: 'Places F / équipe', placesG: 'Places G / équipe',
+      posSs: 'J', posGs: 'G', suTitle: 'Inscriptions', suMen: 'hommes', suWomen: 'femmes', suGoalies: 'gardiens', suPoolK: 'sans équipe',
+      suHow: 'Les joueurs inscrits dans cette ligue cette saison. Sans équipe = le bassin du repêchage. Un joueur ajouté à une équipe est inscrit par le fait même. Un remplaçant ne s’inscrit pas : il est sur la liste de la section, avec son salaire.',
+      suAdd: 'Inscrire', suNone: 'Aucune inscription pour cette ligue.', suNoTeam: 'Sans équipe', suRemove: 'Retirer l’inscription',
+      suH_pool: 'Sans équipe ({n})', suH_team: 'Dans une équipe ({n})',
+      confirmDelSignup: 'Retirer l’inscription de {n} ?',
+      suChipPool: 'inscrit, sans équipe', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
       tabMore: 'Plus', langShort: 'EN', filters: 'Filtres',
       tabHome: 'Accueil', homeTitle: 'Tableau de bord', kToValidate: 'À valider', kNextNight: 'Prochaine soirée', kNoCaptain: 'Équipes sans capitaine', kMissing: 'Données à compléter',
@@ -188,16 +184,12 @@
       gamesImported: 'Schedule imported: {a} new games, {u} changes ({k} changed by hand, left as they are).',
       todoNoGames: 'No game in the schedule.', todoNbhpa: 'NBHPA schedule: {a} new games, {u} changes to import.',
       e_game: 'Invalid game (a date, and two different teams of the league).', e_no_season_data: 'The NBHPA schedule of this season is not in the site data.', e_game_in_use: 'Replacements point to this game: cancel it instead.',
-      posSs: 'S', posGs: 'G', suTitle: 'Sign-ups', suMen: 'men', suWomen: 'women', suGoalies: 'goalies', suFree: '{n} open',
-      suPlaces: 'Places per team, captain included: {m} M, {f} W, {g} G × {n} teams.', suNoPlaces: 'Places per team not set (Configuration, league rules).',
-      suPool: '{n} signed up with no team (draft)', suWaiting: '{n} on the waiting list',
-      suHow: 'An admin signs players up. When the league is full, the player goes on the waiting list. A replacement player does not sign up: they are on the section list, with their salary.',
-      suAdd: 'Sign up', suNone: 'No sign-up for this league.', suNoTeam: 'No team',
-      suH_in: 'Signed up ({n})', suH_wait: 'Waiting list ({n})', suH_out: 'Withdrew ({n})',
-      suToWait: 'To waiting list', suToOut: 'Withdraw', suToIn: 'Sign up', suAddedWait: 'The league is full for this place: the player is on the waiting list.',
-      confirmDelSignup: 'Delete the sign-up of {n}? (A typing mistake. When someone leaves, use Withdraw.)',
-      suChipPool: 'signed up, no team', suChipWait: 'waiting list', suChipSub: 'Replacement', plSubs: 'Replacements',
-      placesM: 'Places M / team', placesF: 'Places W / team', placesG: 'Places G / team',
+      posSs: 'S', posGs: 'G', suTitle: 'Sign-ups', suMen: 'men', suWomen: 'women', suGoalies: 'goalies', suPoolK: 'no team',
+      suHow: 'The players signed up in this league this season. No team = the draft pool. A player put on a team is signed up by that. A replacement player does not sign up: they are on the section list, with their salary.',
+      suAdd: 'Sign up', suNone: 'No sign-up for this league.', suNoTeam: 'No team', suRemove: 'Remove the sign-up',
+      suH_pool: 'No team ({n})', suH_team: 'On a team ({n})',
+      confirmDelSignup: 'Remove the sign-up of {n}?',
+      suChipPool: 'signed up, no team', suChipSub: 'Replacement', plSubs: 'Replacements',
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
       tabMore: 'More', langShort: 'FR', filters: 'Filters',
       tabHome: 'Home', homeTitle: 'Dashboard', kToValidate: 'To validate', kNextNight: 'Next game night', kNoCaptain: 'Teams without a captain', kMissing: 'Data to complete',
@@ -371,11 +363,11 @@
     return '<th class="' + (cls || '') + '"' + (on ? ' aria-sort="' + (S.ps.d > 0 ? 'ascending' : 'descending') + '"' : '') + '><button type="button" class="ad-sort" data-psort="' + k + '"' +
       (title ? ' title="' + esc(title) + '"' : '') + '>' + esc(label) + arrow + '</button></th>';
   }
-  /* Beside the teams of a player: signed up in a league but no team yet (the draft pool), waiting list, or a replacement player. */
+  /* Beside the teams of a player: signed up in a league but no team yet (the draft pool), or a replacement player. */
   var signupChips = function (p) {
-    var ups = (p.signups || []).filter(function (u) { return u.status !== 'out' && !p.rosters.some(function (r) { return r.league === u.league; }); });
-    var chips = ups.map(function (u) { var l = leagueOf(u.league); return '<span class="ad-chip">' + esc((l ? l.short : u.league) + ' · ' + t(u.status === 'wait' ? 'suChipWait' : 'suChipPool')) + '</span>'; });
-    if (!(p.signups || []).some(function (u) { return u.status === 'in'; })) chips.push('<span class="ad-chip ad-chip-sub">' + esc(t('suChipSub')) + '</span>');
+    var ups = (p.signups || []).filter(function (u) { return !p.rosters.some(function (r) { return r.league === u.league; }); });
+    var chips = ups.map(function (u) { var l = leagueOf(u.league); return '<span class="ad-chip">' + esc((l ? l.short : u.league) + ' · ' + t('suChipPool')) + '</span>'; });
+    if (!(p.signups || []).length) chips.push('<span class="ad-chip ad-chip-sub">' + esc(t('suChipSub')) + '</span>');
     return chips.join('');
   };
   function viewPlayers() {
@@ -383,7 +375,7 @@
     if (!curSeason()) return head;
     var q = S.pq.trim().toLowerCase(), lgs = sectionLeagues(), f = S.pf;
     var inLg = function (p) { return p.rosters.some(function (r) { return r.league === S.league; }); };
-    var isSub = function (p) { return !(p.signups || []).some(function (u) { return u.status === 'in'; }); };   // no sign-up: a replacement player
+    var isSub = function (p) { return !(p.signups || []).length; };   // no sign-up: a replacement player
     var num = function (v) { return v === '' || v == null || isNaN(Number(String(v).replace(',', '.'))) ? null : Number(String(v).replace(',', '.')); };
     var smin = num(f.smin), smax = num(f.smax);
     /* Position: a goalie on a roster of this section, or a goalie this season in the stats (any league of the section). */
@@ -457,9 +449,10 @@
       '<select class="ctl ad-sm" name="pos" aria-label="' + esc(t('pos')) + '"><option value="s">' + t('posS') + '</option><option value="g">' + t('posG') + '</option></select>' +
       '<button class="ad-btn ad-btn-sm" type="submit">' + t('add') + '</button></form></article>';
   }
-  /* Draft leagues: the sign-ups (who plays in the league this season) against the places (teams x places per team, captain
-   * included). Signed up with no team yet = the draft pool; then the waiting list, in order. A replacement player is not
-   * signed up: being on the section list (with a salary) is enough. Admins sign people up; the tools are never public. */
+  /* Draft leagues: the sign-ups (who plays in the league this season). Kept simple on purpose (owner): no limits, no
+   * waiting list; admins manage. Signed up with no team yet = the draft pool, for a draft run by the tools (later).
+   * Without it, admins create teams and put players on them, as before (a roster add signs the person up).
+   * A replacement player is not signed up: being on the section list (with a salary) is enough. */
   var teamChip = function (l, tm) {
     var href = tm.nbhpa_team_id && l.path ? leagueHome(l) + '#team-' + tm.nbhpa_team_id : '';
     return '<span class="tcell ad-tchip">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo }, l.slug, 'sm') +
@@ -468,42 +461,29 @@
   function signupPanel(l) {
     var u = S.signups;
     if (!u || u.league !== l.slug) return '';
-    var lab = { m: t('suMen'), f: t('suWomen'), g: t('suGoalies') };
-    var kpi = ['m', 'f', 'g'].map(function (k) {
-      var p = u.places[k], c = u.counts[k];
-      return '<span class="ad-su-k' + (p != null && c > p ? ' ad-over' : p != null && c === p ? ' ad-su-full' : '') + '"><b>' + c + (p != null ? ' / ' + p : '') + '</b> ' + esc(lab[k]) +
-        (p != null && c < p ? ' <span class="note">' + esc(t('suFree', { n: p - c })) + '</span>' : '') + '</span>';
-    }).join('');
-    var per = u.perTeam, set = per.m != null || per.f != null || per.g != null;
-    var placesNote = set ? t('suPlaces', { m: per.m == null ? '—' : per.m, f: per.f == null ? '—' : per.f, g: per.g == null ? '—' : per.g, n: u.teams }) : t('suNoPlaces');
-    var acts = function (x) {
-      if (x.team) return '';
-      var b = function (to, label) { return '<button type="button" class="lnk ad-linkbtn" data-su-status="' + x.id + '" data-to="' + to + '">' + esc(t(label)) + '</button>'; };
-      return (x.status === 'in' ? b('wait', 'suToWait') + b('out', 'suToOut') : x.status === 'wait' ? b('in', 'suToIn') + b('out', 'suToOut') : b('in', 'suToIn')) +
-        '<button type="button" class="ad-x" data-su-del="' + x.id + '" data-name="' + esc(x.name) + '" title="' + esc(t('del')) + '" aria-label="' + esc(t('del')) + '">×</button>';
-    };
-    var row = function (x, i) {
-      return '<tr' + (x.status === 'out' ? ' class="ad-su-out"' : '') + '><td>' + (x.status === 'wait' ? '<span class="note">' + (i + 1) + '.</span> ' : '') + personIn(l.slug, x) + '</td>' +
+    var kpi = '<span class="ad-su-k"><b>' + u.counts.m + '</b> ' + esc(t('suMen')) + '</span><span class="ad-su-k"><b>' + u.counts.f + '</b> ' + esc(t('suWomen')) + '</span>' +
+      '<span class="ad-su-k"><b>' + u.counts.g + '</b> ' + esc(t('suGoalies')) + '</span><span class="ad-su-k"><b>' + u.pool + '</b> ' + esc(t('suPoolK')) + '</span>';
+    var row = function (x) {
+      return '<tr><td>' + personIn(l.slug, x) + '</td>' +
         '<td class="ad-sx">' + esc(x.sex === 'f' ? t('sexF') : x.sex === 'm' ? t('sexM') : '—') + '</td><td><span class="ad-long">' + esc(x.pos === 'g' ? t('posG') : t('posS')) + '</span><span class="ad-short" title="' + esc(x.pos === 'g' ? t('posG') : t('posS')) + '">' + esc(x.pos === 'g' ? t('posGs') : t('posSs')) + '</span></td>' +
         '<td class="num">' + esc(money(x.pos === 'g' ? x.salary_g : x.salary_s)) + '</td>' +
-        '<td>' + (x.team ? teamChip(l, x.team) : x.status === 'in' ? '<span class="note">' + esc(t('suNoTeam')) + '</span>' : '') + '</td>' +
-        '<td class="ad-acts ad-ed">' + acts(x) + '</td></tr>';
+        '<td>' + (x.team ? teamChip(l, x.team) : '<span class="note">' + esc(t('suNoTeam')) + '</span>') + '</td>' +
+        '<td class="ad-ed">' + (x.team ? '' : '<button type="button" class="ad-x" data-su-del="' + x.id + '" data-name="' + esc(x.name) + '" title="' + esc(t('suRemove')) + '" aria-label="' + esc(t('suRemove')) + '">×</button>') + '</td></tr>';
     };
-    var group = function (st) {
-      var list = u.signups.filter(function (x) { return x.status === st; });
-      if (st === 'in') list = window.LDBuilder.rosterOrder(list, function (x) { return x.pos === 'g' ? x.salary_g : x.salary_s; });
-      return list.length ? '<h3 class="ad-h3">' + esc(t('suH_' + st, { n: list.length })) + '</h3><div class="tbl-wrap"><table class="tbl ad-roster ad-su-t"><tbody>' + list.map(row).join('') + '</tbody></table></div>' : '';
+    var group = function (key, list) {
+      list = window.LDBuilder.rosterOrder(list, function (x) { return x.pos === 'g' ? x.salary_g : x.salary_s; });
+      return list.length ? '<h3 class="ad-h3">' + esc(t(key, { n: list.length })) + '</h3><div class="tbl-wrap"><table class="tbl ad-roster ad-su-t"><tbody>' + list.map(row).join('') + '</tbody></table></div>' : '';
     };
     var signed = {}; u.signups.forEach(function (x) { signed[x.person_id] = 1; });
     var pick = (S.allPeople || []).filter(function (p) { return !signed[p.id]; });
     return '<details class="sec ad-panel ad-su" id="ad-su"' + (S.suOpen ? ' open' : '') + '><summary><h2 class="ad-su-h">' + t('suTitle') + '</h2><span class="ad-su-ks">' + kpi + '</span></summary>' +
-      '<p class="note">' + esc(placesNote) + (set ? '' : ' <a class="lnk" href="#setup">' + t('tabSetup') + '</a>') + ' · ' + esc(t('suPool', { n: u.pool })) + (u.waiting ? ' · ' + esc(t('suWaiting', { n: u.waiting })) : '') + '</p>' +
       '<p class="note">' + t('suHow') + '</p>' +
       '<datalist id="ad-su-free">' + pick.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
       '<form class="ad-grant ad-ed" data-addsignup="' + esc(l.slug) + '"><input class="ctl" name="person" list="ad-su-free" autocomplete="off" required aria-label="' + esc(t('personField')) + '" placeholder="' + esc(t('personField')) + '">' +
       '<select class="ctl ad-sm" name="pos" aria-label="' + esc(t('pos')) + '"><option value="s">' + t('posS') + '</option><option value="g">' + t('posG') + '</option></select>' +
       '<button class="ad-btn ad-btn-sm" type="submit">' + t('suAdd') + '</button></form>' +
-      (u.signups.length ? group('in') + group('wait') + group('out') : '<p class="empty">' + t('suNone') + '</p>') + '</details>';
+      (u.signups.length ? group('suH_pool', u.signups.filter(function (x) { return !x.team; })) + group('suH_team', u.signups.filter(function (x) { return x.team; }))
+        : '<p class="empty">' + t('suNone') + '</p>') + '</details>';
   }
   function viewTeams() {
     var s = curSeason(), l = leagueOf(S.league);
@@ -541,9 +521,6 @@
       '<label>' + t('minAgeF') + '<input class="ctl ad-sm" name="min_age_f" inputmode="numeric" value="' + val(r.min_age_f) + '"></label>' +
       '<label>' + t('minAgeG') + '<input class="ctl ad-sm" name="min_age_g" inputmode="numeric" value="' + val(r.min_age_g) + '"></label>' +
       '<label>' + t('ageOn') + '<select class="ctl" name="age_on"><option value="game">' + t('ageOnGame') + '</option><option value="year"' + (r.age_on === 'year' ? ' selected' : '') + '>' + t('ageOnYear') + '</option></select></label>' +
-      '<label>' + t('placesM') + '<input class="ctl ad-sm" name="places_m" inputmode="numeric" value="' + val(r.places_m) + '"></label>' +
-      '<label>' + t('placesF') + '<input class="ctl ad-sm" name="places_f" inputmode="numeric" value="' + val(r.places_f) + '"></label>' +
-      '<label>' + t('placesG') + '<input class="ctl ad-sm" name="places_g" inputmode="numeric" value="' + val(r.places_g) + '"></label>' +
       '<label class="ad-wide">' + t('notes') + '<input class="ctl" name="notes" maxlength="500" value="' + val(r.notes) + '"></label>' +
       '<button class="ad-btn ad-btn-sm ad-ar" type="submit">' + t('save') + '</button></form>' +
       '<h3 class="ad-h3">' + t('teamsSetup') + '</h3>' +
@@ -919,7 +896,7 @@
       var su = /#(\d+)\s*$/.exec(v('person'));
       if (!su) { say('err', t('e_signup')); render(); return; }
       api('/league-players', 'POST', { season_id: S.seasonId, league: f.getAttribute('data-addsignup'), person_id: Number(su[1]), pos: v('pos') }).then(function (r) {
-        S.suOpen = true; done(r, r.ok && r.data.status === 'wait' ? t('suAddedWait') : null);
+        S.suOpen = true; done(r);
       });
     } else if (f.hasAttribute('data-newteam')) {
       api('/teams', 'POST', { season_id: S.seasonId, league: f.getAttribute('data-newteam'), name: v('name'), abb: v('abb'), nbhpa_team_id: v('nbhpa') || null }).then(function (r) { done(r); });
@@ -927,8 +904,7 @@
       api('/teams/' + f.getAttribute('data-edit-team'), 'POST', { name: v('name'), abb: v('abb'), nbhpa_team_id: v('nbhpa') || null }).then(function (r) { done(r); });
     } else if (f.hasAttribute('data-rules')) {
       api('/rules', 'POST', { season_id: S.seasonId, league: f.getAttribute('data-rules'), salary_cap: numOrNull(v('salary_cap')), min_age_m: numOrNull(v('min_age_m')),
-        min_age_f: numOrNull(v('min_age_f')), min_age_g: numOrNull(v('min_age_g')), age_on: v('age_on') || null, notes: v('notes') || null,
-        places_m: numOrNull(v('places_m')), places_f: numOrNull(v('places_f')), places_g: numOrNull(v('places_g')) }).then(function (r) { done(r); });
+        min_age_f: numOrNull(v('min_age_f')), min_age_g: numOrNull(v('min_age_g')), age_on: v('age_on') || null, notes: v('notes') || null }).then(function (r) { done(r); });
     }
   });
   document.addEventListener('toggle', function (e) { if (e.target && e.target.id === 'ad-accounts') S.accountsOpen = e.target.open; if (e.target && e.target.id === 'ad-su') S.suOpen = e.target.open; if (e.target && e.target.classList && e.target.classList.contains('ad-filt')) S.filtOpen = e.target.open; }, true);
@@ -954,7 +930,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-status],[data-su-del]');
+      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -992,7 +968,6 @@
     if (b.hasAttribute('data-edit-team-btn')) { openModal({ kind: 'team-edit', id: num('data-edit-team-btn') }); return; }
     if (b.hasAttribute('data-team-new')) { openModal({ kind: 'team-new', league: b.getAttribute('data-team-new') }); return; }
     if (act === 'season-new') { openModal({ kind: 'season-new' }); return; }
-    if (b.hasAttribute('data-su-status')) { api('/league-players/' + b.getAttribute('data-su-status'), 'POST', { status: b.getAttribute('data-to') }).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-su-del')) { if (window.confirm(t('confirmDelSignup', { n: b.getAttribute('data-name') }))) api('/league-players/' + b.getAttribute('data-su-del') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-games-import')) { api('/games/import', 'POST', { season_id: S.seasonId }).then(function (r) { done(r, r.ok ? t('gamesImported', { a: r.data.added, u: r.data.updated, k: r.data.kept }) : null); }); return; }
     if (b.hasAttribute('data-game-new')) { openModal({ kind: 'game-new' }); return; }

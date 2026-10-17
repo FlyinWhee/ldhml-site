@@ -44,7 +44,7 @@ export function seedSql(data, reg, now = Math.floor(Date.now() / 1000)) {
     }
   }
   // everyone on a team plays in that league (their sign-up)
-  out.push(`INSERT OR IGNORE INTO league_players (season_id, league, person_id, pos, status, created_at) SELECT season_id, league, person_id, pos, 'in', added_at FROM rosters WHERE season_id = ${S} AND removed_at IS NULL;`);
+  out.push(`INSERT OR IGNORE INTO league_players (season_id, league, person_id, pos, created_at) SELECT season_id, league, person_id, pos, added_at FROM rosters WHERE season_id = ${S} AND removed_at IS NULL;`);
   out.push(`INSERT INTO audit (at, actor_kind, action, target, detail) VALUES (${now}, 'system', 'seed.local', 'season:' || ${S}, '{"by":"seed-local script"}');`);
   return out.join('\n');
 }
