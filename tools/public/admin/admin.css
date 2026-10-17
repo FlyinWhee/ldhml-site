@@ -340,3 +340,10 @@ a.ad-lc-warn:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ad-grid-wide { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 @media (max-width: 900px) { .ad-grid-wide { grid-template-columns: minmax(0, 1fr); } }
 .ad-hcnt { display: inline-block; min-width: 1.6em; padding: 0 .45em; border-radius: 999px; background: var(--ball); color: var(--on-ball); font-size: .7em; line-height: 1.6; text-align: center; vertical-align: .2em; }
+/* Home to-do: one row per action (count | what | arrow) */
+.ad-todo2 { list-style: none; display: grid; gap: 6px; margin: 0; padding: 0; }
+.ad-todo-i { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.ad-todo-i:hover { border-color: var(--ball); }
+.ad-todo-n { min-width: 2.2em; font: 600 22px/1 var(--f-display); color: var(--ball); text-align: right; }
+.ad-todo-l { min-width: 0; }
+.ad-todo-go { color: var(--muted); }

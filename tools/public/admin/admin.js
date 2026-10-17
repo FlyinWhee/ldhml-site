@@ -138,6 +138,7 @@
       suChipPool: 'inscrit, sans équipe', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
       tabOverview: 'Aperçu', tabLgSetup: 'Réglages', ctxAll: 'Toute la LDHML', ctxLabel: 'Où vous êtes', navLabel: 'Pages',
+      todoMissRow: '{s} : {w}', todoNbhpaRow: 'Calendrier NBHPA : {a} nouveaux matchs, {u} changements (importer)', todoNeverRow: 'capitaine(s) jamais connecté(s)',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -198,6 +199,7 @@
       suChipPool: 'signed up, no team', suChipSub: 'Replacement', plSubs: 'Replacements',
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
       tabOverview: 'Overview', tabLgSetup: 'Settings', ctxAll: 'All of LDHML', ctxLabel: 'Where you are', navLabel: 'Pages',
+      todoMissRow: '{s}: {w}', todoNbhpaRow: 'NBHPA schedule: {a} new games, {u} changes (import)', todoNeverRow: 'captain(s) never signed in',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -650,17 +652,19 @@
     var val = '<section class="ad-panel"><h2 class="ad-ph">' + t('pToValidate') + (pending.length ? ' <span class="ad-hcnt">' + pending.length + '</span>' : '') + '</h2>' +
       (pending.length ? '<div class="bd-reqs">' + pending.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
       '</section>';
-    // what is not tied to one league: data missing in a section list, the NBHPA schedule, captains who never signed in
+    /* what is not tied to one league, one row per action (a count, what it is, one click to fix it); nothing at zero:
+     * data missing in a section list, the NBHPA schedule, captains who never signed in */
+    var row = function (attrs, n, label, tag) { return '<li><' + (tag || 'button type="button"') + ' class="ad-todo-i" ' + attrs + '><span class="ad-todo-n">' + n + '</span><span class="ad-todo-l">' + label + '</span><span class="ad-todo-go" aria-hidden="true">→</span></' + (tag ? 'a' : 'button') + '></li>'; };
     var todo = [];
     d.missing.forEach(function (m) {
-      if (!m.no_salary && !m.no_birth && !m.no_nid) return;
-      var sec = (S.data.sections || []).filter(function (x) { return x.key === m.section; })[0];
-      var link = function (kind, text) { return '<button type="button" class="lnk ad-linkbtn" data-home-miss="' + esc(m.section) + ':' + kind + '">' + esc(text) + '</button>'; };
-      todo.push('<li><b>' + esc(nameOf(sec) || m.section) + ' :</b> ' + link('sal', m.no_salary + ' ' + t('fNoSal').toLowerCase()) + ' · ' + link('birth', m.no_birth + ' ' + t('fNoBirth').toLowerCase()) + ' · ' + link('nid', m.no_nid + ' ' + t('fNoNid').toLowerCase()) + '</li>');
+      var sec = (S.data.sections || []).filter(function (x) { return x.key === m.section; })[0], sn = esc(nameOf(sec) || m.section);
+      [['sal', m.no_salary, 'fNoSal'], ['birth', m.no_birth, 'fNoBirth'], ['nid', m.no_nid, 'fNoNid']].forEach(function (x) {
+        if (x[1]) todo.push(row('data-home-miss="' + esc(m.section) + ':' + x[0] + '"', x[1], esc(t('todoMissRow', { s: nameOf(sec) || m.section, w: t(x[2]).charAt(0).toLowerCase() + t(x[2]).slice(1) }))));
+      });
     });
-    if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push('<li><b>' + esc(t('todoNbhpa', { a: d.nbhpa.add, u: d.nbhpa.update })) + '</b> <button type="button" class="ad-btn ad-btn-sm ad-ar" data-games-import>' + esc(t('importGames')) + '</button></li>');
-    if (d.captainsNeverIn) todo.push('<li><button type="button" class="lnk ad-linkbtn" data-home-accounts>' + esc(t('todoNever', { n: d.captainsNeverIn })) + '</button></li>');
-    var todoP = todo.length ? '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2><ul class="ad-todo">' + todo.join('') + '</ul></section>' : '';
+    if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push(row('data-games-import', d.nbhpa.add + d.nbhpa.update, esc(t('todoNbhpaRow', { a: d.nbhpa.add, u: d.nbhpa.update }))));
+    if (d.captainsNeverIn) todo.push(row('href="#/config"', d.captainsNeverIn, esc(t('todoNeverRow')), 'a'));
+    var todoP = todo.length ? '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2><ul class="ad-todo2">' + todo.join('') + '</ul></section>' : '';
     return head + leaguesP + (todoP ? '<div class="ad-grid2 ad-grid-wide"><div class="ad-col">' + val + '</div><div class="ad-col">' + todoP + '</div></div>' : val) +
       '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
   }
