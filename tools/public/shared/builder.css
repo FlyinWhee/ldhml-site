@@ -154,3 +154,11 @@
 .ld-nights { display: grid; gap: 12px; }
 @media (max-width: 700px) { .ld-cols { grid-template-columns: 1fr; } .ld-vs { justify-self: start; } }
 .ld-none { margin: 0; font-size: 13px; color: var(--muted); }
+@media (max-width: 600px) {
+  .bd-req { padding: 8px 10px; }
+  .bd-req-h { gap: 4px 6px; }
+  .bd-meta { font-size: 11px; }
+  .bd-q { font-size: 24px; }
+  .bd-line { padding: 10px; }
+  .bd-lh h3 { font-size: 19px; }
+}

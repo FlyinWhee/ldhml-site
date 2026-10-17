@@ -29,7 +29,10 @@
 .ad-door b { font: 600 26px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
 .ad-door span { color: var(--muted); }
 .ad-door:hover { border-color: var(--ball); }
-@media (max-width: 899px) { .sec-top { flex-wrap: wrap; } .sec-top .nav { display: flex; flex-basis: 100%; } }
+/* below 900 px the top menu gives way to the bottom tab bar (site.css .tabbar, like the public site) */
+.ad-short { display: none; }
+.ad-m-only { display: none; }
+@media (max-width: 899px) { html.ad-has-tabbar .sec-top .nav { display: none; } .sec-top { flex-wrap: nowrap; } .sec-top .brand { flex: 1 1 auto; min-width: 0; } }
 @media (max-width: 600px) { .ad-form .ctl { min-width: 0; width: 100%; } .ad-form label { flex: 1 1 100%; } }
 body { margin: 0; }
 .ad-body > .ph:first-child, .ad-body > .ad-msg + .ph { margin-top: 10px; }
@@ -164,3 +167,65 @@ a.ad-kpi:hover { border-color: var(--ball); }
 .ad-lgoff { opacity: .6; border-style: dashed; }
 .ad-lgoff .ad-switch { opacity: 1; }
 .ad-offnote { margin: 4px 0 0; }
+/* ---------- phones and small tablets ---------- */
+.ad-tbcnt { position: absolute; top: 4px; left: calc(50% + 6px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--ball); color: var(--on-ball); font: 700 10px/16px var(--f-text); }
+@media (max-width: 899px) {
+  html.ad-has-tabbar .ad-body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  html.ad-has-tabbar .foot { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  html.ad-has-tabbar .bd-nav { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+  .tabbar { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 600px) {
+  .ad-body { padding-block: 12px 32px; }
+  .ad-body > .ph:first-child, .ad-body .ph { font-size: 40px; margin: 4px 0 6px; }
+  .ad-body .lede { font-size: 15px; margin-bottom: 8px; }
+  .sec-top { flex-wrap: nowrap; gap: 8px; }
+  .sec-top .brand small { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .ad-tools { gap: 6px; padding: 6px 0; flex: none; }
+  .ad-tools .lgbtn { padding: 6px 8px; font-size: 13px; }
+  .ad-long { display: none; }
+  .ad-short { display: inline; }
+  .ad-scope { padding: 8px; gap: 8px; }
+  .ad-scope .ad-inline select { max-width: 60vw; }
+  .ad-panel, .ad-lgset { padding: 10px; }
+  /* Configuration: rules two per row; each team on two short lines, labelled */
+  .ad-lgset .ad-rule { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ad-lgset .ad-rule label { flex: none; }
+  .ad-lgset .ad-rule .ad-wide, .ad-lgset .ad-rule .ad-btn { grid-column: 1 / -1; }
+  .ad-lgset .ad-rule .ad-sm, .ad-lgset .ad-rule select { width: 100% !important; }
+  .ad-lgset-h { flex-wrap: wrap; gap: 6px 10px; }
+  .ad-lgset .ad-switch { margin-left: 0; flex-basis: 100%; }
+  .ad-lgset .ad-tbl tr { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .ad-lgset .ad-tbl td { width: auto; padding: 0; }
+  .ad-lgset .ad-tbl td.ad-c-name { flex: 1 1 0; min-width: 0; }
+  .ad-lgset .ad-tbl td.ad-c-sm { display: none; }
+  .ad-lgset .ad-tbl td.ad-acts { flex: none; }
+  .ad-lgset .ad-tbl td.ad-acts .ad-linkbtn { margin-right: 10px; }
+  .ad-m-only { display: block; margin: 2px 0 0 32px; font-size: 12px; color: var(--muted); white-space: normal; }
+  .ad-lgset .ad-tbl td.ad-c-name { white-space: normal; }
+  .ad-tbl td[data-label]::before { content: attr(data-label) " "; color: var(--muted); font-size: 12px; }
+  /* home: tighter key numbers */
+  .ad-kpi { padding: 10px; }
+  .ad-kv { font-size: 28px; }
+}
+/* grids never grow wider than the screen */
+.ad-lgsets, .ad-teams { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 700px) { .ad-teams { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); } }
+.ad-lgset, .ad-team, .ad-panel { min-width: 0; }
+.ad-form .ctl { max-width: 100%; }
+/* Joueurs on phones: a compact card per player (name and NBHPA no.; sex, birth, J$, G$; teams; actions) */
+.ad-players td[data-label]::before { display: none; }
+@media (max-width: 600px) {
+  .ad-players tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 10px 0; }
+  .ad-players td, .ad-players td.num { width: auto !important; padding: 0 !important; text-align: left; }
+  .ad-players td.ad-p-name { flex: 1 1 calc(100% - 130px); min-width: 0; }
+  .ad-players td.ad-p-nid { flex: 0 0 116px; text-align: right; font-size: 13px; }
+  .ad-players td.ad-p-sm { font-size: 14px; }
+  .ad-players td.ad-p-teams, .ad-players td.ad-acts { flex: 0 0 100%; }
+  .ad-players td[data-label]::before { display: inline; content: attr(data-label) " "; color: var(--muted); font-size: 12px; }
+}
+.ad-filt > summary { display: none; }
+@media (max-width: 600px) {
+  .ad-filt > summary { display: list-item; cursor: pointer; padding: 6px 0; font-weight: 600; color: var(--muted); }
+  .ad-lgset .tcell .crest { display: inline-grid; }
+}

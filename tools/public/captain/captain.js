@@ -18,7 +18,7 @@
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
-      sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
+      langShort: 'EN', sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
       myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
@@ -38,7 +38,7 @@
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
-      sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
+      langShort: 'FR', sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
       myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
@@ -188,7 +188,7 @@
   function render() {
     document.documentElement.lang = lang;
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b><small>' + esc(S.me ? S.me.name : '') + '</small></span></a>' +
-      '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang">' + t('lang') + '</button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
+      '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
     $('#main').innerHTML = msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
