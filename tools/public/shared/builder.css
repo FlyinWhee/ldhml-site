@@ -129,3 +129,27 @@
 .bd-gtag { display: inline-block; padding: 0 6px; border: 1px dashed var(--bad, #e57373); border-radius: 3px; font-size: 12px; color: var(--bad, #e57373); }
 .bd-guestbtn { font-size: 14px; }
 .bd-cl-team .bd-why { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; }
+/* ---------- the actual lineup of a game (roster - absents + replacements) ---------- */
+.ld-game { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 10px 12px; display: grid; gap: 8px; }
+.ld-gh { font-size: 15px; }
+.ld-gh b { font: 600 20px/1 var(--f-display); }
+.ld-cols { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; }
+.ld-vs { align-self: center; color: var(--muted); font: 600 18px/1 var(--f-display); }
+.ld-team { border-left: 4px solid var(--tc); padding-left: 10px; display: grid; gap: 4px; min-width: 0; }
+.ld-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.ld-sum { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ld-sum.bd-fail { color: var(--bad, #e57373); }
+.ld-list { list-style: none; display: grid; gap: 1px; font-size: 15px; }
+.ld-list li { display: flex; gap: 6px; align-items: baseline; }
+.ld-mark { flex: none; width: 14px; font-weight: 700; text-align: center; }
+.ld-sub.ld-approved .ld-mark { color: var(--good, #43a047); }
+.ld-sub.ld-pending .ld-mark { color: var(--warn, #f0a500); }
+.ld-sub .note { font-size: 12px; }
+.ld-g { font: 700 11px/1 var(--f-text); padding: 1px 4px; border: 1px solid var(--line); border-radius: 3px; text-decoration: none; color: var(--muted); }
+.ld-abs { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.ld-dates { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.ld-dates button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 3px; padding: 6px 10px; cursor: pointer; font: 500 14px/1.1 var(--f-text); }
+.ld-dates button.ld-past { color: var(--muted); }
+.ld-dates button[aria-pressed="true"] { border-color: var(--ball); outline: 2px solid var(--ball); outline-offset: -1px; color: var(--ink); }
+.ld-nights { display: grid; gap: 12px; }
+@media (max-width: 700px) { .ld-cols { grid-template-columns: 1fr; } .ld-vs { justify-self: start; } }

@@ -10,3 +10,10 @@
 .cp-roster { max-width: 560px; }
 @media (max-width: 600px) { .cp-ask .ad-btn { width: 100%; } }
 @media (max-width: 520px) { .cp-team .tcell .crest { display: inline-grid; } }
+/* next game and my games: the actual lineup */
+.cp-next .ld-team { max-width: 560px; }
+.cp-gline { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.cp-game { border: 1px solid var(--line); border-radius: 3px; background: var(--surface); padding: 6px 12px; margin: 0 0 6px; max-width: 760px; }
+.cp-game > summary { cursor: pointer; padding: 4px 0; }
+.cp-game[open] > summary { margin-bottom: 6px; }
+.cp-game.cp-has-subs { border-left: 4px solid var(--ball); }

@@ -119,6 +119,12 @@ The main captain tool. **The same builder in both areas** (`tools/public/shared/
 - **Privacy:** birth dates never leave the server; captains see only whether the age minimum is met. Salaries are shown to captains (the cap needs them; public or not on the stats site is still open).
 - Local tests: `node tools/scripts/seed-local.mjs --demo` adds **fake** salaries derived from the stats (skaters 2 to 6 by points per game, goalies 4, every Retro team under the 41 cap) and fake birth dates, only where empty, plus Retro demo rules if none, to try the checks. Never real data.
 
+## Actual lineups and the schedule (built 2026-10-16)
+The lineup of a team for a game = its roster, minus the absent players, plus their replacements from the requests on file (approved ✓ or pending !; an approved request wins over a pending one for the same absent player; refused ones do not count). With the night's counts (skaters, goalies) and payroll against the cap. Code: `tools/src/lineups.js` (server), `lineupHtml` / `gameHtml` in `tools/public/shared/builder.js` (display).
+- **Admin: Calendrier tab** (scope bar, league): the game nights as date chips (the next one chosen), each game with both teams side by side; "Remplacement…" per team opens the builder with that team and game (step 2). API: `GET /api/admin/lineups?season&league&date`.
+- **Captain page:** "Prochain match" (the team's lineup for the next game, "Remplacement pour ce match…") and "Mes matchs" (every game, folded; past games in a fold). The captain sees their own team only, not the other team's absences. API: `GET /api/captain/lineups?team`.
+- The schedule is the stats snapshot; the roster is the current one (a past game shows today's roster). Game-night lineups from NBHPA come later (NBHPA accounts, next season).
+
 ## Next
 - Import tool for the league file (Excel or Google Sheet) when the owner has it (salaries, birth dates, rosters).
 - Confirm the Retro rules with the league (cap sum, ages, goalie age, age date) and whether other leagues use them.

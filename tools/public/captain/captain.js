@@ -15,6 +15,8 @@
       codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.',
       codeLabel: 'Code à 6 chiffres', verify: 'Se connecter', otherEmail: 'Utiliser une autre adresse', devCode: 'Code (développement local) : {c}',
       signOut: 'Déconnexion', lang: 'English', ask: 'Demander un remplacement', askTitle: 'Demande de remplacement', back: '← Mon équipe',
+      nextGame: 'Prochain match', myGames: 'Mes matchs', pastGames: 'Matchs passés ({n})', askGame: 'Remplacement pour ce match…', noGames: 'Aucun match de votre équipe dans le calendrier.',
+      gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
       myReqs: 'Mes demandes', noReqs: 'Aucune demande pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
       payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / plafond {c}', posS: 'Joueur', posG: 'Gardien',
       noTeams: 'Aucune équipe pour le moment. Un administrateur de la ligue doit vous donner l’accès à votre équipe.',
@@ -29,6 +31,8 @@
       codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.',
       codeLabel: '6-digit code', verify: 'Sign in', otherEmail: 'Use another address', devCode: 'Code (local development): {c}',
       signOut: 'Sign out', lang: 'Français', ask: 'Request a replacement', askTitle: 'Replacement request', back: '← My team',
+      nextGame: 'Next game', myGames: 'My games', pastGames: 'Past games ({n})', askGame: 'Replacement for this game…', noGames: 'No game of your team in the schedule.',
+      gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
       myReqs: 'My requests', noReqs: 'No request yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
       payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / cap {c}', posS: 'Skater', posG: 'Goalie',
       noTeams: 'No team yet. A league admin must give you access to your team.',
@@ -41,7 +45,7 @@
   };
   var t = function (k, v) { var s = STR[lang][k] != null ? STR[lang][k] : k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 
-  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, data: null, teams: [], teamId: null, reqs: [], today: '', sub: null, flash: null };
+  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, data: null, teams: [], teamId: null, reqs: [], games: [], today: '', sub: null, flash: null };
   try { S.teamId = Number(localStorage.getItem('ldhml-captain-team')) || null; } catch (e) { /* ignore */ }
 
   function api(path, method, body) {
@@ -102,16 +106,39 @@
     tm.roster.forEach(function (r) { total += r.salary || 0; });
     var rows = tm.roster.map(function (r) { return '<tr><td>' + person(tm, r) + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.salary)) + '</td></tr>'; }).join('');
     return switcher() + '<div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
-      '<p class="cp-ask"><button type="button" class="ad-btn" data-act="ask">' + t('ask') + '</button></p>' +
+      '<p class="cp-ask"><button type="button" class="ad-btn" data-act="ask">' + t('ask') + '</button></p>' + nextGame(tm) +
       '<section class="sec"><div class="sec-h"><h2>' + t('myReqs') + '</h2></div>' +
       (current.length ? '<div class="bd-reqs">' + current.map(card).join('') + '</div>' : '<p class="note">' + t('noReqs') + '</p>') +
       (older.length ? '<details class="ad-add"><summary>' + esc(t('older', { n: older.length })) + '</summary><div class="bd-reqs">' + older.map(card).join('') + '</div></details>' : '') + '</section>' +
+      myGames(tm) +
       '<section class="sec cp-roster"><div class="sec-h"><h2>' + t('roster') + '</h2></div>' +
       (rows ? '<table class="tbl ad-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       '<p class="ad-payroll">' + esc(cap != null ? t('payrollCap', { v: money(total), c: money(cap) }) : t('payroll', { v: money(total) })) + '</p>' +
       (tm.rules && tm.rules.notes ? '<p class="note">' + esc(tm.rules.notes) + '</p>' : '') + '</section>';
   }
-  /* The builder page (#demande): the team, then the guided steps. */
+  /* The actual lineup of the team's games (roster - absents + replacements on file): the next one in full, the others folded. */
+  var gameLine = function (tm, x) { return window.LDBuilder.gameText(ctx(), tm.league, tm.nbhpa_team_id, x.game); };
+  var askBtn = function (x) { return '<button type="button" class="lnk ad-linkbtn" data-ask-game="' + esc(x.game.id) + '">' + t('askGame') + '</button>'; };
+  function nextGame(tm) {
+    var x = S.games.filter(function (g) { return g.game.date >= S.today; })[0];
+    if (!x) return '';
+    return '<section class="sec cp-next"><div class="sec-h"><h2>' + t('nextGame') + '</h2></div><p class="cp-gline"><b>' + esc(gameLine(tm, x)) + '</b> ' + askBtn(x) + '</p>' +
+      window.LDBuilder.lineupHtml(x.lineup, ctx(), { head: false }) + '</section>';
+  }
+  function myGames(tm) {
+    if (!S.games.length) return '<section class="sec"><div class="sec-h"><h2>' + t('myGames') + '</h2></div><p class="note">' + t('noGames') + '</p></section>';
+    var up = S.games.filter(function (g) { return g.game.date >= S.today; }).slice(1), past = S.games.filter(function (g) { return g.game.date < S.today; }).reverse();
+    var row = function (x, isPast) {
+      var lu = x.lineup, bits = [t('gSum', lu.counts)];
+      if (lu.absents.length) bits.push(t('gAbs', { n: lu.absents.length }));
+      if (lu.subs.length) bits.push(t('gSubs', { n: lu.subs.length }));
+      return '<details class="cp-game' + (lu.subs.length ? ' cp-has-subs' : '') + '"><summary><b>' + esc(gameLine(tm, x)) + '</b> <span class="note">' + esc(bits.join(' · ')) + '</span></summary>' +
+        window.LDBuilder.lineupHtml(lu, ctx(), { head: false }) + (isPast ? '' : '<p>' + askBtn(x) + '</p>') + '</details>';
+    };
+    return '<section class="sec"><div class="sec-h"><h2>' + t('myGames') + '</h2></div>' + up.map(function (x) { return row(x, false); }).join('') +
+      (past.length ? '<details class="ad-add"><summary>' + esc(t('pastGames', { n: past.length })) + '</summary>' + past.map(function (x) { return row(x, true); }).join('') + '</details>' : '') + '</section>';
+  }
+  /* The builder page (#demande[/<game id>]): the team, then the guided steps (a game chosen beforehand starts at step 2). */
   function viewAsk() {
     return '<p class="ad-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('askTitle') + '</h1><div class="bd-page" id="cp-builder"></div>';
   }
@@ -136,17 +163,20 @@
       S.today = rs[1].data.today || '';
       if (!S.teams.some(function (x) { return x.id === S.teamId; })) S.teamId = S.teams.length ? S.teams[0].id : null;
       route();
+      if (!S.teamId) { S.games = []; return; }
+      return api('/lineups?team=' + S.teamId).then(function (r) { S.games = (r.ok && r.data.games) || []; });
     });
   }
   /* #demande: the builder page for the current team; anything else: the team page. */
   function route() {
-    if (location.hash === '#demande' && S.teamId) { if (!S.sub || S.sub.teamId !== S.teamId) S.sub = window.LDBuilder.state({ area: 'captain', teamId: S.teamId }); }
+    var m = /^#demande(?:\/(\w+))?$/.exec(location.hash);
+    if (m && S.teamId) { var key = S.teamId + '/' + (m[1] || ''); if (!S.sub || S.sub.key !== key) { S.sub = window.LDBuilder.state({ area: 'captain', teamId: S.teamId, slot: m[1] || '' }); S.sub.key = key; } }
     else S.sub = null;
   }
   window.addEventListener('hashchange', function () {
     S.msg = S.flash; S.flash = null;
     if (!S.me) { render(); return; }
-    if (location.hash === '#demande') { route(); render(); document.documentElement.scrollTop = 0; } else refresh();
+    if (/^#demande/.test(location.hash)) { route(); render(); document.documentElement.scrollTop = 0; } else refresh();
   });
   var refresh = function () { return load().then(render); };
   var pickTeam = function (id) { S.teamId = id; try { localStorage.setItem('ldhml-captain-team', String(id)); } catch (e) { /* ignore */ } };
@@ -175,14 +205,15 @@
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-ask-game]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
     if (act === 'other-email') { S.step = 'email'; S.devCode = ''; S.msg = null; render(); return; }
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
     if (act === 'ask') { S.msg = null; location.hash = '#demande'; return; }
-    if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; render(); return; }
+    if (b.hasAttribute('data-ask-game')) { S.msg = null; location.hash = '#demande/' + b.getAttribute('data-ask-game'); return; }
+    if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
     if (b.hasAttribute('data-cancel')) {
       if (!window.confirm(t('confirmCancel'))) return;
       api('/replacements/' + b.getAttribute('data-cancel') + '/cancel', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('cancelled')); else say('err', errMsg(r)); refresh(); });

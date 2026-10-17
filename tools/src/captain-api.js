@@ -5,6 +5,7 @@ import { json, fail, readJson, cleanEmail, isLocal, now } from './http.js';
 import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearCookie } from './auth.js';
 import { sendCode } from './email.js';
 import { replacementApi } from './replacements.js';
+import { lineupApi } from './lineups.js';
 
 const audit = (env, cap, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -64,6 +65,8 @@ export async function captainApi(req, env, url) {
     return json({ teams: out });
   }
 
+  const lu = await lineupApi({ env, path, m, url, isAdmin: false, teamIds: async () => (await myTeams(env, cap)).map((t) => t.id), seasonData: () => seasonData(env, url) });
+  if (lu) return lu;
   const rep = await replacementApi({ req, env, url, path, m, actor: { kind: 'captain', id: cap.id },
     teamIds: async () => (await myTeams(env, cap)).map((t) => t.id),
     audit: (action, target, detail) => audit(env, cap, action, target, detail), seasonData: () => seasonData(env, url) });

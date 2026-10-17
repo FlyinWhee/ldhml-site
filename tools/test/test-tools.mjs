@@ -356,6 +356,23 @@ r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...b
 assert.equal(r.status, 201);
 assert.equal((await call('/api/admin/people/' + outsider + '/delete', { method: 'POST', cookie, body: {} })).status, 200);
 assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE id = ?').bind(r.data.id).first('n'), 0, 'person delete: their request goes');
+// ---- the actual lineup of a game: roster - absent players + replacements on file (approved or pending; refused ones do not count) ----
+r = await call('/api/admin/lineups?season=' + seasonId + '&league=retro&date=' + gameA2.date, { cookie });
+assert.ok(r.data.dates.includes(gameA2.date) && r.data.date === gameA2.date, 'the game nights of the league, the one asked');
+const nightA = r.data.games.find((x) => x.game.id === gameA2.id);
+assert.equal(nightA.teams.length, 2, 'both teams of the game');
+const luA = nightA.teams.find((x) => x.team.id === teamA), sub1Name = await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub1).first('name');
+assert.ok(luA.absents.some((a) => a.person_id === absentA) && !luA.players.some((p) => p.person_id === absentA), 'the absent player is out');
+assert.ok(luA.subs.some((x) => x.name === sub1Name && x.req.status === 'approved' && x.for), 'the replacement is in (approved, with who they replace)');
+assert.equal(luA.counts.s + luA.counts.g, luA.players.length + luA.subs.length, 'the night\'s counts');
+r = await call('/api/admin/lineups?season=' + seasonId + '&league=retro&date=' + gameA.date, { cookie });
+assert.equal(r.data.games.find((x) => x.game.id === gameA.id).teams.find((x) => x.team.id === teamA).subs.length, 0, 'a refused request does not change the lineup');
+r = await call('/api/captain/lineups?team=' + teamA, { cookie: ccookie });
+assert.equal(r.data.games.length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length, 'captain: every game of their team');
+assert.equal(r.data.games.find((x) => x.game.id === gameA2.id).lineup.subs.length, 1, 'with the lineup of each');
+assert.equal((await call('/api/captain/lineups?team=' + oppTeam, { cookie: ccookie })).status, 404, 'not another team');
+assert.equal((await call('/api/captain/lineups', { cookie: ccookie })).status, 400, 'captains: one of their teams only');
+
 
 // teams: a team with players cannot be deleted; a person delete takes their rows with them
 assert.equal((await call('/api/admin/teams/' + tRef(mainAbb) + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'team_in_use');
@@ -566,6 +583,16 @@ d.querySelector('[data-sf="approved"]').click(); await wait(30);
 assert.ok([...d.querySelectorAll('.bd-req.bd-st-approved')].some((c) => c.textContent.includes('OK pour ce match')), 'approved list, with the decision note');
 d.querySelector('[data-act="sub-new"]').click(); await wait(200);
 assert.ok(q('[data-b-team]'), 'from the tab: choose the team first');
+w.location.hash = '#cal'; await wait(250);
+assert.ok(d.querySelector('.nav a[href="#cal"][aria-current="page"]') && d.querySelector('.ld-dates button[aria-pressed="true"]'), 'Calendrier tab: the game nights of the league');
+d.querySelector('[data-cal-date="' + gameA2.date + '"]').click(); await wait(250);
+const calA = [...d.querySelectorAll('.ld-team')].find((x) => x.querySelector('[data-sub-game^="' + teamA + ':"]'));
+assert.equal(d.querySelectorAll('.ld-game').length * 2, d.querySelectorAll('.ld-team').length, 'each game: both teams');
+assert.ok(calA && calA.querySelector('.ld-sub.ld-approved') && calA.querySelector('.ld-abs s'), 'the actual lineup: the replacement in (approved), the absent player struck through');
+calA.querySelector('[data-sub-game]').click(); await wait(250);
+assert.ok(w.location.hash === '#subs/new/' + teamA + '/' + gameA2.id && q('.bd-sp.bd-now [data-b-step="2"]'), 'Remplacement… from the calendar: the builder with the game chosen (step 2)');
+assert.ok(/Calendrier/.test(d.querySelector('.ad-back').textContent), 'back to the calendar');
+
 w.location.hash = '#teams'; await wait(150);
 // players: the section list, with a league filter
 w.location.hash = '#players'; await wait(120);
@@ -687,6 +714,13 @@ assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no secti
 assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ?').bind(teamA).first('n')), 'their team’s requests (current and past)');
 assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
+const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
+assert.ok(cd.querySelector('.ld-team'), 'the actual lineup of the team\'s games');
+assert.equal(cd.querySelectorAll('.cp-game').length + (cd.querySelector('.cp-next') ? 1 : 0), totalGamesA, 'the next game in full, every other game folded');
+cd.querySelector('[data-ask-game]').click(); await wait(250);
+assert.ok(/^#demande\/\w+$/.test(cw.location.hash) && cd.querySelector('#cp-builder .bd-sp.bd-now [data-b-step="2"]'), 'a replacement for that game: the builder starts at step 2');
+cw.location.hash = '#equipe'; await wait(250);
+
 cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
 assert.equal(cw.location.hash, '#demande', 'the request is a page of its own');

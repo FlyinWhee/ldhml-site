@@ -117,6 +117,8 @@
       fAllPos: 'Toutes positions', fSkaters: 'Joueurs', fGoalies: 'Gardiens', colPos: 'Salaire', colPosFull: 'Salaire à sa position (G$ pour un gardien, J$ sinon), en millions',
       colNid: 'NBHPA', colNidFull: 'No de joueur NBHPA (obligatoire à partir de 2027)', nidField: 'No NBHPA (facultatif)',
       nidHint: 'Le no de joueur NBHPA deviendra obligatoire en 2027 (compte NBHPA requis pour tous). Il lie la personne aux statistiques.',
+      tabCal: 'Calendrier', calLede: 'Les soirées de match de la ligue choisie, avec l’alignement réel de chaque équipe : l’alignement, moins les absents, plus les remplaçants (approuvés ✓ ou en attente !).',
+      calNoData: 'Pas de calendrier pour cette saison dans les données.', calNone: 'Aucun match ce soir-là.', backCal: '← Calendrier',
       tabSubs: 'Remplacements', subsLede: 'Les demandes de remplacement de la ligue choisie, vérifiées avant d’arriver ici. Vous pouvez aussi faire une demande pour un capitaine.',
       newSub: 'Nouveau remplacement', backTeams: '← Équipes', backSubs: '← Remplacements', subForTeam: 'Remplacement', subTitle: 'Remplacement · {l}', subSaved: 'Demande enregistrée.', noSubs: 'Aucune demande.',
       sf_pending: 'En attente', sf_approved: 'Approuvées', sf_refused: 'Refusées', sf_all: 'Toutes',
@@ -142,6 +144,8 @@
       fAllPos: 'All positions', fSkaters: 'Skaters', fGoalies: 'Goalies', colPos: 'Salary', colPosFull: 'Salary at their position (G$ for a goalie, S$ otherwise), in millions',
       colNid: 'NBHPA', colNidFull: 'NBHPA player no. (required from 2027)', nidField: 'NBHPA no. (optional)',
       nidHint: 'The NBHPA player no. becomes required in 2027 (an NBHPA account for everyone). It links the person to the stats.',
+      tabCal: 'Schedule', calLede: 'The game nights of the chosen league, with each team’s actual lineup: the roster, minus the absent players, plus the replacements (approved ✓ or pending !).',
+      calNoData: 'No schedule for this season in the data.', calNone: 'No game that night.', backCal: '← Schedule',
       tabSubs: 'Replacements', subsLede: 'The replacement requests of the chosen league, checked before they get here. You can also make a request for a captain.',
       newSub: 'New replacement', backTeams: '← Teams', backSubs: '← Replacements', subForTeam: 'Replacement', subTitle: 'Replacement · {l}', subSaved: 'Request saved.', noSubs: 'No request.',
       sf_pending: 'Pending', sf_approved: 'Approved', sf_refused: 'Refused', sf_all: 'All',
@@ -160,8 +164,8 @@
    * Scope: season, section, league. Every working tab shows only that context. Section and league are remembered in this browser. */
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'teams', seasons: [], captains: [], audit: [], data: null, seasonId: null,
     section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'name', d: 1 }, modal: null, accountsOpen: false,
-    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: 'subs', flash: null };
-  var TABS = ['teams', 'subs', 'players', 'setup', 'audit'];
+    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: 'subs', flash: null, cal: null, calDate: null };
+  var TABS = ['teams', 'cal', 'subs', 'players', 'setup', 'audit'];
   var OLD_TABS = { seasons: 'setup', rules: 'setup', captains: 'teams' };   // old links still land somewhere sensible
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
   function saveScope() { try { localStorage.setItem('ldhml-admin-scope', JSON.stringify({ section: S.section, league: S.league })); } catch (e) { /* ignore */ } }
@@ -437,10 +441,23 @@
     var l = leagueOf(tm ? tm.league : S.league);
     S.sub.league = S.league;
     if (S.sub.pick) { S.sub.teams = leagueTeams(); if (!S.sub.teamId && S.sub.teams.length === 1) S.sub.teamId = S.sub.teams[0].id; }
-    return '<p class="ad-back"><a class="lnk" href="#' + S.subFrom + '">' + t(S.subFrom === 'teams' ? 'backTeams' : 'backSubs') + '</a></p>' +
+    return '<p class="ad-back"><a class="lnk" href="#' + S.subFrom + '">' + t(S.subFrom === 'teams' ? 'backTeams' : S.subFrom === 'cal' ? 'backCal' : 'backSubs') + '</a></p>' +
       '<h1 class="ph">' + t('newSub') + '</h1>' + (l ? '<p>' + leagueOnly(l) + '</p>' : '') + '<div class="bd-page" id="ad-builder"></div>';
   }
   var leagueTeams = function () { return S.teams.filter(function (x) { return x.league === S.league; }).map(function (x) { return { id: x.id, name: x.name, abb: x.abb }; }); };
+  /* ---------- Calendar: the game nights of the league, each game with both teams' actual lineups ---------- */
+  function viewCal() {
+    var head = '<h1 class="ph">' + t('tabCal') + '</h1><p class="lede">' + t('calLede') + '</p>' + scopeBar('league');
+    var c = S.cal;
+    if (!curSeason() || !leagueOf(S.league) || !c) return head;
+    if (c.noData) return head + '<p class="note">' + t('calNoData') + '</p>';
+    var ctx = builderCtx();
+    var chips = '<div class="ld-dates" role="group" aria-label="' + esc(t('tabCal')) + '">' + c.dates.map(function (d) {
+      return '<button type="button" data-cal-date="' + d + '" aria-pressed="' + (d === c.date) + '"' + (d < c.today ? ' class="ld-past"' : '') + '>' + esc(window.LDBuilder.day(ctx, d)) + '</button>'; }).join('') + '</div>';
+    var act = function (lu, g) { return lu.team.id ? '<button type="button" class="lnk ad-linkbtn" data-sub-game="' + lu.team.id + ':' + g.id + '">' + t('subForTeam') + '…</button>' : ''; };
+    return head + chips + (c.date ? '<h2 class="ad-h3">' + esc(window.LDBuilder.day(ctx, c.date)) + '</h2>' : '') +
+      (c.games.length ? '<div class="ld-nights">' + c.games.map(function (item) { return window.LDBuilder.gameHtml(item, ctx, act); }).join('') + '</div>' : '<p class="note">' + t('calNone') + '</p>');
+  }
   function viewSubs() {
     if (S.sub) return viewSubBuild();
     var s = curSeason(), l = leagueOf(S.league);
@@ -532,12 +549,12 @@
   function render() {
     document.documentElement.lang = lang;
     var pend = Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0);
-    var tabs = [['teams', t('tabTeams')], ['subs', t('tabSubs') + (pend ? ' (' + pend + ')' : '')], ['players', t('tabPlayers')], ['setup', t('tabSetup')], ['audit', t('tabAudit')]];
+    var tabs = [['teams', t('tabTeams')], ['cal', t('tabCal')], ['subs', t('tabSubs') + (pend ? ' (' + pend + ')' : '')], ['players', t('tabPlayers')], ['setup', t('tabSetup')], ['audit', t('tabAudit')]];
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/admin/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
       (S.me ? '<nav class="nav" aria-label="Admin">' + tabs.map(function (x) { return '<a href="#' + x[0] + '"' + (S.tab === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang">' + t('lang') + '</button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { subs: viewSubs, players: viewPlayers, teams: viewTeams, setup: viewSetup, audit: viewAudit };
+    var views = { cal: viewCal, subs: viewSubs, players: viewPlayers, teams: viewTeams, setup: viewSetup, audit: viewAudit };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : (views[S.tab] || viewTeams)());
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
@@ -561,6 +578,7 @@
       fixScope();
       var more = [];
       if (S.seasonId) more.push(api('/replacements/pending?season=' + S.seasonId).then(function (r) { S.pending = r.data.counts || {}; }));
+      if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && S.tab === 'subs') more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
       if (S.seasonId && ['teams', 'setup', 'subs'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
@@ -659,7 +677,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos]');
+      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -669,7 +687,9 @@
     if (act === 'close-modal') { S.modal = null; S.msg = null; render(); return; }
     /* scope */
     if (b.hasAttribute('data-sec')) { S.section = b.getAttribute('data-sec'); S.league = null; fixScope(); saveScope(); S.msg = null; refresh(); return; }
-    if (b.hasAttribute('data-lg')) { S.league = b.getAttribute('data-lg'); saveScope(); S.msg = null; render(); return; }
+    if (b.hasAttribute('data-lg')) { S.league = b.getAttribute('data-lg'); saveScope(); S.msg = null; if (S.tab === 'cal') { S.calDate = null; refresh(); } else render(); return; }
+    if (b.hasAttribute('data-cal-date')) { S.calDate = b.getAttribute('data-cal-date'); refresh(); return; }
+    if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = 'cal'; location.hash = '#subs/new/' + sg[0] + '/' + sg[1]; return; }
     if (b.hasAttribute('data-plf')) { S.plf = b.getAttribute('data-plf'); render(); return; }
     if (b.hasAttribute('data-sf')) { S.sf = b.getAttribute('data-sf'); render(); return; }
     if (b.hasAttribute('data-psort')) { var pk = b.getAttribute('data-psort'); S.ps = S.ps.k === pk ? { k: pk, d: -S.ps.d } : { k: pk, d: pk === 's' || pk === 'g' ? -1 : 1 }; render(); return; }
@@ -709,13 +729,13 @@
     if (b.hasAttribute('data-roster-remove')) { if (window.confirm(t('confirmRemoveRoster', { n: nm }))) api('/rosters/' + b.getAttribute('data-roster-remove') + '/remove', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-del-team')) { if (window.confirm(t('confirmDeleteTeam', { n: nm }))) api('/teams/' + b.getAttribute('data-del-team') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
   });
-  /* Routes: #<tab>, and #subs/new[/<team id>] for the builder page. */
+  /* Routes: #<tab>, and #subs/new[/<team id>[/<game id>]] for the builder page (a game from the calendar starts at step 2). */
   function route() {
     var parts = location.hash.replace('#', '').split('/'), h = OLD_TABS[parts[0]] || parts[0];
     S.tab = TABS.indexOf(h) >= 0 ? h : 'teams';
     if (S.tab === 'subs' && parts[1] === 'new') {
-      var team = Number(parts[2]) || null;
-      if (!S.sub || S.sub.teamId !== team && !S.sub.pick) S.sub = window.LDBuilder.state({ area: 'admin', teamId: team });
+      var team = Number(parts[2]) || null, key = parts.slice(2).join('/');
+      if (!S.sub || S.sub.key !== key) { S.sub = window.LDBuilder.state({ area: 'admin', teamId: team, slot: parts[3] || '' }); S.sub.key = key; }
       S.sub.pick = !team;
     } else S.sub = null;
   }

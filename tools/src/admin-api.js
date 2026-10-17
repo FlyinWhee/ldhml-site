@@ -4,6 +4,7 @@ import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearC
 import { sendCode } from './email.js';
 import { rosterApi } from './roster-api.js';
 import { replacementApi } from './replacements.js';
+import { lineupApi } from './lineups.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -180,6 +181,8 @@ export async function adminApi(req, env, url) {
   const rep = await replacementApi({ req, env, url, path, m, actor: { kind: 'admin', id: admin.id }, teamIds: async () => null,
     audit: (action, target, detail) => audit(env, admin, action, target, detail), seasonData: () => seasonData(env, url) });
   if (rep) return rep;
+  const lu = await lineupApi({ env, path, m, url, isAdmin: true, teamIds: async () => null, seasonData: () => seasonData(env, url) });
+  if (lu) return lu;
 
   // ---- audit (read) ----
   if (m === 'GET' && path === '/audit') {

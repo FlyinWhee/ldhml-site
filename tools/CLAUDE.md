@@ -8,6 +8,8 @@ src/admin-api.js   /api/admin/...: sign-in, seasons, captains, access per season
 src/roster-api.js  /api/admin/...: people, league player lists, our teams, rosters, league rules (called by admin-api.js)
 src/captain-api.js /api/captain/...: captain sign-in, my teams, then the replacement routes for those teams only
 src/replacements.js replacement requests and their checks, shared by both areas (admin: any team; captain: their teams)
+src/lineups.js     the actual lineup of a game (roster - absents + replacements on file): admin calendar, captain games
+src/guest.js       a replacement player not on the list ("joueur hors-ligue")
 src/auth.js        passwordless sign-in (emailed code), sessions, cookies; admin and captain kinds kept apart
 src/email.js       sends the code: "console" (local only) or "resend"
 src/http.js        JSON responses, origin check, input cleaning
