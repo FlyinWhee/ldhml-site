@@ -176,7 +176,7 @@
       /* folded, the game still shows each replacement on one line: absent → replacement, with a status dot */
       var slim = '<ul class="cp-slim">' + r.reqs.map(function (q) { return q.lines.map(function (l) {
         return '<li class="cp-st-' + q.status + '"><i aria-hidden="true"></i>' + esc(l.absent_name) + ' <span aria-hidden="true">→</span> <b>' + esc(l.sub_name) + '</b><span class="cp-sr"> · ' + esc(t('st_' + q.status)) + '</span></li>'; }).join(''); }).join('') + '</ul>';
-      return '<li class="cp-game cp-has-subs' + (next ? ' cp-nextg' : '') + '"><details' + (next || S.openGames[r.x ? r.x.game.id : r.date] ? ' open' : '') + ' data-game-key="' + esc(r.x ? r.x.game.id : r.date) + '"><summary><span class="cp-gl">' + line + '</span>' + slim + '</summary>' + sum +
+      return '<li class="cp-game cp-has-subs' + (next ? ' cp-nextg' : '') + '"><details' + (S.openGames[r.x ? r.x.game.id : r.date] ? ' open' : '') + ' data-game-key="' + esc(r.x ? r.x.game.id : r.date) + '"><summary><span class="cp-gl">' + line + '</span>' + slim + '</summary>' + sum +
         '<div class="bd-reqs">' + r.reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx(), actions(q), { team: false, game: false, result: q.status === 'pending' }); }).join('') + '</div></details></li>';
     };
     return '<section class="cp-panel cp-tl"><h2 class="cp-ph">' + t('myGames') + '</h2>' +

@@ -785,7 +785,7 @@ assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.
 assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1, 'the next game marked');
 assert.equal(cd.querySelectorAll('.cp-kpis .cp-kpi').length, 2, 'two key numbers: the next game and the payroll');
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game [data-ask-game]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each upcoming game: "Déclarer…"');
-assert.ok(![...cd.querySelectorAll('.cp-game > details')].some((x) => x.open && !x.closest('.cp-nextg')), 'the replacements of a game fold under it (only the next game is open)');
+assert.ok(![...cd.querySelectorAll('.cp-game > details')].some((x) => x.open), 'every game starts folded (one line per replacement); opened on demand');
 assert.ok([...cd.querySelectorAll('.cp-game > details')].every((x) => x.querySelector('summary .cp-slim li')), 'folded, a game still shows each replacement on one line (absent → replacement)');
 cd.querySelector('.cp-tl [data-ask-game]').click(); await wait(250);
 assert.ok(cw.location.hash.indexOf('#remplacement/') === 0 && cd.querySelector('#cp-builder .bd-sp.bd-now [data-b-step="2"]'), '"Déclarer…" on a game: the builder on that game (step 2)');
