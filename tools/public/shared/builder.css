@@ -128,3 +128,4 @@
 .bd-gl { font: 500 13px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .bd-gtag { display: inline-block; padding: 0 6px; border: 1px dashed var(--bad, #e57373); border-radius: 3px; font-size: 12px; color: var(--bad, #e57373); }
 .bd-guestbtn { font-size: 14px; }
+.bd-cl-team .bd-why { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; }

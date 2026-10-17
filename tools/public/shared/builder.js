@@ -200,7 +200,8 @@
     var outSum = 0, inSum = 0; (lines || []).forEach(function (l) { outSum += l.absent_salary || 0; inSum += l.sub_salary || 0; });
     html += team.map(function (c) {
       var text = c.k === 'cap' && payroll ? capText(ctx, payroll, outSum, inSum) : explain(ctx, c, names);
-      return '<li class="bd-cl"><div class="bd-cl-h"><span class="bd-chks">' + chip(ctx, c) + '</span></div><p class="bd-why bd-' + c.s + '">' + esc(text) + '</p></li>';
+      /* a team check (cap, duplicates): one line, the numbers then the chip at the end */
+      return '<li class="bd-cl bd-cl-team"><p class="bd-why bd-' + c.s + '">' + esc(text) + ' ' + chip(ctx, c) + '</p></li>';
     }).join('');
     return '<ul class="bd-checks">' + html + '</ul>';
   }
