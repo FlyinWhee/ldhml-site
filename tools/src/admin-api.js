@@ -184,6 +184,21 @@ export async function adminApi(req, env, url) {
   const lu = await lineupApi({ env, path, m, url, isAdmin: true, teamIds: async () => null, seasonData: () => seasonData(env, url) });
   if (lu) return lu;
 
+  // ---- home dashboard: what needs the admins' attention this season (counts; the replacements come from /replacements) ----
+  if (m === 'GET' && path === '/dashboard') {
+    const sid = Number(url.searchParams.get('season')) || 0, DB = env.DB;
+    const { results: missing } = await DB.prepare(`SELECT sp.section, COUNT(*) AS players, SUM(sp.salary_s IS NULL OR sp.salary_g IS NULL) AS no_salary,
+        SUM(p.birth_year IS NULL) AS no_birth, SUM(p.nid IS NULL) AS no_nid
+      FROM section_players sp JOIN people p ON p.id = sp.person_id WHERE sp.season_id = ? GROUP BY sp.section`).bind(sid).all();
+    const { results: noCaptain } = await DB.prepare(`SELECT t.id, t.league, t.name, t.abb, t.nbhpa_team_id FROM teams t WHERE t.season_id = ?
+      AND NOT EXISTS (SELECT 1 FROM captain_access a WHERE a.team_ref = t.id AND a.revoked_at IS NULL) ORDER BY t.league, t.name COLLATE NOCASE`).bind(sid).all();
+    const teams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ?').bind(sid).first('n');
+    const { results: rules } = await DB.prepare('SELECT league FROM league_rules WHERE season_id = ?').bind(sid).all();
+    const neverIn = await DB.prepare(`SELECT COUNT(*) AS n FROM captains c WHERE c.disabled_at IS NULL AND c.last_login_at IS NULL
+      AND EXISTS (SELECT 1 FROM captain_access a WHERE a.captain_id = c.id AND a.season_id = ? AND a.revoked_at IS NULL)`).bind(sid).first('n');
+    return json({ missing, noCaptain, teams, rulesLeagues: rules.map((r) => r.league), captainsNeverIn: neverIn });
+  }
+
   // ---- audit (read) ----
   if (m === 'GET' && path === '/audit') {
     const { results } = await env.DB.prepare(`SELECT a.id, a.at, a.actor_kind, a.actor_id, COALESCE(ad.name, c.name) AS actor_name, a.action, a.target, a.detail FROM audit a

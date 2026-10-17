@@ -8,7 +8,7 @@
  *       The builder is a page of its own in both areas (not a modal: it needs the room).
  *   LDBuilder.requestCard(q, ctx, actionsHtml, o)   one request (queue, history), compact: the problems in words,
  *       every check in a fold. o = { team: show the team (false on the captain's own team page), game: show the game (false under
- *       a game line), result: show the result chip }
+ *       a game line), result: show the result chip, league: show the league badge (a list of several leagues) }
  * Replacements are always the same sex as the absent player (every league): other-sex players are not offered.
  *   LDBuilder.lineupHtml(lu, ctx, o)   the changes to a team's lineup for a game (replacements in, absent players out), from /lineups
  *   LDBuilder.gameHtml(item, ctx, actFn)   a game of a night: both teams' lineups side by side (admin calendar)
@@ -41,7 +41,7 @@
       fits: 'admissible', noTeam: 'sans équipe', nAbsent: '{n} absent(s)', nSubs: '{n} remplaçant(s)', changeTeam: 'Changer d’équipe',
       sameSex: 'remplaçant du même sexe',
       ldAbsent: 'Absents', ldFor: 'remplace {n}', ldCounts: '{s} joueurs · {g} gardien(s)', ldPay: 'masse {a} / {c}', ldPayNoCap: 'masse {a}',
-      ldNone: 'Aucun remplacement.', ldMissing: 'Équipe pas encore dans les outils (Configuration).', ldFull: 'Alignement régulier, aucun absent.', ldG: 'G', ldGoalieTitle: 'Gardien',
+      sxM: 'H', sxF: 'F', ldNone: 'Aucun remplacement.', ldMissing: 'Équipe pas encore dans les outils (Configuration).', ldFull: 'Alignement régulier, aucun absent.', ldG: 'G', ldGoalieTitle: 'Gardien',
       guestBtn: 'Joueur hors-ligue…', guestLegend: 'Joueur hors-ligue (pas sur la liste)', guestName: 'Nom', guestSex: 'Sexe', sexM: 'Homme', sexF: 'Femme',
       guestAge: 'Âge (facultatif)', guestNid: 'No NBHPA (facultatif)', guestUse: 'Utiliser ce joueur',
       guestHint: 'Un joueur hors-ligue rend le remplacement non conforme : une note est requise, l’administration décide. Même sexe que {a}.',
@@ -92,7 +92,7 @@
       fits: 'eligible', noTeam: 'no team', nAbsent: '{n} absent', nSubs: '{n} replacement(s)', changeTeam: 'Change team',
       sameSex: 'replacement of the same sex',
       ldAbsent: 'Absent', ldFor: 'replaces {n}', ldCounts: '{s} skaters · {g} goalie(s)', ldPay: 'payroll {a} / {c}', ldPayNoCap: 'payroll {a}',
-      ldNone: 'No replacement.', ldMissing: 'Team not in the tools yet (Setup).', ldFull: 'Regular roster, nobody absent.', ldG: 'G', ldGoalieTitle: 'Goalie',
+      sxM: 'M', sxF: 'W', ldNone: 'No replacement.', ldMissing: 'Team not in the tools yet (Setup).', ldFull: 'Regular roster, nobody absent.', ldG: 'G', ldGoalieTitle: 'Goalie',
       guestBtn: 'Player not on the list…', guestLegend: 'Player not on the list', guestName: 'Name', guestSex: 'Sex', sexM: 'Man', sexF: 'Woman',
       guestAge: 'Age (optional)', guestNid: 'NBHPA no. (optional)', guestUse: 'Use this player',
       guestHint: 'A player not on the list makes the replacement non-conforming: a note is required, the admins decide. Same sex as {a}.',
@@ -219,6 +219,7 @@
 
   /* ---------- a request: the same compact card in the queue, the history and the captain's list ----------
    * Header: (team) game, status (result). One line per replacement. Then only the problems, in words; every check in a fold. */
+  var leagueTag = function (ctx, slug) { var l = leagueOf(ctx, slug); return l ? window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: home(ctx, l), title: l.name, theme: l.theme }) : ''; };
   function requestCard(q, ctx, actions, o) {
     o = o || {};
     var L = ctx.lang;
@@ -238,7 +239,7 @@
     var who = q.created_kind === 'admin' ? t(L, 'byAdmin', { n: q.created_name || '—', d: stamp(ctx, q.created_at) }) : t(L, 'by', { n: q.created_name || '—', d: stamp(ctx, q.created_at) });
     var dec = q.decided_at ? t(L, 'decided', { s: t(L, 'st_' + q.status), n: q.decided_name || '—', d: stamp(ctx, q.decided_at) }) : '';
     return '<article class="bd-req bd-st-' + esc(q.status) + '" data-req="' + q.id + '" style="--tc:' + window.LDLook.colorVar(q.league, q.team.abb) + '">' +
-      '<div class="bd-req-h">' + (o.team === false ? '' : teamHead(ctx, q.team, q.league)) + (o.game === false ? '<span class="bd-game"></span>' : '<b class="bd-game">' + esc(requestGame(ctx, q)) + '</b>') +
+      '<div class="bd-req-h">' + (o.league ? leagueTag(ctx, q.league) : '') + (o.team === false ? '' : teamHead(ctx, q.team, q.league)) + (o.game === false ? '<span class="bd-game"></span>' : '<b class="bd-game">' + esc(requestGame(ctx, q)) + '</b>') +
       '<span class="bd-st">' + esc(t(L, 'st_' + q.status)) + '</span>' + (o.result === false ? '' : resultChip(ctx, q.result)) + '</div>' +
       '<ul class="bd-lines">' + lines + '</ul>' + (issues ? '<ul class="bd-issues">' + issues + '</ul>' : '') +
       (q.note ? '<p class="bd-note">' + esc(q.note) + '</p>' : '') + (q.decision_note ? '<p class="bd-note bd-dnote">' + esc(q.decision_note) + '</p>' : '') +
@@ -384,10 +385,10 @@
   function step2(b) {
     var L = b.ctx.lang, d = b.d;
     if (!d.roster.length) return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'emptyRoster')) + '</p>' + nav(b, 1, 0);
-    return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'q2hint')) + '</p><div class="bd-tiles">' + d.roster.map(function (p) {
+    return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'q2hint')) + '</p><div class="bd-tiles">' + rosterOrder(d.roster, function (p) { return p.salary; }).map(function (p) {
       var on = b.lines.some(function (l) { return l.absent_id === p.person_id; });
       return '<button type="button" class="bd-tile' + (on ? ' bd-on' : '') + '" data-b-absent="' + p.person_id + '" data-b-key="abs-' + p.person_id + '" aria-pressed="' + on + '">' +
-        '<span class="bd-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></span></button>';
+        '<span class="bd-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc((p.sex ? t(L, p.sex === 'f' ? 'sxF' : 'sxM') + ' · ' : '') + posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></span></button>';
     }).join('') + '</div>' + nav(b, 1, b.lines.length ? 3 : 0, b.lines.length ? t(L, 'nextN', { n: b.lines.length }) : '');
   }
   function candCard(b, line, x, chosen) {
@@ -622,6 +623,15 @@
       '<div class="ld-cols">' + item.teams.map(function (lu) { return lineupHtml(lu, ctx, { actions: actFn ? actFn(lu, gm) : '' }); }).join('<span class="ld-vs" aria-hidden="true">@</span>') + '</div></article>';
   }
 
-  window.LDBuilder = { state: state, mount: mount, requestCard: requestCard, checksHtml: checksHtml, lineupHtml: lineupHtml, gameHtml: gameHtml,
+  /* The default order of every player list (owner): men, then women, then goalies; salary high to low in each group.
+   * sal(p) gives the salary to sort by (the salary at the player's position). Returns a sorted copy. */
+  function rosterOrder(list, sal) {
+    var grp = function (p) { return p.pos === 'g' ? 2 : p.sex === 'f' ? 1 : 0; };
+    return list.slice().sort(function (a, b) {
+      var x = sal(a), y = sal(b);
+      return grp(a) - grp(b) || (y == null ? -1 : y) - (x == null ? -1 : x) || String(a.name).localeCompare(String(b.name), 'fr');
+    });
+  }
+  window.LDBuilder = { rosterOrder: rosterOrder, state: state, mount: mount, requestCard: requestCard, checksHtml: checksHtml, lineupHtml: lineupHtml, gameHtml: gameHtml,
     day: function (ctx, d) { return day(ctx, d); }, gameText: function (ctx, league, nb, g) { return gameText(ctx, league, nb, g, true); }, t: t, STR: STR };
 })();

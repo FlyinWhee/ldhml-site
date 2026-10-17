@@ -107,7 +107,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     const s = await season(q.get('season'));
     if (!s) return fail(400, 'season');
     const { results: teams } = await DB.prepare('SELECT id, league, name, abb, nbhpa_team_id FROM teams WHERE season_id = ? ORDER BY league, name COLLATE NOCASE').bind(s.id).all();
-    const { results: ros } = await DB.prepare(`SELECT r.id, r.team_id, r.league, r.pos, r.added_at, p.id AS person_id, p.name, p.site_id
+    const { results: ros } = await DB.prepare(`SELECT r.id, r.team_id, r.league, r.pos, r.added_at, p.id AS person_id, p.name, p.site_id, p.sex
       FROM rosters r JOIN people p ON p.id = r.person_id
       WHERE r.season_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(s.id).all();
     // The salary comes from the player list of the team's section (a person can be on the lists of two sections).

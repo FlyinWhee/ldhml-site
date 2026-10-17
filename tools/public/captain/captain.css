@@ -44,3 +44,4 @@
 .cp-tl .cp-game .bd-reqs { margin: 4px 0 0; }
 .cp-tl .cp-game .bd-req { background: var(--bg); }
 .cp-tl .bd-req-h .bd-game:empty { margin-right: auto; }
+.cp-sx { color: var(--muted); }

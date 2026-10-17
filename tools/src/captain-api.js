@@ -56,11 +56,11 @@ export async function captainApi(req, env, url) {
     const out = [];
     for (const t of teams) {
       const lg = data && data.leagues.find((l) => l.slug === t.league);
-      const { results: roster } = await env.DB.prepare(`SELECT r.person_id, r.pos, p.name, p.site_id, sp.salary_s, sp.salary_g FROM rosters r JOIN people p ON p.id = r.person_id
+      const { results: roster } = await env.DB.prepare(`SELECT r.person_id, r.pos, p.name, p.site_id, p.sex, sp.salary_s, sp.salary_g FROM rosters r JOIN people p ON p.id = r.person_id
         LEFT JOIN section_players sp ON sp.season_id = r.season_id AND sp.section = ? AND sp.person_id = r.person_id
         WHERE r.team_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(lg ? lg.section : '', t.id).all();
       const rules = await env.DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM league_rules WHERE season_id = ? AND league = ?').bind(t.season_id, t.league).first();
-      out.push({ ...t, rules, roster: roster.map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, pos: r.pos, salary: (r.pos === 'g' ? r.salary_g : r.salary_s) ?? null })) });
+      out.push({ ...t, rules, roster: roster.map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: (r.pos === 'g' ? r.salary_g : r.salary_s) ?? null })) });
     }
     return json({ teams: out });
   }

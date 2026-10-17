@@ -478,6 +478,13 @@ d.querySelector('#f-email [name=email]').value = 'boss@example.test'; await subm
 const devHint = d.querySelector('.ad-dev').textContent.match(/\d{6}/)[0];
 d.querySelector('#f-code [name=code]').value = devHint; await submit('#f-code');
 assert.ok(/Boss|boss@example\.test/.test(d.getElementById('top').textContent), 'signed in');
+assert.ok(d.querySelectorAll('.ad-kpis .ad-kpi').length === 4, 'home first: the dashboard and its four key numbers');
+assert.ok(!d.querySelector('.nav a[href="#audit"]') && d.querySelector('#main .ad-foot-link a[href="#audit"]'), 'the action log: a link at the bottom of the home page, not in the menu');
+w.location.hash = '#teams'; await wait(200);
+assert.ok(!d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-team .ad-ed'), 'Équipes opens in read mode: the controls that change things are hidden');
+assert.ok(d.querySelector('.ad-team [data-sub-team]:not(.ad-ed)'), '"Remplacement…" stays (daily work, not editing)');
+d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
+assert.ok(d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-edbadge'), 'Modifier: edit mode, clearly marked');
 // Teams tab (default): scoped to a league; each team card has its captains and roster; every add and edit in a modal
 assert.ok(d.querySelector('.ad-scope [data-lg="' + lg.slug + '"][aria-pressed="true"]'), 'Teams tab first: scoped to the first league of the first section');
 assert.ok(!d.querySelector('.nav a[href="#captains"]'), 'no separate Captains tab');
@@ -576,6 +583,14 @@ assert.equal(w.location.hash, '#teams', 'saved: back where the admin came from')
 assert.ok(d.querySelector('#main .ad-msg.ad-ok'), 'with a message');
 assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="#subs"]').textContent), 'the Replacements tab counts the pending request');
 assert.ok(d.querySelector('[data-lg="retro"] .ad-cnt'), 'the league button shows its pending count');
+w.location.hash = '#home'; await wait(250);
+assert.equal(d.querySelector('.ad-k-val .ad-kv').textContent, '1', 'home: one replacement to validate');
+assert.ok(d.querySelector('.ad-panel .bd-req.bd-st-pending [data-decide="approve"]') && d.querySelector('.ad-panel .bd-req .lgb'), 'with its actions and its league');
+const missBtn = d.querySelector('[data-home-miss]');
+if (missBtn) { const kind = missBtn.getAttribute('data-home-miss').split(':')[1]; missBtn.click(); await wait(250);
+  assert.ok(w.location.hash === '#players' && d.querySelector('[data-pfmiss="' + kind + '"][aria-pressed="true"]'), 'a to-do item opens Joueurs with its filter');
+  d.querySelector('[data-pfmiss=""]').click(); await wait(20); d.querySelector('[data-sec="draft"]').click(); await wait(150); }
+assert.ok(!d.getElementById('main').classList.contains('ad-editing'), 'edit mode never follows to another tab');
 w.location.hash = '#subs'; await wait(200);
 const pendingCards = d.querySelectorAll('.bd-req.bd-st-pending');
 assert.equal(pendingCards.length, 1, 'Replacements tab: the pending queue of the league');
@@ -655,6 +670,9 @@ const firstTeamsLg = season.leagues.filter((l) => l.section === 'teams')[0].slug
 assert.ok(d.querySelector('.ad-scope [data-lg="' + firstTeamsLg + '"][aria-pressed="true"]'), 'the section change carried over: first league of Équipes');
 assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, firstTeamsLg).first('n'), 'one card per team of the league');
 assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
+{ const rows = [...d.querySelectorAll('.ad-team')].flatMap((c) => [[...c.querySelectorAll('.ad-roster tr')]]);
+  const ok = rows.every((rs) => { const k = rs.map((tr) => [tr.children[2].textContent === 'Gardien' ? 2 : tr.children[1].textContent === 'F' ? 1 : 0, parseFloat(tr.children[3].textContent) || 0]); return k.every((x, i) => !i || x[0] > k[i - 1][0] || (x[0] === k[i - 1][0] && x[1] <= k[i - 1][1])); });
+  assert.ok(ok && d.querySelector('.ad-roster .ad-sx'), 'team cards: the sex shown; men, women, goalies, salary high to low'); }
 assert.ok([...d.querySelectorAll('.ad-roster a.lnk')].some((x) => x.href.includes('/' + firstTeamsLg + '/#player-L')), 'team card: a name opens the player page in the league');
 assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'), 'team setup is not on the daily Teams tab');
 // Configuration: seasons, then one card per league with its rules and team setup
@@ -723,6 +741,10 @@ assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
 assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
 assert.ok([...cd.querySelectorAll('.cp-roster a.lnk')].some((x) => x.href.includes('/draft/retro/#player-L')), 'a roster name opens the player page in the league (not the section)');
+const ordered = (rows, sx, pos, sal) => { const k = rows.map((tr) => [tr.children[pos].textContent === 'Gardien' ? 2 : tr.children[sx].textContent === 'F' ? 1 : 0, parseFloat(tr.children[sal].textContent) || 0]);
+  return k.every((x, i) => !i || x[0] > k[i - 1][0] || (x[0] === k[i - 1][0] && x[1] <= k[i - 1][1])); };
+const capRows = [...cd.querySelectorAll('.cp-roster .ad-roster tr')];
+assert.ok(capRows.every((tr) => /^(H|F|—)$/.test(tr.children[1].textContent)) && ordered(capRows, 1, 2, 3), 'captain roster: the sex shown; men, women, goalies, salary high to low');
 const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
 const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA) && g.date >= todayT).length, 'one line per upcoming game; past games only with requests, folded');

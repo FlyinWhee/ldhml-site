@@ -125,3 +125,34 @@ html.ad-modal-open, html.ad-modal-open body { overflow: hidden; }
 .ad-range { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 .ad-xs { width: 4.5em; min-width: 0; padding-inline: 6px; }
 .ad-missing { color: var(--warn, #f0a500); }
+/* ---------- edit mode: the controls that change things show only in edit mode ---------- */
+.ad-body:not(.ad-editing) .ad-ed { display: none !important; }
+.ad-edtog { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
+.ad-ghost { background: none; border: 1px solid var(--line); color: var(--ink); }
+.ad-ghost:hover { border-color: var(--ball); }
+.ad-edbadge { padding: 2px 10px; border-radius: 999px; background: var(--ball); color: var(--on-ball); font: 700 13px/1.6 var(--f-text); }
+.ad-editing .ad-team, .ad-editing .ad-players { outline: 1px dashed var(--ball); outline-offset: 2px; }
+/* ---------- home dashboard ---------- */
+.ad-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.ad-kpi { display: grid; gap: 4px; align-content: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); text-decoration: none; min-width: 0; }
+a.ad-kpi:hover { border-color: var(--ball); }
+.ad-kl { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ad-kv { font: 600 34px/1 var(--f-display); text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.ad-ks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 13px; color: var(--muted); }
+.ad-k-hot { border-top: 3px solid var(--ball); }
+.ad-grid2 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ad-col { display: grid; gap: 16px; min-width: 0; }
+.ad-panel { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.ad-ph { font: 600 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+.ad-panel .bd-reqs { margin: 0; }
+.ad-panel p { margin: 0; }
+.ad-nights { list-style: none; display: grid; gap: 6px; }
+.ad-night { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; font: 400 15px/1.2 var(--f-text); }
+.ad-night:hover { border-color: var(--ball); }
+.ad-todo { list-style: none; display: grid; gap: 10px; }
+.ad-todo li { display: grid; gap: 4px; }
+.ad-todo .lgbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad-todo-a { text-decoration: none; }
+.ad-foot-link { margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) { .ad-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ad-grid2 { grid-template-columns: minmax(0, 1fr); } }
+.ad-sx, .ad-players td:nth-child(3) { color: var(--muted); }

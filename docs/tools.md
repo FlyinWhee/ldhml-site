@@ -128,6 +128,12 @@ The lineup of a team for a game = its roster, minus the absent players, plus the
 - **Player links in a league context** (rosters, lineups, request cards, the builder) open the player's page **in that league**; the section page only when they have not played in it yet. The Joueurs tab (section-wide) links to the section page. The captain sees their own team only, not the other team's absences. API: `GET /api/captain/lineups?team`.
 - The schedule is the stats snapshot; the roster is the current one (a past game shows today's roster). Game-night lineups from NBHPA come later (NBHPA accounts, next season).
 
+## Admin home, edit mode, default order (2026-10-16)
+- **Home = a dashboard** (opens first; season choice): four key numbers (to validate, per league; next game night and the replacements on file; teams without a captain; players with missing data), then **À valider** (soonest game first, Valider / Refuser in place, league badge on each card) | **Prochaines soirées** (the next night per league, a click opens it in the Calendrier) and **À compléter** (teams without a captain, leagues without rules, missing salaries / birth dates / NBHPA nos. per section, captains who never signed in; each item opens the place to fix it, in the right scope or filter). API: `GET /api/admin/dashboard?season`.
+- **The action log** is a link at the bottom of the home page (`#audit`), not a menu item.
+- **Edit mode** (owner: the team page was always editable, easy to make a mistake): Équipes and Joueurs open in **read mode**; "✎ Modifier" shows the controls that change things (class `ad-ed`), marked "Mode modification"; it switches off on a tab change or a reload. "Remplacement…" stays in read mode (daily work). Configuration is the setup page and stays editable.
+- **Sex in every player list**, and one **default order** everywhere (owner): men, then women, then goalies; salary at the position, high to low (`LDBuilder.rosterOrder`): team cards, the Joueurs tab (default sort; "Tri par défaut" brings it back after a column sort), the captain roster, the builder's step 2.
+
 ## Next
 - Import tool for the league file (Excel or Google Sheet) when the owner has it (salaries, birth dates, rosters).
 - Confirm the Retro rules with the league (cap sum, ages, goalie age, age date) and whether other leagues use them.
