@@ -70,7 +70,7 @@ export async function leagueNight(DB, data, season, league, date) {
   const byNb = new Map(teams.filter((x) => x.nbhpa_team_id).map((x) => [x.nbhpa_team_id, x]));
   const ids = teams.map((x) => x.id);
   const rosters = await rostersOf(DB, ids, lg.section), reqs = await openRequests(DB, ids, d);
-  const rules = await DB.prepare('SELECT salary_cap FROM league_rules WHERE season_id = ? AND league = ?').bind(season.id, league).first();
+  const rules = await DB.prepare('SELECT salary_cap FROM season_leagues WHERE season_id = ? AND league = ?').bind(season.id, league).first();
   const side = (nb, g) => {
     const tm = byNb.get(nb);
     if (!tm) { const dt = lg.teams.find((x) => x.id === nb) || {}; return { team: { id: null, name: dt.name || '?', abb: dt.abb || '?', nbhpa_team_id: nb, league }, missing: true }; }
@@ -87,7 +87,7 @@ export async function teamGames(DB, data, season, team) {
   const games = (lg.games || []).filter((g) => !g.cancelled && (g.away === team.nbhpa_team_id || g.home === team.nbhpa_team_id))
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
   const roster = (await rostersOf(DB, [team.id], lg.section)).get(team.id), reqs = await openRequests(DB, [team.id]);
-  const rules = await DB.prepare('SELECT salary_cap FROM league_rules WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
+  const rules = await DB.prepare('SELECT salary_cap FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
   return { today: t, games: games.map((g) => {
     const home = g.home === team.nbhpa_team_id, opp = lg.teams.find((x) => x.id === (home ? g.away : g.home)) || {};
     return { game: gameOut(g), home, opp: { abb: opp.abb || '?', name: opp.name || '?', nbhpa_team_id: opp.id || null }, lineup: lineup(team, roster, reqs, g, rules && rules.salary_cap) };

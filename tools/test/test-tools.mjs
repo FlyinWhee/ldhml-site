@@ -86,6 +86,23 @@ r = await call('/api/admin/seasons', { method: 'POST', cookie, body: { name: 'Hi
 const futureId = r.data.id;
 r = await call('/api/admin/seasons', { cookie });
 assert.equal(r.data.seasons.length, 2); assert.equal(r.data.seasons.find((s) => s.id === seasonId).key, season.seasonName.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+// ---- one live season (en cours); an archived season is read only; the public season ----
+assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.find((x) => x.id === seasonId).status, 'active', 'the first season is the live one');
+r = await call('/api/public/season');
+assert.equal(r.data.season.nbhpa_season_id, season.seasonId, 'public: the live season'); assert.ok(!JSON.stringify(r.data).includes('@'), 'no personal data');
+r = await call('/api/admin/seasons/' + futureId, { method: 'POST', cookie, body: { name: 'Hiver 2027', nbhpa_season_id: '', status: 'active' } });
+assert.deepEqual(r.data.archived, [seasonId], 'making a season live archives the live one (one at a time)');
+assert.equal((await call('/api/admin/teams', { method: 'POST', cookie, body: { season_id: seasonId, league: season.leagues[0].slug, name: 'X', abb: 'X' } })).data.error, 'season_archived', 'an archived season is read only');
+assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: 5 } })).data.error, 'season_archived');
+assert.equal((await call('/api/public/season')).data.season.name, 'Hiver 2027', 'the public season follows');
+r = await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), status: 'active' } });
+assert.deepEqual(r.data.archived, [futureId], 'back');
+assert.equal((await call('/api/admin/seasons/' + futureId, { method: 'POST', cookie, body: { name: 'Hiver 2027', status: 'upcoming' } })).status, 200, 'an archived season can change status again');
+assert.equal((await call('/api/admin/seasons/' + futureId, { method: 'POST', cookie, body: { name: season.seasonName, status: 'upcoming' } })).data.error, 'season_exists', 'no two seasons with the same name');
+r = await call('/api/admin/seasons', { method: 'POST', cookie, body: { name: 'Été 2027' } });
+assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.find((x) => x.id === r.data.id).status, 'upcoming', 'a new season is upcoming once a season is live (preparing the next one never archives the current one)');
+await call('/api/admin/seasons/' + r.data.id + '/delete', { method: 'POST', cookie, body: {} });
+assert.ok((await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action = 'season.update'").first('n')) >= 3, 'season changes are logged');
 
 // ---- captains ----
 r = await call('/api/admin/captains', { method: 'POST', cookie, body: { name: 'Marco Normandin', email: 'Marco@Example.test', person_id: 'L0137' } });
@@ -313,6 +330,14 @@ assert.equal(r.data.teams.length, 1); assert.equal(r.data.teams[0].id, teamA); a
 assert.equal((await call('/api/captain/replacements/builder?team=' + oppTeam, { cookie: ccookie })).status, 404, 'not their team');
 assert.equal((await call('/api/captain/replacements', { method: 'POST', cookie: ccookie, body: { ...body(sub1), team_id: oppTeam } })).status, 404, 'cannot ask for another team');
 assert.deepEqual(await chk(body(sub1), ccookie, 'captain'), await chk(body(sub1)), 'the captain gets the same checks as an admin');
+// a league switched off for the season: hidden from captains, no replacement; its data stays
+assert.equal((await call('/api/admin/season-leagues', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', enabled: false } })).status, 200);
+assert.equal((await call('/api/captain/teams', { cookie: ccookie })).data.teams.length, 0, 'a league switched off: its teams leave the captain page');
+assert.equal((await call('/api/admin/replacements', { method: 'POST', cookie, body: body(sub1, { note: 'x' }) })).data.error, 'league_off', 'and it takes no replacement');
+assert.deepEqual((await call('/api/public/season')).data.season.leagues_off, ['retro'], 'public: the leagues switched off this season');
+assert.equal(await DB.prepare("SELECT salary_cap FROM season_leagues WHERE season_id = ? AND league = 'retro'").bind(seasonId).first('salary_cap'), payrollA, 'the rules stay (same row)');
+assert.equal((await call('/api/admin/season-leagues', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', enabled: true } })).status, 200, 'switched back on');
+assert.equal((await call('/api/captain/teams', { cookie: ccookie })).data.teams.length, 1);
 r = await call('/api/captain/replacements', { method: 'POST', cookie: ccookie, body: body(sub1, { approve: true }) });
 assert.equal(r.status, 201); assert.equal(r.data.status, 'pending', 'a captain cannot approve their own request'); const rqB = r.data.id;
 assert.equal((await call('/api/captain/replacements/' + rqB + '/decide', { method: 'POST', cookie: ccookie, body: { decision: 'approve' } })).status, 404, 'captains do not decide');
@@ -687,13 +712,18 @@ assert.ok(d.querySelector('#modal [data-newteam="retro"]'), 'new team: modal for
 d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
 d.querySelector('[data-act="season-new"]').click(); await wait(20);
 assert.ok(d.querySelector('#modal #f-season'), 'new season: modal');
+assert.equal(d.querySelector('#modal #f-season [name=status]').value, 'upcoming', 'new season: upcoming by default (a season is live)');
+d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
+d.querySelector('[data-edit-season]').click(); await wait(20);
+assert.ok(d.querySelector('#modal [data-edit-season-f] [name=status]'), 'a season can be edited (name, NBHPA no., status)');
+assert.equal(d.querySelectorAll('[data-league-on]').length, season.leagues.length, 'each league: "Active cette saison"');
 d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
 w.location.hash = '#rules'; await wait(120);
 assert.ok(d.querySelector('[data-league-setup]'), 'an old #rules link opens Configuration');
 const rf = d.querySelector('[data-rules="retro"]');
 assert.equal(rf.elements.salary_cap.value, String(payrollA), 'rules tab shows the saved row');
 rf.elements.salary_cap.value = '30'; rf.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
-assert.equal(await DB.prepare("SELECT salary_cap FROM league_rules WHERE league = 'retro' AND season_id = ?").bind(seasonId).first('salary_cap'), 30, 'rules saved from the page');
+assert.equal(await DB.prepare("SELECT salary_cap FROM season_leagues WHERE league = 'retro' AND season_id = ?").bind(seasonId).first('salary_cap'), 30, 'rules saved from the page');
 w.location.hash = '#audit'; await wait(80);
 assert.ok(/access\.grant/.test(d.getElementById('main').textContent), 'log tab lists the grant');
 d.querySelector('[data-act="logout"]').click(); await wait(80);

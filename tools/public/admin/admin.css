@@ -156,3 +156,11 @@ a.ad-kpi:hover { border-color: var(--ball); }
 .ad-foot-link { margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
 @media (max-width: 900px) { .ad-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ad-grid2 { grid-template-columns: minmax(0, 1fr); } }
 .ad-sx, .ad-players td:nth-child(3) { color: var(--muted); }
+/* ---------- an archived season: read only ---------- */
+.ad-archived .ad-ed, .ad-archived .ad-ar, .ad-archived .ad-edtog { display: none !important; }
+.ad-arch { border-left: 5px solid var(--warn, #f0a500); }
+.ad-switch { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+.ad-switch input { width: 20px; height: 20px; }
+.ad-lgoff { opacity: .6; border-style: dashed; }
+.ad-lgoff .ad-switch { opacity: 1; }
+.ad-offnote { margin: 4px 0 0; }

@@ -26,7 +26,7 @@ Pulls the repo, runs `node scraper/fetch.mjs` in a `node:22-alpine` container, p
 Status: **not set up yet**. The owner runs `npm run fetch:force` by hand for now.
 
 ## New season
-Edit `leagues.json`: `seasonId`, `seasonName`, and check each `categoryId` against the official standings page (they can change). Run `npm run fetch:force`, `npm test`, push. Old `data/<slug>/box.json` entries of the previous season would stay in the file: delete `data/` first when the season changes, otherwise stale box scores keep growing the pages.
+The live season is chosen in the tools (admin, Configuration: make the new season "En cours"; switch off the leagues that do not run). Then `npm run season:check` (with the tools address, or the local tools) says what the public site needs. Edit `leagues.json`: `seasonId`, `seasonName`, and check each `categoryId` against the official standings page (they can change). Run `npm run fetch:force`, `npm test`, push. Old `data/<slug>/box.json` entries of the previous season would stay in the file: delete `data/` first when the season changes, otherwise stale box scores keep growing the pages.
 
 ## Add a league
 1. Add an entry in `leagues.json` (`slug`, `section`, `logo`, `categoryId`, `theme`, `short`, `name`, optional `path`). The URL is `/<section path>/<path or slug>/`. A new section: add it to `sections` (`key`, `path`, `logo`, `theme`, `name.fr`, `name.en`).

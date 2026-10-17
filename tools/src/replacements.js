@@ -4,7 +4,7 @@
 //
 // One request = one game of one team, with one line per absent player (absent -> replacement, at a position).
 // The checks run while the request is built, again when it is saved, and again when an admin decides.
-// No rule engine: each check is coded here as a league confirms it, and reads its numbers from league_rules.
+// No rule engine: each check is coded here as a league confirms it, and reads its numbers from season_leagues.
 //   absent  the absent player is on the team's roster
 //   listed  the replacement is on the section's player list for the season
 //   guest   a player who is not on the list ("joueur hors-ligue": name and sex; age and NBHPA no. optional, given by
@@ -20,6 +20,7 @@
 // Captains never get birth dates: the age check says only whether the minimum is met.
 import { json, fail, readJson, cleanText, now } from './http.js';
 import { cleanGuest } from './guest.js';
+import { isArchived } from './seasons.js';
 
 const MAX_LINES = 8;
 const OPEN = "('pending', 'approved')";
@@ -125,7 +126,7 @@ async function busyAt(DB, data, season, team, slot, exceptReq) {
 /** Run every check. Returns { result, checks, payroll, lines (with positions and salaries) }. */
 export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   const lg = leagueOf(data, team.league), section = lg ? lg.section : null;
-  const rules = await DB.prepare('SELECT * FROM league_rules WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
+  const rules = await DB.prepare('SELECT * FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
   const roster = await teamRoster(DB, team, section);
   const onTeam = new Map(roster.map((r) => [r.person_id, r]));
   const listed = new Map((await DB.prepare(`SELECT p.id, p.name, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g, sp.id AS sp
@@ -205,7 +206,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const team = await teamRow(q.get('team'));
     if (!team) return fail(404, 'team');
     const season = await seasonOf(team.season_id), lg = leagueOf(data, team.league);
-    const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM league_rules WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
+    const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
     const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null }));
     const games = sameSeason(data, season) && lg && team.nbhpa_team_id
       ? (lg.games || []).filter((g) => !g.cancelled && (g.away === team.nbhpa_team_id || g.home === team.nbhpa_team_id)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)) : [];
@@ -217,7 +218,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       const { results: ros } = await DB.prepare(`SELECT r.person_id, t.id AS team_id, t.abb, t.name, t.nbhpa_team_id FROM rosters r JOIN teams t ON t.id = r.team_id
         WHERE r.season_id = ? AND r.league = ? AND r.removed_at IS NULL`).bind(team.season_id, team.league).all();
       const teamOf = new Map(ros.map((r) => [r.person_id, r]));
-      const fullRules = await DB.prepare('SELECT * FROM league_rules WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
+      const fullRules = await DB.prepare('SELECT * FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
       const busy = await busyAt(DB, data, season, team, slot, 0);
       out.slot = slot;
       out.candidates = list.filter((p) => !(teamOf.get(p.id) && teamOf.get(p.id).team_id === team.id)).map((p) => {
@@ -237,6 +238,8 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (!team) return fail(404, 'team');
     const season = await seasonOf(team.season_id), slot = resolveGame(data, season, team, b), lines = readLines(b);
     if (!slot) return fail(400, 'game');
+    if (path === '/replacements' && await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
+    if (path === '/replacements' && (await DB.prepare('SELECT enabled FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first('enabled')) === 0) return fail(409, 'league_off');
     if (!lines) return fail(400, 'replacement');
     const ev = await evaluate(DB, data, season, team, slot, lines, 0);
     if (path === '/replacements/check') return json({ result: ev.result, checks: ev.checks, payroll: ev.payroll });
@@ -302,6 +305,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const b = await readJson(req) || {}, r = await DB.prepare('SELECT * FROM replacements WHERE id = ?').bind(Number(x[1])).first();
     if (!r) return fail(404, 'replacement');
     if (r.status !== 'pending') return fail(409, 'not_pending');
+    if (await isArchived(DB, r.season_id)) return fail(409, 'season_archived');
     if (!['approve', 'refuse'].includes(b.decision)) return fail(400, 'decision');
     const note = b.note ? cleanText(b.note, 1000) : null;
     if (b.note && !note) return fail(400, 'decision');
@@ -321,6 +325,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const r = await DB.prepare('SELECT * FROM replacements WHERE id = ?').bind(Number(x[1])).first();
     if (!r || !allowed.includes(r.team_id)) return fail(404, 'replacement');
     if (r.status !== 'refused') return fail(409, 'not_refused');
+    if (await isArchived(DB, r.season_id)) return fail(409, 'season_archived');
     await DB.prepare('UPDATE replacements SET captain_hidden_at = ? WHERE id = ?').bind(now(), r.id).run();
     await audit('replacement.hide', 'replacement:' + r.id);
     return json({ ok: true });
@@ -333,6 +338,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const r = await DB.prepare('SELECT * FROM replacements WHERE id = ?').bind(Number(x[1])).first();
     if (!r || (allowed !== null && !allowed.includes(r.team_id))) return fail(404, 'replacement');
     if (!['pending', 'approved'].includes(r.status)) return fail(409, 'not_open');
+    if (await isArchived(DB, r.season_id)) return fail(409, 'season_archived');
     await DB.batch([
       DB.prepare('DELETE FROM replacement_lines WHERE replacement_id = ?').bind(r.id),
       DB.prepare('DELETE FROM replacements WHERE id = ?').bind(r.id),

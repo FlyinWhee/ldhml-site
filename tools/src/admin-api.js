@@ -5,6 +5,7 @@ import { sendCode } from './email.js';
 import { rosterApi } from './roster-api.js';
 import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
+import { isArchived, archiveOthers } from './seasons.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -57,13 +58,35 @@ export async function adminApi(req, env, url) {
   if (m === 'POST' && path === '/seasons') {
     const body = await readJson(req) || {};
     const name = cleanText(body.name, 60), nb = body.nbhpa_season_id === '' || body.nbhpa_season_id == null ? null : Number(body.nbhpa_season_id);
-    const status = ['upcoming', 'active', 'archived'].includes(body.status) ? body.status : 'active';
+    // A new season is "upcoming" unless asked otherwise, or "active" when there is no active season yet (the first one).
+    const hasLive = await env.DB.prepare("SELECT 1 FROM seasons WHERE status = 'active'").first();
+    const status = ['upcoming', 'active', 'archived'].includes(body.status) ? body.status : hasLive ? 'upcoming' : 'active';
     if (!name || !seasonKey(name) || (nb !== null && !(Number.isInteger(nb) && nb > 0))) return fail(400, 'season');
     if (await env.DB.prepare('SELECT 1 FROM seasons WHERE key = ?').bind(seasonKey(name)).first()) return fail(409, 'season_exists');
     const r = await env.DB.prepare('INSERT INTO seasons (key, name, nbhpa_season_id, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(seasonKey(name), name, nb, status, now(), admin.id).run();
+    if (status === 'active') await archiveOthers(env.DB, r.meta.last_row_id).run();   // one active season at a time
     await audit(env, admin, 'season.create', 'season:' + r.meta.last_row_id, { name, nbhpa_season_id: nb, status });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
+  }
+  // Edit a season: name, NBHPA no., status. Making it active archives the active one (one active season at a time).
+  let xs = path.match(/^\/seasons\/(\d+)$/);
+  if (m === 'POST' && xs) {
+    const id = Number(xs[1]), cur = await env.DB.prepare('SELECT * FROM seasons WHERE id = ?').bind(id).first();
+    if (!cur) return fail(404, 'season');
+    const body = await readJson(req) || {};
+    const name = cleanText(body.name, 60), nb = body.nbhpa_season_id === '' || body.nbhpa_season_id == null ? null : Number(body.nbhpa_season_id);
+    const status = ['upcoming', 'active', 'archived'].includes(body.status) ? body.status : null;
+    if (!name || !seasonKey(name) || !status || (nb !== null && !(Number.isInteger(nb) && nb > 0))) return fail(400, 'season');
+    if (seasonKey(name) !== cur.key && await env.DB.prepare('SELECT 1 FROM seasons WHERE key = ? AND id <> ?').bind(seasonKey(name), id).first()) return fail(409, 'season_exists');
+    const archived = status === 'active' && cur.status !== 'active'
+      ? (await env.DB.prepare("SELECT id FROM seasons WHERE status = 'active' AND id <> ?").bind(id).all()).results.map((r) => r.id) : [];
+    await env.DB.batch([
+      ...(archived.length ? [archiveOthers(env.DB, id)] : []),
+      env.DB.prepare('UPDATE seasons SET key = ?, name = ?, nbhpa_season_id = ?, status = ? WHERE id = ?').bind(seasonKey(name), name, nb, status, id)
+    ]);
+    await audit(env, admin, 'season.update', 'season:' + id, { name, nbhpa_season_id: nb, status, was: cur.status, archived });
+    return json({ ok: true, archived });
   }
 
   // ---- captains ----
@@ -145,7 +168,7 @@ export async function adminApi(req, env, url) {
         await env.DB.prepare('SELECT 1 FROM rosters WHERE season_id = ? AND removed_at IS NULL').bind(id).first()) return fail(409, 'season_in_use');
     await env.DB.batch([
       env.DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE season_id = ?)').bind(id),
-      ...['replacements', 'captain_access', 'rosters', 'section_players', 'league_rules', 'teams', 'seasons'].map((tb) =>
+      ...['replacements', 'captain_access', 'rosters', 'section_players', 'season_leagues', 'teams', 'seasons'].map((tb) =>
         env.DB.prepare(`DELETE FROM ${tb} WHERE ${tb === 'seasons' ? 'id' : 'season_id'} = ?`).bind(id))]);
     await audit(env, admin, 'season.delete', 'season:' + id);
     return json({ ok: true });
@@ -159,6 +182,7 @@ export async function adminApi(req, env, url) {
     const cap = await env.DB.prepare('SELECT id FROM captains WHERE id = ?').bind(Number(body.captain_id)).first();
     const tm = await env.DB.prepare('SELECT * FROM teams WHERE id = ?').bind(Number(body.team_ref)).first();
     if (!cap || !tm) return fail(400, 'access');
+    if (await isArchived(env.DB, tm.season_id)) return fail(409, 'season_archived');
     if (await env.DB.prepare('SELECT 1 FROM captain_access WHERE captain_id = ? AND team_ref = ? AND revoked_at IS NULL').bind(cap.id, tm.id).first()) return fail(409, 'access_exists');
     const r = await env.DB.prepare('INSERT INTO captain_access (captain_id, season_id, league, team_id, team_abb, team_name, team_ref, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(cap.id, tm.season_id, tm.league, tm.nbhpa_team_id || '', tm.abb, tm.name, tm.id, now(), admin.id).run();
@@ -167,6 +191,8 @@ export async function adminApi(req, env, url) {
   }
   x = path.match(/^\/access\/(\d+)\/revoke$/);
   if (m === 'POST' && x) {
+    const sa = await env.DB.prepare('SELECT season_id FROM captain_access WHERE id = ?').bind(Number(x[1])).first('season_id');
+    if (sa && await isArchived(env.DB, sa)) return fail(409, 'season_archived');
     const r = await env.DB.prepare('UPDATE captain_access SET revoked_at = ?, revoked_by = ? WHERE id = ? AND revoked_at IS NULL').bind(now(), admin.id, Number(x[1])).run();
     if (!r.meta.changes) return fail(404, 'access');
     await audit(env, admin, 'access.revoke', 'access:' + x[1]);
@@ -193,7 +219,9 @@ export async function adminApi(req, env, url) {
     const { results: noCaptain } = await DB.prepare(`SELECT t.id, t.league, t.name, t.abb, t.nbhpa_team_id FROM teams t WHERE t.season_id = ?
       AND NOT EXISTS (SELECT 1 FROM captain_access a WHERE a.team_ref = t.id AND a.revoked_at IS NULL) ORDER BY t.league, t.name COLLATE NOCASE`).bind(sid).all();
     const teams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ?').bind(sid).first('n');
-    const { results: rules } = await DB.prepare('SELECT league FROM league_rules WHERE season_id = ?').bind(sid).all();
+    // leagues with rules set (a row made only by the on/off switch does not count)
+    const { results: rules } = await DB.prepare(`SELECT league FROM season_leagues WHERE season_id = ? AND (salary_cap IS NOT NULL OR min_age_m IS NOT NULL
+      OR min_age_f IS NOT NULL OR min_age_g IS NOT NULL OR notes IS NOT NULL)`).bind(sid).all();
     const neverIn = await DB.prepare(`SELECT COUNT(*) AS n FROM captains c WHERE c.disabled_at IS NULL AND c.last_login_at IS NULL
       AND EXISTS (SELECT 1 FROM captain_access a WHERE a.captain_id = c.id AND a.season_id = ? AND a.revoked_at IS NULL)`).bind(sid).first('n');
     return json({ missing, noCaptain, teams, rulesLeagues: rules.map((r) => r.league), captainsNeverIn: neverIn });

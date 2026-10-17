@@ -67,7 +67,7 @@
       r_ok: 'Tout est conforme', r_warn: 'À vérifier', r_fail: 'Non conforme',
       st_pending: 'À valider', st_approved: 'Validé', st_refused: 'Refusé', st_cancelled: 'Annulé',
       by: 'Déclaré par {n} · {d}', byAdmin: 'Déclaré par l’administration ({n}) · {d}', decided: '{s} par {n} · {d}', reqNo: 'Remplacement no {id}', noteFrom: 'Note',
-      e_note_required: 'Une vérification échoue : une note est requise.', e_game: 'Match invalide.', e_replacement: 'Remplacement invalide.', e_team: 'Équipe introuvable.',
+      e_league_off: 'Cette ligue est désactivée pour cette saison.', e_season_archived: 'Cette saison est archivée : lecture seule.', e_note_required: 'Une vérification échoue : une note est requise.', e_game: 'Match invalide.', e_replacement: 'Remplacement invalide.', e_team: 'Équipe introuvable.',
       e_session: 'Votre session a expiré. Reconnectez-vous.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.'
     },
     en: {
@@ -118,7 +118,7 @@
       r_ok: 'All checks pass', r_warn: 'To check', r_fail: 'Does not pass',
       st_pending: 'To validate', st_approved: 'Validated', st_refused: 'Refused', st_cancelled: 'Cancelled',
       by: 'Declared by {n} · {d}', byAdmin: 'Declared by the admins ({n}) · {d}', decided: '{s} by {n} · {d}', reqNo: 'Replacement no. {id}', noteFrom: 'Note',
-      e_note_required: 'A check fails: a note is required.', e_game: 'Invalid game.', e_replacement: 'Invalid replacement.', e_team: 'Team not found.',
+      e_league_off: 'This league is switched off for this season.', e_season_archived: 'This season is archived: read only.', e_note_required: 'A check fails: a note is required.', e_game: 'Invalid game.', e_replacement: 'Invalid replacement.', e_team: 'Team not found.',
       e_session: 'Your session expired. Sign in again.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.'
     }
   };

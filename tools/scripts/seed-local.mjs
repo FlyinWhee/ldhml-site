@@ -103,7 +103,7 @@ export function demoSql(data, reg, stats, now = Math.floor(Date.now() / 1000)) {
     const [sec, id] = k.split(':');
     out.push(`UPDATE section_players SET salary_s = ${v.s}, salary_g = ${v.g} WHERE season_id = ${S} AND section = ${sq(sec)} AND person_id = (SELECT id FROM people WHERE site_id = ${sq(id)}) AND salary_s IS NULL AND salary_g IS NULL;`);
   }
-  out.push(`INSERT OR IGNORE INTO league_rules (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, notes, updated_at) VALUES (${S}, 'retro', 41, 40, 35, 30, 'DÉMO : plafond et âges de test', ${now});`);
+  out.push(`INSERT OR IGNORE INTO season_leagues (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, notes, updated_at) VALUES (${S}, 'retro', 41, 40, 35, 30, 'DÉMO : plafond et âges de test', ${now});`);
   out.push(`INSERT INTO audit (at, actor_kind, action, target, detail) VALUES (${now}, 'system', 'seed.demo', 'season:' || ${S}, '{"by":"seed-local script --demo"}');`);
   return out.join('\n');
 }

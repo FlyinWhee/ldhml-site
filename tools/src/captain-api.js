@@ -19,7 +19,8 @@ async function seasonData(env, url) {
 /** The captain's teams: open access, seasons not archived, newest season first. */
 const myTeams = (env, cap) => env.DB.prepare(`SELECT t.id, t.season_id, t.league, t.name, t.abb, t.nbhpa_team_id, s.name AS season_name, s.status AS season_status
   FROM captain_access a JOIN teams t ON t.id = a.team_ref JOIN seasons s ON s.id = t.season_id
-  WHERE a.captain_id = ? AND a.revoked_at IS NULL AND s.status <> 'archived' ORDER BY s.created_at DESC, s.id DESC, t.league, t.name COLLATE NOCASE`).bind(cap.id).all().then((r) => r.results);
+  LEFT JOIN season_leagues sl ON sl.season_id = t.season_id AND sl.league = t.league
+  WHERE a.captain_id = ? AND a.revoked_at IS NULL AND s.status <> 'archived' AND COALESCE(sl.enabled, 1) = 1 ORDER BY s.created_at DESC, s.id DESC, t.league, t.name COLLATE NOCASE`).bind(cap.id).all().then((r) => r.results);
 
 export async function captainApi(req, env, url) {
   const path = url.pathname.replace(/^\/api\/captain/, '') || '/';
@@ -59,7 +60,7 @@ export async function captainApi(req, env, url) {
       const { results: roster } = await env.DB.prepare(`SELECT r.person_id, r.pos, p.name, p.site_id, p.sex, sp.salary_s, sp.salary_g FROM rosters r JOIN people p ON p.id = r.person_id
         LEFT JOIN section_players sp ON sp.season_id = r.season_id AND sp.section = ? AND sp.person_id = r.person_id
         WHERE r.team_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(lg ? lg.section : '', t.id).all();
-      const rules = await env.DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM league_rules WHERE season_id = ? AND league = ?').bind(t.season_id, t.league).first();
+      const rules = await env.DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(t.season_id, t.league).first();
       out.push({ ...t, rules, roster: roster.map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: (r.pos === 'g' ? r.salary_g : r.salary_s) ?? null })) });
     }
     return json({ teams: out });
