@@ -7,7 +7,8 @@
  *       ctx = { lang, data (season.json), api(path, method, body) -> Promise<{ ok, status, data }>, onSaved(result), onCancel() }
  *       The builder is a page of its own in both areas (not a modal: it needs the room).
  *   LDBuilder.requestCard(q, ctx, actionsHtml, o)   one request (queue, history), compact: the problems in words,
- *       every check in a fold. o = { team: show the team (false on the captain's own team page), result: show the result chip }
+ *       every check in a fold. o = { team: show the team (false on the captain's own team page), game: show the game (false under
+ *       a game line), result: show the result chip }
  * Replacements are always the same sex as the absent player (every league): other-sex players are not offered.
  *   LDBuilder.lineupHtml(lu, ctx, o)   the changes to a team's lineup for a game (replacements in, absent players out), from /lineups
  *   LDBuilder.gameHtml(item, ctx, actFn)   a game of a night: both teams' lineups side by side (admin calendar)
@@ -138,9 +139,12 @@
     var name = team.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(home(ctx, l) + '#team-' + team.nbhpa_team_id) + '">' + esc(team.name) + '</a>' : '<b>' + esc(team.name) + '</b>';
     return '<span class="tcell">' + window.LDLook.crest({ abb: team.abb, logo: dt.logo }, league, 'sm') + name + '</span>';
   }
+  /* A person in a league context: their page in that league (most detail); the section page when they have not played in it. */
   function person(ctx, league, name, siteId) {
-    var l = leagueOf(ctx, league);
-    return siteId && l ? '<a class="lnk" href="' + esc(((ctx.data && ctx.data.siteUrl) || '/') + l.sectionPath + '/#player-' + siteId) + '">' + esc(name) + '</a>' : esc(name);
+    var l = leagueOf(ctx, league), dp = siteId && ctx.data && ctx.data.people.filter(function (x) { return x.id === siteId; })[0];
+    if (!siteId || !l) return esc(name);
+    var href = dp && dp.lg && dp.lg[l.slug] ? home(ctx, l) + '#player-' + siteId : ((ctx.data && ctx.data.siteUrl) || '/') + l.sectionPath + '/#player-' + siteId;
+    return '<a class="lnk" href="' + esc(href) + '">' + esc(name) + '</a>';
   }
   var locale = function (ctx) { return ctx.lang === 'en' ? 'en-CA' : 'fr-CA'; };
   var day = function (ctx, d) { try { return new Date(d + 'T12:00:00').toLocaleDateString(locale(ctx), { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return d; } };
@@ -234,7 +238,7 @@
     var who = q.created_kind === 'admin' ? t(L, 'byAdmin', { n: q.created_name || '—', d: stamp(ctx, q.created_at) }) : t(L, 'by', { n: q.created_name || '—', d: stamp(ctx, q.created_at) });
     var dec = q.decided_at ? t(L, 'decided', { s: t(L, 'st_' + q.status), n: q.decided_name || '—', d: stamp(ctx, q.decided_at) }) : '';
     return '<article class="bd-req bd-st-' + esc(q.status) + '" data-req="' + q.id + '" style="--tc:' + window.LDLook.colorVar(q.league, q.team.abb) + '">' +
-      '<div class="bd-req-h">' + (o.team === false ? '' : teamHead(ctx, q.team, q.league)) + '<b class="bd-game">' + esc(requestGame(ctx, q)) + '</b>' +
+      '<div class="bd-req-h">' + (o.team === false ? '' : teamHead(ctx, q.team, q.league)) + (o.game === false ? '<span class="bd-game"></span>' : '<b class="bd-game">' + esc(requestGame(ctx, q)) + '</b>') +
       '<span class="bd-st">' + esc(t(L, 'st_' + q.status)) + '</span>' + (o.result === false ? '' : resultChip(ctx, q.result)) + '</div>' +
       '<ul class="bd-lines">' + lines + '</ul>' + (issues ? '<ul class="bd-issues">' + issues + '</ul>' : '') +
       (q.note ? '<p class="bd-note">' + esc(q.note) + '</p>' : '') + (q.decision_note ? '<p class="bd-note bd-dnote">' + esc(q.decision_note) + '</p>' : '') +

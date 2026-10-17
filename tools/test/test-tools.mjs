@@ -335,6 +335,10 @@ c2 = await chk({ team_id: oppTeam, game_id: gameA.id, lines: [{ absent_id: oppAb
 assert.deepEqual([st(c2, 'busy'), c2.checks.find((x) => x.k === 'busy').d.req], ['fail', rqB], 'already replacing at that time (another request)');
 r = await call('/api/captain/replacements', { cookie: ccookie });
 assert.equal(r.data.replacements.find((q) => q.id === rqA).decision_note, 'Plafond dépassé', 'the captain sees the decision and its note');
+assert.equal((await call('/api/captain/replacements/' + rqB + '/hide', { method: 'POST', cookie: ccookie, body: {} })).data.error, 'not_refused', 'only a refused request can be hidden');
+assert.equal((await call('/api/captain/replacements/' + rqA + '/hide', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain hides a refused request');
+assert.ok(!(await call('/api/captain/replacements', { cookie: ccookie })).data.replacements.some((q) => q.id === rqA), 'hidden from the captain');
+assert.ok((await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.some((q) => q.id === rqA), 'still in the admin history');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain can cancel');
 assert.equal(await DB.prepare('SELECT (SELECT COUNT(*) FROM replacements WHERE id = ?) + (SELECT COUNT(*) FROM replacement_lines WHERE replacement_id = ?) AS n').bind(rqB, rqB).first('n'), 0, 'a cancelled request is deleted, with its lines');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 404, 'gone');
@@ -651,6 +655,7 @@ const firstTeamsLg = season.leagues.filter((l) => l.section === 'teams')[0].slug
 assert.ok(d.querySelector('.ad-scope [data-lg="' + firstTeamsLg + '"][aria-pressed="true"]'), 'the section change carried over: first league of Équipes');
 assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, firstTeamsLg).first('n'), 'one card per team of the league');
 assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
+assert.ok([...d.querySelectorAll('.ad-roster a.lnk')].some((x) => x.href.includes('/' + firstTeamsLg + '/#player-L')), 'team card: a name opens the player page in the league');
 assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'), 'team setup is not on the daily Teams tab');
 // Configuration: seasons, then one card per league with its rules and team setup
 w.location.hash = '#setup'; await wait(120);
@@ -713,13 +718,19 @@ await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
 assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there');
-assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ?').bind(teamA).first('n')), 'their team’s requests (current and past)');
+assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
+assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
+assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
 assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
+assert.ok([...cd.querySelectorAll('.cp-roster a.lnk')].some((x) => x.href.includes('/draft/retro/#player-L')), 'a roster name opens the player page in the league (not the section)');
 const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
-assert.equal(cd.querySelectorAll('.cp-game').length, totalGamesA, 'every game of the team, one line each (past games in a fold)');
+const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA) && g.date >= todayT).length, 'one line per upcoming game; past games only with requests, folded');
 assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1 && !cd.querySelector('[data-ask-game]'), 'the next game marked; no second request link (the button is above)');
-const subsGame = cd.querySelector('.cp-game.cp-has-subs');
-assert.ok(subsGame && subsGame.querySelector('.ld-sub') && !subsGame.querySelector('.ld-list li:not(.ld-sub)'), 'under a game: only its replacements and absent players, not the whole roster');
+const nReq = cd.querySelectorAll('.bd-req').length, hideBtn = cd.querySelector('[data-hide]');
+assert.ok(hideBtn, 'a refused request can be hidden');
+hideBtn.click(); await wait(250);
+assert.equal(cd.querySelectorAll('.bd-req').length, nReq - 1, 'Masquer: the refused request leaves the page');
 
 cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);

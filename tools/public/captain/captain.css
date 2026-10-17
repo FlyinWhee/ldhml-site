@@ -40,3 +40,7 @@
 @media (max-width: 600px) { .cp-team .tcell { font-size: 26px; } .cp-kv { font-size: 28px; } .cp-ask { width: 100%; } .cp-ask .ad-btn { width: 100%; } }
 .cp-panel .ad-add { padding: 2px 12px; }
 .cp-panel .ad-add > summary { font-size: 15px; padding: 6px 0; letter-spacing: .06em; }
+/* the timeline: games with their requests */
+.cp-tl .cp-game .bd-reqs { margin: 4px 0 0; }
+.cp-tl .cp-game .bd-req { background: var(--bg); }
+.cp-tl .bd-req-h .bd-game:empty { margin-right: auto; }

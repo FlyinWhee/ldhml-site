@@ -193,6 +193,12 @@
     return l ? '<a class="lnk" href="' + esc(site() + l.sectionPath + '/#player-' + id) + '">' + esc(p.name) + '</a>' : esc(personName(id));
   }
   var personCell = function (p) { return p.site_id ? personLink(p.site_id) : esc(p.name); };
+  /* A person in a league context (a team's roster): their page in that league; the section page when they have not played in it. */
+  function personIn(slug, p) {
+    var dp = p.site_id && S.data && S.data.people.filter(function (x) { return x.id === p.site_id; })[0], l = leagueOf(slug);
+    if (!dp || !l || !dp.lg[slug]) return personCell(p);
+    return '<a class="lnk" href="' + esc(leagueHome(l) + '#player-' + p.site_id) + '">' + esc(p.name) + '</a>';
+  }
   var fmt = function (sec) { return sec ? new Date(sec * 1000).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' }) : ''; };
   /* League and team identity (docs/presentation.md): league badges, team chips and crests from shared/look.js. */
   var leagueOnly = function (l, link) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: link === false ? '' : leagueHome(l), title: l.name, theme: l.theme }); };
@@ -353,7 +359,7 @@
     tm.roster.forEach(function (r) { var v = r.pos === 'g' ? r.salary_g : r.salary_s; if (v == null) missing++; else total += v; });
     var cap = rule && rule.salary_cap != null ? rule.salary_cap : null, over = cap != null && total > cap;
     var rows = tm.roster.map(function (r) {
-      return '<tr><td>' + personCell(r) + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.pos === 'g' ? r.salary_g : r.salary_s)) + '</td>' +
+      return '<tr><td>' + personIn(tm.league, r) + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.pos === 'g' ? r.salary_g : r.salary_s)) + '</td>' +
         '<td><button type="button" class="ad-x" data-roster-remove="' + r.id + '" data-name="' + esc(r.name) + '" title="' + esc(t('removeFromRoster')) + '" aria-label="' + esc(t('removeFromRoster')) + '">×</button></td></tr>';
     }).join('');
     var caps = S.captains.map(function (c) { return { c: c, a: c.access.filter(function (a) { return a.season_id === S.seasonId && a.team_ref === tm.id; })[0] }; }).filter(function (x) { return x.a; });

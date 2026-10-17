@@ -18,7 +18,8 @@
       kNext: 'Prochain match', kReqs: 'Demandes en attente', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} en attente', kApprovedUp: '{n} approuvée(s) à venir',
       kNoReq: 'Aucune demande ouverte', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
-      nextTag: 'Prochain', myGames: 'Mes matchs', pastGames: 'Matchs passés ({n})', noGames: 'Aucun match de votre équipe dans le calendrier.',
+      nextTag: 'Prochain', myGames: 'Mes matchs et mes demandes', pastReqs: 'Matchs passés avec des demandes ({n})', noGames: 'Aucun match à venir pour votre équipe.',
+      offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Demande masquée.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
       myReqs: 'Mes demandes', noReqs: 'Aucune demande pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
       payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / plafond {c}', posS: 'Joueur', posG: 'Gardien',
@@ -37,7 +38,8 @@
       kNext: 'Next game', kReqs: 'Pending requests', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} pending', kApprovedUp: '{n} approved, upcoming',
       kNoReq: 'No open request', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
-      nextTag: 'Next', myGames: 'My games', pastGames: 'Past games ({n})', noGames: 'No game of your team in the schedule.',
+      nextTag: 'Next', myGames: 'My games and requests', pastReqs: 'Past games with requests ({n})', noGames: 'No upcoming game for your team.',
+      offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Request hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
       myReqs: 'My requests', noReqs: 'No request yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
       payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / cap {c}', posS: 'Skater', posG: 'Goalie',
@@ -79,9 +81,12 @@
     var badge = l.path ? window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: home(l), title: l.name, theme: l.theme }) : '';
     return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: dt.logo }, tm.league, '') + name + '</span>' + badge;
   }
+  /* A player of the team: their page in THIS league (most detail); the section page when they have not played in it yet. */
   function person(tm, p) {
-    var l = leagueOf(tm.league);
-    return p.site_id && l ? '<a class="lnk" href="' + esc(((S.data && S.data.siteUrl) || '/') + l.sectionPath + '/#player-' + p.site_id) + '">' + esc(p.name) + '</a>' : esc(p.name);
+    var l = leagueOf(tm.league), dp = p.site_id && S.data && S.data.people.filter(function (x) { return x.id === p.site_id; })[0];
+    if (!p.site_id || !l) return esc(p.name);
+    var href = dp && dp.lg && dp.lg[l.slug] ? home(l) + '#player-' + p.site_id : ((S.data && S.data.siteUrl) || '/') + l.sectionPath + '/#player-' + p.site_id;
+    return '<a class="lnk" href="' + esc(href) + '">' + esc(p.name) + '</a>';
   }
 
   /* ---------- views ---------- */
@@ -103,20 +108,14 @@
   }
   /* ---------- the captain dashboard ----------
    * Top: the team and the main action. Then four key numbers (next game, requests, payroll, roster). Then two columns:
-   * the work (my requests) and the reference (my games with their replacements, the roster). One column on a phone. */
+   * the timeline (the team's games, each with its requests: the work in its context) and the roster. One column on a phone. */
   function viewTeam() {
     var tm = team();
     if (!tm) return '<h1 class="ph">' + t('title') + '</h1><p class="lede">' + t('noTeams') + '</p>';
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
-    var open = function (q) { return (q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today; };
-    var current = reqs.filter(function (q) { return q.status === 'pending' || q.game_date >= S.today; }), older = reqs.filter(function (q) { return current.indexOf(q) < 0; });
-    var card = function (q) { return window.LDBuilder.requestCard(q, ctx(), open(q) ? '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button></div>' : '', { team: false, result: q.status === 'pending' }); };
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
       '<p class="cp-ask"><button type="button" class="ad-btn" data-act="ask">' + t('ask') + '</button></p></div>';
-    var requests = '<section class="cp-panel"><h2 class="cp-ph">' + t('myReqs') + '</h2>' +
-      (current.length ? '<div class="bd-reqs">' + current.map(card).join('') + '</div>' : '<p class="note">' + t('noReqs') + '</p>') +
-      (older.length ? '<details class="ad-add"><summary>' + esc(t('older', { n: older.length })) + '</summary><div class="bd-reqs">' + older.map(card).join('') + '</div></details>' : '') + '</section>';
-    return switcher() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + requests + '</div><div class="cp-col">' + myGames(tm) + rosterPanel(tm) + '</div></div>';
+    return switcher() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
   /* The four key numbers. */
   function kpis(tm, reqs) {
@@ -145,18 +144,35 @@
       tile('cp-k-pay', t('kPay'), esc(money(total)) + (cap != null ? ' <small>/ ' + esc(money(cap)) + '</small>' : ''), payS) +
       tile('cp-k-ros', t('kRoster'), String(tm.roster.length), esc(t('kCounts', { s: nS, g: nG }))) + '</div>';
   }
-  /* The team's games, one line each, the next one marked; under a game, its replacements on file (only what changes). */
+  /* The timeline: one line per game of the team (the next one marked), its requests under it (compact, without the game
+   * again), and the night's counts and payroll when something changes. A request for a date typed by hand gets its own line.
+   * Past games show only when they had requests, in a fold. Refused requests can be hidden; open ones cancelled. */
   var gameLine = function (tm, x) { return window.LDBuilder.gameText(ctx(), tm.league, tm.nbhpa_team_id, x.game); };
-  function myGames(tm) {
-    if (!S.games.length) return '<section class="cp-panel"><h2 class="cp-ph">' + t('myGames') + '</h2><p class="note">' + t('noGames') + '</p></section>';
-    var up = S.games.filter(function (g) { return g.game.date >= S.today; }), past = S.games.filter(function (g) { return g.game.date < S.today; }).reverse();
-    var row = function (x, i) {
-      var lu = x.lineup, changed = lu.subs.length || lu.absents.length, next = i === 0 && x.game.date >= S.today;
-      return '<li class="cp-game' + (next ? ' cp-nextg' : '') + (changed ? ' cp-has-subs' : '') + '"><div class="cp-gl"><b>' + esc(gameLine(tm, x)) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</div>' +
-        (changed ? window.LDBuilder.lineupHtml(lu, ctx(), { head: false }) : '') + '</li>';
+  function timeline(tm, reqs) {
+    var byGame = {}, ids = {}, rows = [];
+    S.games.forEach(function (x) { ids[x.game.id] = 1; });
+    reqs.forEach(function (q) { var k = q.game_id && ids[q.game_id] ? q.game_id : 'd:' + q.game_date + ':' + (q.game_time || ''); (byGame[k] = byGame[k] || []).push(q); });
+    S.games.forEach(function (x) { rows.push({ date: x.game.date, time: x.game.time || '', x: x, reqs: byGame[x.game.id] || [] }); });
+    Object.keys(byGame).filter(function (k) { return k.indexOf('d:') === 0; }).forEach(function (k) {
+      var q = byGame[k][0]; rows.push({ date: q.game_date, time: q.game_time || '', x: null, reqs: byGame[k], label: window.LDBuilder.day(ctx(), q.game_date) + (q.game_time ? ' · ' + q.game_time : '') + ' · ' + t('offSchedule') });
+    });
+    rows.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    var up = rows.filter(function (r) { return r.date >= S.today; }), past = rows.filter(function (r) { return r.date < S.today && r.reqs.length; }).reverse();
+    var actions = function (q) {
+      if ((q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today) return '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button></div>';
+      if (q.status === 'refused') return '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-hide="' + q.id + '">' + t('hideReq') + '</button></div>';
+      return '';
     };
-    return '<section class="cp-panel"><h2 class="cp-ph">' + t('myGames') + '</h2>' + (up.length ? '<ul class="cp-games">' + up.map(row).join('') + '</ul>' : '') +
-      (past.length ? '<details class="ad-add"><summary>' + esc(t('pastGames', { n: past.length })) + '</summary><ul class="cp-games">' + past.map(function (x) { return row(x, -1); }).join('') + '</ul></details>' : '') + '</section>';
+    var row = function (r, i) {
+      var lu = r.x && r.x.lineup, changed = lu && (lu.subs.length || lu.absents.length), next = i === 0 && r.date >= S.today;
+      var sum = changed ? ' <span class="note">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</span>' : '';
+      return '<li class="cp-game' + (next ? ' cp-nextg' : '') + (r.reqs.length ? ' cp-has-subs' : '') + '"><div class="cp-gl"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' +
+        (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + sum + '</div>' +
+        (r.reqs.length ? '<div class="bd-reqs">' + r.reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx(), actions(q), { team: false, game: false, result: q.status === 'pending' }); }).join('') + '</div>' : '') + '</li>';
+    };
+    return '<section class="cp-panel cp-tl"><h2 class="cp-ph">' + t('myGames') + '</h2>' +
+      (up.length ? '<ul class="cp-games">' + up.map(row).join('') + '</ul>' : '<p class="note">' + t('noGames') + '</p>') +
+      (past.length ? '<details class="ad-add"><summary>' + esc(t('pastReqs', { n: past.length })) + '</summary><ul class="cp-games">' + past.map(function (r) { return row(r, -1); }).join('') + '</ul></details>' : '') + '</section>';
   }
   function rosterPanel(tm) {
     var rows = tm.roster.map(function (r) { return '<tr><td>' + person(tm, r) + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.salary)) + '</td></tr>'; }).join('');
@@ -231,7 +247,7 @@
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
@@ -239,6 +255,7 @@
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
     if (act === 'ask') { S.msg = null; location.hash = '#demande'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
+    if (b.hasAttribute('data-hide')) { api('/replacements/' + b.getAttribute('data-hide') + '/hide', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('hidden')); else say('err', errMsg(r)); refresh(); }); return; }
     if (b.hasAttribute('data-cancel')) {
       if (!window.confirm(t('confirmCancel'))) return;
       api('/replacements/' + b.getAttribute('data-cancel') + '/cancel', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('cancelled')); else say('err', errMsg(r)); refresh(); });

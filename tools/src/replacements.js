@@ -262,7 +262,8 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
 
   // The requests: admin, one season (every league); captain, their teams. Pending requests carry their checks run again now.
   if (m === 'GET' && path === '/replacements') {
-    const where = isAdmin ? 'q.season_id = ?' : `q.team_id IN (${allowed.map(() => '?').join(',') || 'NULL'})`;
+    // A captain does not see the refused requests they hid; the admins see everything.
+    const where = isAdmin ? 'q.season_id = ?' : `q.team_id IN (${allowed.map(() => '?').join(',') || 'NULL'}) AND q.captain_hidden_at IS NULL`;
     const args = isAdmin ? [intId(q.get('season')) || 0] : allowed;
     const { results: reqs } = await DB.prepare(`SELECT q.*, t.name AS team_name, t.abb, t.nbhpa_team_id,
         CASE q.created_kind WHEN 'captain' THEN c.name ELSE a.name END AS created_name, d.name AS decided_name
@@ -312,6 +313,17 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       .bind(status, ev.result, JSON.stringify({ checks: ev.checks, payroll: ev.payroll }), now(), actor.id, note, r.id).run();
     await audit('replacement.' + (status === 'approved' ? 'approve' : 'refuse'), 'replacement:' + r.id, { result: ev.result });
     return json({ ok: true, status, result: ev.result });
+  }
+
+  // Hide (captain): a refused request leaves the captain's page (noise); it stays in the admin history.
+  x = path.match(/^\/replacements\/(\d+)\/hide$/);
+  if (m === 'POST' && x && !isAdmin) {
+    const r = await DB.prepare('SELECT * FROM replacements WHERE id = ?').bind(Number(x[1])).first();
+    if (!r || !allowed.includes(r.team_id)) return fail(404, 'replacement');
+    if (r.status !== 'refused') return fail(409, 'not_refused');
+    await DB.prepare('UPDATE replacements SET captain_hidden_at = ? WHERE id = ?').bind(now(), r.id).run();
+    await audit('replacement.hide', 'replacement:' + r.id);
+    return json({ ok: true });
   }
 
   // Cancel: the team's captain or an admin, while the request is pending or approved. A cancelled request serves no
