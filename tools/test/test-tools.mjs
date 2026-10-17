@@ -576,13 +576,14 @@ d.querySelector('#f-email [name=email]').value = 'boss@example.test'; await subm
 const devHint = d.querySelector('.ad-dev').textContent.match(/\d{6}/)[0];
 d.querySelector('#f-code [name=code]').value = devHint; await submit('#f-code');
 assert.ok(/Boss|boss@example\.test/.test(d.getElementById('top').textContent), 'signed in');
-assert.ok(d.querySelectorAll('.ad-kpis .ad-kpi').length === 4, 'home first: the dashboard and its four key numbers');
+assert.ok(d.querySelector('.ad-dive .ad-lcard') && !d.querySelector('.ad-kpis'), 'home first: the league cards (no key-number tiles)');
 // the context first: LDHML > section > league (owner, 2026-10-17); links #/, #/<section>, #/<section>/<league>[/<tab>]
 const hL = (l, tab) => '#/' + l.sectionPath + '/' + l.path + (tab ? '/' + tab : '');
 const hS = (key) => '#/' + season.sections.find((x) => x.key === key).path;
 assert.ok(d.querySelector('.ad-ctxbar #ad-ctx') && d.querySelector('.ad-ctxbar #ad-season'), 'every page: the context bar (where you are, a switcher) and the season');
 assert.ok(d.querySelector('.nav a[href="#/config"]') && d.querySelector('.nav a[href="#/audit"]') && d.querySelectorAll('#tabbar a').length === 3, 'LDHML level: Accueil, Configuration, Journal (top bar; bottom bar on phones)');
-assert.equal(d.querySelectorAll('.ad-lgcard').length, season.leagues.length, 'home: one card per league, by section');
+assert.equal(d.querySelectorAll('.ad-lcard').length, season.leagues.length, 'home: one card per league, by section');
+assert.ok([...d.querySelectorAll('.ad-lcard')].every((c) => c.querySelector('.ad-lc-head') && c.querySelector('.ad-lc-links a')), 'each card: the league, its action items, its pages');
 assert.equal(d.querySelectorAll('.ad-ctx-pop .ad-ctx-lg').length, season.leagues.length, 'the switcher lists every league');
 w.location.hash = hL(lg); await wait(250);
 assert.ok(d.querySelector('.nav a[aria-current="page"]').getAttribute('href') === hL(lg) && d.querySelectorAll('.ad-kpis .ad-kpi').length === 4 && d.querySelector('.ad-ovteams'), 'a league opens on its overview (key numbers, to validate, teams)');
@@ -697,7 +698,7 @@ assert.ok(d.querySelector('#main .ad-msg.ad-ok'), 'with a message');
 assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="' + hL(lg, 'subs') + '"]').textContent), 'the Replacements tab counts the pending request');
 assert.ok(d.querySelector('.ad-ctx-lg[href^="' + hL(lg) + '"] .ad-cnt'), 'the switcher shows the league\'s pending count');
 w.location.hash = '#/'; await wait(250);
-assert.equal(d.querySelector('.ad-k-val .ad-kv').textContent, '1', 'home: one replacement to validate');
+assert.equal(d.querySelector('.ad-lcard a.ad-lc-val[href="' + hL(lg, 'subs') + '"] b').textContent, '1', 'home: the league card says 1 to validate, one click to the league queue');
 assert.ok(d.querySelector('.ad-panel .bd-req.bd-st-pending [data-decide="approve"]') && d.querySelector('.ad-panel .bd-req .lgb'), 'with its actions and its league');
 const missBtn = d.querySelector('[data-home-miss]');
 if (missBtn) { const kind = missBtn.getAttribute('data-home-miss').split(':')[1]; missBtn.click(); await wait(250);

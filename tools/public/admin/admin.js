@@ -138,7 +138,7 @@
       suChipPool: 'inscrit, sans équipe', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
       tabOverview: 'Aperçu', tabLgSetup: 'Réglages', ctxAll: 'Toute la LDHML', ctxLabel: 'Où vous êtes', navLabel: 'Pages',
-      pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
+      pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
       leaguesHint2: 'Une ligue inactive est cachée du travail courant. Ses règles et ses équipes se règlent dans ses Réglages.',
@@ -198,7 +198,7 @@
       suChipPool: 'signed up, no team', suChipSub: 'Replacement', plSubs: 'Replacements',
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
       tabOverview: 'Overview', tabLgSetup: 'Settings', ctxAll: 'All of LDHML', ctxLabel: 'Where you are', navLabel: 'Pages',
-      pLeagues: 'The leagues', secPlayers: 'Section players →', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
+      pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
       leaguesHint2: 'A league that is off is hidden from the daily work. Its rules and teams are set in its Settings.',
@@ -618,59 +618,50 @@
     var head = '<h1 class="ph">' + t('homeTitle') + '</h1>' + warn;
     var s = curSeason(), d = S.dash;
     if (!s || !d || !S.data) return head + '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
-    var ctx = builderCtx(), today = torontoToday(), open = function (q) { return q.status === 'pending' || q.status === 'approved'; };
-    var tile = function (cls, label, value, sub, href) { return '<' + (href ? 'a href="' + href + '"' : 'div') + ' class="ad-kpi ' + cls + '"><span class="ad-kl">' + esc(label) + '</span><span class="ad-kv">' + value + '</span>' + (sub ? '<span class="ad-ks">' + sub + '</span>' : '') + '</' + (href ? 'a' : 'div') + '>'; };
+    var ctx = builderCtx(), open = function (q) { return q.status === 'pending' || q.status === 'approved'; };
     var pending = S.subs.filter(function (q) { return q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
-    var byLg = {}; pending.forEach(function (q) { byLg[q.league] = (byLg[q.league] || 0) + 1; });
-    var pendSub = Object.keys(byLg).map(function (slug) { var l = leagueOf(slug); return l ? leagueOnly(l, false) + ' <b>' + byLg[slug] + '</b>' : ''; }).join(' ') || esc(t('kNothing'));
-    // the next game night of each league (the tools' own schedule)
+    // the next game night of each league (the tools' own schedule), with the replacements on file for it
     var nights = (d.nights || []).filter(function (n) { return leagueOf(n.league) && !leagueOff(n.league); }).map(function (n) {
       var subs = S.subs.filter(function (q) { return q.league === n.league && q.game_date === n.date && open(q); });
       return { l: leagueOf(n.league), date: n.date, games: n.games, v: subs.filter(function (q) { return q.status === 'approved'; }).length, p: subs.filter(function (q) { return q.status === 'pending'; }).length };
     });
-    var first = nights[0], firstDay = first ? nights.filter(function (n) { return n.date === first.date; }) : [];
-    var nextV = first ? esc(window.LDBuilder.day(ctx, first.date)) : '—';
-    var nextS = first ? firstDay.map(function (n) { return leagueOnly(n.l, false); }).join(' ') + ' · ' + esc(t('kOnFile', { n: firstDay.reduce(function (a, n) { return a + n.v + n.p; }, 0) })) : esc(t('noNight'));
-    var miss = d.missing.reduce(function (a, m) { return { s: a.s + (m.no_salary || 0), b: a.b + (m.no_birth || 0), n: a.n + (m.no_nid || 0) }; }, { s: 0, b: 0, n: 0 });
-    var kpis = '<div class="ad-kpis">' + tile('ad-k-val' + (pending.length ? ' ad-k-hot' : ''), t('kToValidate'), String(pending.length), pendSub, '') +
-      tile('ad-k-night', t('kNextNight'), nextV, nextS, first ? hrefL(first.l.slug, 'cal') : '') +
-      tile('ad-k-cap', t('kNoCaptain'), String(d.noCaptain.length), esc(t('kOfTeams', { n: d.teams })), d.noCaptain.length ? hrefL(d.noCaptain[0].league, 'teams') : '') +
-      tile('ad-k-miss', t('kMissing'), String(miss.s), esc(miss.s || miss.b || miss.n ? t('kMissSub', { b: miss.b, d: miss.n }) : t('kAllComplete')), hrefS(((S.data.sections || [])[0] || {}).key)) + '</div>';
-    var val = '<section class="ad-panel"><h2 class="ad-ph">' + t('pToValidate') + '</h2>' +
+    /* One card per league, by section (the first place to dive in, owner): what to do there, each item one click away.
+     * To validate (straight to the league's queue), the next game night (the schedule on that date), what is missing
+     * (rules, games), and the league's pages. */
+    var card = function (l) {
+      var off = leagueOff(l.slug), pend = S.pending[l.slug] || 0, n = nights.filter(function (x) { return x.l.slug === l.slug; })[0];
+      var head = '<a class="ad-lc-head" href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) + '<span class="ad-lc-name">' + esc(l.name) + '</span></a>';
+      if (off) return '<li class="ad-lcard ad-lgoff">' + head + '<p class="note">' + esc(t('lgInactive')) + ' · <a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + '</a></p></li>';
+      var val = pend ? '<a class="ad-lc-val ad-hot" href="' + hrefL(l.slug, 'subs') + '"><b>' + pend + '</b> ' + esc(t('lcVal')) + ' <span aria-hidden="true">→</span></a>'
+        : '<span class="ad-lc-val ad-calm">' + esc(t('lcNoVal')) + '</span>';
+      var night = n ? '<button type="button" class="ad-lc-night" data-home-cal="' + esc(l.slug) + ':' + n.date + '"><span class="ad-kl">' + esc(t('kNextNight')) + '</span>' +
+          '<span><b>' + esc(window.LDBuilder.day(ctx, n.date)) + '</b> · <span class="note">' + esc(t('nightGames', { n: n.games })) + '</span></span>' +
+          (n.v + n.p ? '<span class="ad-lc-subs">' + esc(t('nightSubs', { v: n.v, p: n.p })) + '</span>' : '') + '</button>'
+        : '<a class="ad-lc-night ad-lc-warn" href="' + hrefL(l.slug, 'cal') + '"><span class="ad-kl">' + esc(t('kNextNight')) + '</span>' + esc(t('lcNoGames')) + '</a>';
+      var warn = d.rulesLeagues.indexOf(l.slug) < 0 ? '<a class="ad-lc-warn" href="' + hrefL(l.slug, 'setup') + '">! ' + esc(t('lcNoRules')) + '</a>' : '';
+      var links = '<nav class="ad-lc-links" aria-label="' + esc(l.name) + '"><a href="' + hrefL(l.slug, 'cal') + '">' + t('tabCal') + '</a><a href="' + hrefL(l.slug, 'teams') + '">' + t('tabTeams') + '</a><a href="' + hrefL(l.slug, 'subs') + '">' + t('tabSubs') + '</a></nav>';
+      return '<li class="ad-lcard' + (pend ? ' ad-lc-hot' : '') + '">' + head + val + night + warn + links + '</li>';
+    };
+    var leaguesP = '<section class="ad-dive" aria-label="' + esc(t('pLeagues')) + '">' + (S.data.sections || []).map(function (sec) {
+      return '<div class="ad-dive-sec"><div class="ad-dive-h"><h2>' + esc(nameOf(sec)) + '</h2><a class="lnk" href="' + hrefS(sec.key) + '">' + t('secPlayers') + '</a></div><ul class="ad-lcards">' +
+        S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(card).join('') + '</ul></div>';
+    }).join('') + '</section>';
+    // every replacement to validate, all leagues, soonest game first (the daily work: validate from here)
+    var val = '<section class="ad-panel"><h2 class="ad-ph">' + t('pToValidate') + (pending.length ? ' <span class="ad-hcnt">' + pending.length + '</span>' : '') + '</h2>' +
       (pending.length ? '<div class="bd-reqs">' + pending.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
       '</section>';
-    // the leagues, by section: each card opens the league (next night, to validate, teams without a captain)
-    /* the first place to dive (owner): the leagues, full width under the title, by section */
-    var leaguesP = '<section class="ad-dive" aria-label="' + esc(t('pLeagues')) + '">' + (S.data.sections || []).map(function (sec) {
-      return '<div class="ad-dive-sec"><div class="ad-dive-h"><h2>' + esc(nameOf(sec)) + '</h2><a class="lnk" href="' + hrefS(sec.key) + '">' + t('secPlayers') + '</a></div><ul class="ad-lgcards">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
-        var n = nights.filter(function (x) { return x.l.slug === l.slug; })[0], off = leagueOff(l.slug);
-        var nc = d.noCaptain.filter(function (x) { return x.league === l.slug; }).length, pend = S.pending[l.slug] || 0;
-        return '<li><a class="ad-lgcard' + (off ? ' ad-lgoff' : '') + '" href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) +
-          '<span class="ad-lgc-l">' + (off ? esc(t('lgInactive')) : n ? '<b>' + esc(window.LDBuilder.day(ctx, n.date)) + '</b> · ' + esc(t('nightGames', { n: n.games })) : esc(t('noNight'))) + '</span>' +
-          '<span class="ad-lgc-k">' + (pend ? '<b>' + pend + '</b> ' + esc(t('kToValidate').toLowerCase()) : '') + (nc ? (pend ? ' · ' : '') + esc(t('lgNoCap', { n: nc })) : '') + '</span></a></li>';
-      }).join('') + '</ul>';
-    }).join('') + '</section>';
-    var todo = [], noCap = d.noCaptain.filter(function (x) { return !leagueOff(x.league); });
-    if (noCap.length) {
-      var capByLg = {}; noCap.forEach(function (x) { (capByLg[x.league] = capByLg[x.league] || []).push(x); });
-      todo.push('<li><b>' + esc(t('todoNoCap', { n: noCap.length })) + '</b><div class="lgbs">' + Object.keys(capByLg).map(function (slug) {
-        var l = leagueOf(slug) || { slug: slug, short: slug, name: slug, theme: 'default' };
-        return '<button type="button" class="ad-lgbtn" data-home-teams="' + esc(slug) + '">' + window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { theme: l.theme, teams: capByLg[slug].map(function (x) { return { abb: x.abb, name: x.name }; }) }) + '</button>';
-      }).join('') + '</div></li>');
-    }
-    var noRules = S.data.leagues.filter(function (l) { return !leagueOff(l.slug) && d.rulesLeagues.indexOf(l.slug) < 0; });
-    if (noRules.length) todo.push('<li><b>' + esc(t('todoRules')) + '</b> <a class="lgbs ad-todo-a" href="' + hrefL(noRules[0].slug, 'setup') + '">' + noRules.map(function (l) { return leagueOnly(l, false); }).join('') + '</a></li>');
+    // what is not tied to one league: data missing in a section list, the NBHPA schedule, captains who never signed in
+    var todo = [];
     d.missing.forEach(function (m) {
       if (!m.no_salary && !m.no_birth && !m.no_nid) return;
       var sec = (S.data.sections || []).filter(function (x) { return x.key === m.section; })[0];
       var link = function (kind, text) { return '<button type="button" class="lnk ad-linkbtn" data-home-miss="' + esc(m.section) + ':' + kind + '">' + esc(text) + '</button>'; };
       todo.push('<li><b>' + esc(nameOf(sec) || m.section) + ' :</b> ' + link('sal', m.no_salary + ' ' + t('fNoSal').toLowerCase()) + ' · ' + link('birth', m.no_birth + ' ' + t('fNoBirth').toLowerCase()) + ' · ' + link('nid', m.no_nid + ' ' + t('fNoNid').toLowerCase()) + '</li>');
     });
-    if (!d.games) todo.push('<li><b>' + esc(t('todoNoGames')) + '</b> <a class="lnk" href="' + hrefL(S.league, 'cal') + '">' + esc(t('tabCal')) + '</a></li>');
     if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push('<li><b>' + esc(t('todoNbhpa', { a: d.nbhpa.add, u: d.nbhpa.update })) + '</b> <button type="button" class="ad-btn ad-btn-sm ad-ar" data-games-import>' + esc(t('importGames')) + '</button></li>');
     if (d.captainsNeverIn) todo.push('<li><button type="button" class="lnk ad-linkbtn" data-home-accounts>' + esc(t('todoNever', { n: d.captainsNeverIn })) + '</button></li>');
-    var todoP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2>' + (todo.length ? '<ul class="ad-todo">' + todo.join('') + '</ul>' : '<p class="note">' + t('todoNone') + '</p>') + '</section>';
-    return head + leaguesP + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + todoP + '</div></div>' +
+    var todoP = todo.length ? '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2><ul class="ad-todo">' + todo.join('') + '</ul></section>' : '';
+    return head + leaguesP + (todoP ? '<div class="ad-grid2 ad-grid-wide"><div class="ad-col">' + val + '</div><div class="ad-col">' + todoP + '</div></div>' : val) +
       '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
   }
   /* ---------- A league: its overview (what needs doing in this league now) ----------
