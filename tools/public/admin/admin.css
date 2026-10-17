@@ -239,3 +239,22 @@ a.ad-kpi:hover { border-color: var(--ball); }
 }
 .ld-gacts { margin-left: auto; display: inline-flex; gap: 10px; }
 .ld-gh { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+/* Sign-ups (draft leagues) */
+.ad-su > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; cursor: pointer; }
+.ad-su-h { margin: 0; display: inline; }
+.ad-su-ks { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+.ad-su-k b { font-size: 1.05em; }
+.ad-su-k.ad-su-full b { color: var(--ok, #3fb67a); }
+.ad-su-k.ad-over b { color: var(--bad, #e5484d); }
+.ad-su-out td { opacity: .55; }
+.ad-chip { display: inline-block; padding: 1px 8px; border: 1px solid var(--line, #33404d); border-radius: 999px; font-size: .8em; white-space: nowrap; }
+.ad-chip-sub { border-style: dashed; }
+.ad-su-t td:first-child, .ad-su-t td:first-child a { overflow-wrap: break-word; }
+.ad-su-t .ad-short { display: none; }
+.ad-tchip { gap: 6px; }
+@media (max-width: 600px) {
+  .ad-su-t .ad-long { display: none; }
+  .ad-su-t .ad-short { display: inline; }
+  .ad-su-t td { padding: 4px 5px; }
+  .ad-su-t .tcell .crest { display: inline-grid; }
+}

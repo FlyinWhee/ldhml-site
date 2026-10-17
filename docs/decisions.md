@@ -89,3 +89,6 @@ The season "en cours" is the reference for the tools, the captains and the publi
 
 ## "Déclarer un remplacement", not "demander" (2026-10-16)
 The captain does not ask for a replacement: they tell the league. The admins validate it (they make sure no other team is wronged by an invalid player). The words follow: Déclarer un remplacement, Mes remplacements, Remplacement no N, À valider / Validé / Refusé, Valider (admin). In code and in the database the table keeps its name (`replacements`, a "request" in comments).
+
+## One sign-up entity per league, not a draft pool (2026-10-17)
+Team leagues join as a team; draft leagues take people one by one until the places are full (places per team include the captain). A draft-only pool would hold the same fact as "this person plays in this league this season" for half the leagues. One table (`league_players`) for all leagues answers it everywhere: team leagues write it with the roster, draft leagues through an admin's sign-up. A person in both draft leagues has two rows. Salaries stay per section (owner: the purpose of a section); replacement players have no sign-up (owner: they only need to be known, with a salary). The tools are never public: admins enter sign-ups.

@@ -5,7 +5,7 @@ The LDHML tools: one Cloudflare Worker with a D1 database. Admin area and captai
 ```
 src/worker.js      entry: /api/... to the API, everything else to the static assets (dist-tools/, built by ../build.mjs)
 src/admin-api.js   /api/admin/...: sign-in, seasons, captains, access per season and team, audit
-src/roster-api.js  /api/admin/...: people, league player lists, our teams, rosters, league rules (called by admin-api.js)
+src/roster-api.js  /api/admin/...: people, league player lists, sign-ups per league, our teams, rosters, league rules (called by admin-api.js)
 src/captain-api.js /api/captain/...: captain sign-in, my teams, then the replacement routes for those teams only
 src/replacements.js replacement requests and their checks, shared by both areas (admin: any team; captain: their teams)
 src/lineups.js     the actual lineup of a game (roster - absents + replacements on file): admin calendar, captain games
@@ -28,6 +28,8 @@ wrangler.jsonc     Worker config. No secrets in it.
 2. **Every feature table has a `season_id`.** Access is per season. A new feature that is not per season needs a written reason in `../docs/decisions.md`.
 3. **Every change made by a person writes an `audit` row** (who, what, target, detail).
 4. **The tools work without NBHPA** (owner, 2026-10-17): every feature reads the tools database only (schedule, teams, logos, rosters). NBHPA data comes in through imports (optional; from the build snapshot now, an API later) and a missing import never breaks a feature. **The Worker never fetches NBHPA** (Cloudflare servers are blocked). It reads our snapshot (`/data/season.json`).
+13. **Never public** (owner, 2026-10-17): two roles only, admins and captains. Admins enter everything (sign-ups included); there is no public form and no player account. A new feature for players goes through an admin or a captain.
+14. **Who plays where** (owner, 2026-10-17): `league_players` = one row per person, league and season (status in / wait / out). Team leagues: written with the roster. Draft leagues: an admin signs the person up, the draft puts them on a team. **A replacement player has no row**: being on the section list (`section_players`, the salary) is enough, and they can replace in every league of the section. **Salaries are per section.** **Places per team include the captain** (4v4: 4 men, 4 women, 1 goalie; in `season_leagues`).
 5. **Admin and captain stay apart:** separate tables, cookies (`__Host-ldhml_admin`, `__Host-ldhml_captain`), session kinds and URL areas (`/admin/`, `/captain/`).
 6. Sign-in security (do not weaken without a decision): same answer for any email; codes 6 digits, 10 min, single use, 5 tries; 5 codes per email and 20 per IP per hour; only HMAC hashes stored (CODE_PEPPER secret); cookie `HttpOnly; Secure; SameSite=Strict`; writes need our own `Origin`.
 7. The pages follow `../docs/presentation.md` (league badges, team chips, links to the stats site) and are fr/en (`STR` in `public/admin/admin.js`).

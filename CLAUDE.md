@@ -70,6 +70,7 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 10. **Open legal question:** NBHPA has not given permission for outside sites to use their public endpoints and logos. The owner will raise it with them. Do not add new data sources or heavier polling before that talk. Do not claim the site is "official".
 11. **Never change, reuse or delete an id in `registry/people.json`.** Do not regenerate the file. See `registry/CLAUDE.md`.
 13. **The tools are their own operational system** (owner, 2026-10-17). They must work fully without NBHPA: their schedule, teams, rosters, players and rules live in the tools database. NBHPA is an optional source (richer data, easier loading) through imports, never a hard dependency. The stats site stays NBHPA-based; the tools may feed it some of their data (regular lineups, salaries).
+   **The tools are never public** (owner, 2026-10-17): admins do everything (sign-ups included) and offer some of it to captains. No public form, no player accounts.
 12. **No personal data in git** (the repo is public): admin and captain emails, sessions and requests live only in the tools database (D1). Every tools feature is **per season** and **audited**. See `tools/CLAUDE.md`.
 
 ## Commands

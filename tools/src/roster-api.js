@@ -1,4 +1,4 @@
-// Roster layer (admin only): people, league player lists (per section and season), our teams, rosters, league rules.
+// Roster layer (admin only): people, league player lists (per section and season), sign-ups per league, our teams, rosters, league rules.
 // Called by admin-api.js after the admin session check. Returns a Response, or null when the route is not one of these.
 // Rules: every row is per season (people excepted: one person across seasons); every change writes an audit row.
 import { json, fail, readJson, cleanText, now } from './http.js';
@@ -26,6 +26,25 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
   const season = async (id) => DB.prepare('SELECT id, nbhpa_season_id FROM seasons WHERE id = ?').bind(Number(id)).first();
   const q = url.searchParams;
   let x;
+  /** A league's sign-ups for a season: { signups (in, then wait in order, then out), places, counts, pool }.
+   *  places = teams x places per team (captain included); counts = signed up ('in'), per men, women, goalies; pool = 'in' with no team yet. */
+  const signupsOf = async (seasonId, lg) => {
+    const { results } = await DB.prepare(`SELECT u.id, u.person_id, u.pos, u.status, u.created_at, p.name, p.site_id, p.sex, sp.salary_s, sp.salary_g,
+        t.id AS team_id, t.abb, t.name AS team_name, t.nbhpa_team_id, t.logo AS team_logo
+      FROM league_players u JOIN people p ON p.id = u.person_id
+      LEFT JOIN section_players sp ON sp.season_id = u.season_id AND sp.section = ? AND sp.person_id = u.person_id
+      LEFT JOIN rosters r ON r.season_id = u.season_id AND r.league = u.league AND r.person_id = u.person_id AND r.removed_at IS NULL
+      LEFT JOIN teams t ON t.id = r.team_id
+      WHERE u.season_id = ? AND u.league = ? ORDER BY CASE u.status WHEN 'in' THEN 0 WHEN 'wait' THEN 1 ELSE 2 END, u.created_at, u.id`).bind(lg.section, seasonId, lg.slug).all();
+    const rule = await DB.prepare('SELECT places_m, places_f, places_g FROM season_leagues WHERE season_id = ? AND league = ?').bind(seasonId, lg.slug).first() || {};
+    const teams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, lg.slug).first('n');
+    const slot = (u) => (u.pos === 'g' ? 'g' : u.sex === 'f' ? 'f' : 'm'), on = results.filter((u) => u.status === 'in');
+    const per = { m: rule.places_m ?? null, f: rule.places_f ?? null, g: rule.places_g ?? null };
+    const count = (k, list) => list.filter((u) => slot(u) === k).length;
+    return { signups: results.map((u) => ({ ...u, team: u.team_id ? { id: u.team_id, abb: u.abb, name: u.team_name, nbhpa_team_id: u.nbhpa_team_id, logo: u.team_logo } : null })),
+      teams, perTeam: per, places: { m: per.m == null ? null : per.m * teams, f: per.f == null ? null : per.f * teams, g: per.g == null ? null : per.g * teams },
+      counts: { m: count('m', on), f: count('f', on), g: count('g', on) }, pool: on.filter((u) => !u.team_id).length, waiting: results.filter((u) => u.status === 'wait').length };
+  };
 
   // ---------- people and the league player list ----------
   if (m === 'GET' && path === '/people') {
@@ -40,7 +59,9 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       FROM section_players sp JOIN people p ON p.id = sp.person_id WHERE sp.season_id = ? AND sp.section = ? ORDER BY p.name COLLATE NOCASE`).bind(s.id, section).all();
     const { results: ros } = await DB.prepare(`SELECT r.id, r.person_id, r.league, r.pos, t.id AS team_id, t.name AS team_name, t.abb, t.nbhpa_team_id
       FROM rosters r JOIN teams t ON t.id = r.team_id WHERE r.season_id = ? AND r.removed_at IS NULL`).bind(s.id).all();
-    return json({ players: list.map((p) => ({ ...p, rosters: ros.filter((r) => r.person_id === p.id && leagues.includes(r.league)) })) });
+    const { results: ups } = await DB.prepare('SELECT person_id, league, pos, status FROM league_players WHERE season_id = ?').bind(s.id).all();
+    return json({ players: list.map((p) => ({ ...p, rosters: ros.filter((r) => r.person_id === p.id && leagues.includes(r.league)),
+      signups: ups.filter((u) => u.person_id === p.id && leagues.includes(u.league)).map((u) => ({ league: u.league, pos: u.pos, status: u.status })) })) });
   }
   if (m === 'POST' && path === '/people') {
     const b = await readJson(req) || {}, f = personFields(b);
@@ -74,6 +95,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       DB.prepare('DELETE FROM replacement_lines WHERE absent_id = ? OR sub_id = ?').bind(id, id),
       DB.prepare('DELETE FROM replacements WHERE NOT EXISTS (SELECT 1 FROM replacement_lines l WHERE l.replacement_id = replacements.id)'),
       DB.prepare('DELETE FROM rosters WHERE person_id = ?').bind(id),
+      DB.prepare('DELETE FROM league_players WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM section_players WHERE person_id = ?').bind(id),
       DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('person:' + id),
       DB.prepare('DELETE FROM people WHERE id = ?').bind(id)
@@ -194,6 +216,9 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (on) return fail(409, 'already_on_roster', { team: on.name });
     const r = await DB.prepare('INSERT INTO rosters (season_id, league, team_id, person_id, pos, added_at, added_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(t.season_id, t.league, t.id, p.id, b.pos, now(), admin.id).run();
+    await DB.prepare(`INSERT INTO league_players (season_id, league, person_id, pos, status, created_at, created_by) VALUES (?, ?, ?, ?, 'in', ?, ?)
+      ON CONFLICT (season_id, league, person_id) DO UPDATE SET status = 'in', pos = excluded.pos, updated_at = excluded.created_at, updated_by = excluded.created_by`)
+      .bind(t.season_id, t.league, p.id, b.pos, now(), admin.id).run();
     await audit('roster.add', 'team:' + t.id, { person: p.id, pos: b.pos });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
@@ -205,6 +230,50 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     const r = await DB.prepare('UPDATE rosters SET removed_at = ?, removed_by = ? WHERE id = ? AND removed_at IS NULL').bind(now(), admin.id, Number(x[1])).run();
     if (!r.meta.changes) return fail(404, 'roster');
     await audit('roster.remove', 'roster:' + x[1]);
+    return json({ ok: true });
+  }
+
+  // ---------- sign-ups: who plays in a league for a season (league_players) ----------
+  // GET: the league's sign-ups (waiting list in order), with the team of each (none yet = in the draft pool), and the places.
+  if (m === 'GET' && path === '/league-players') {
+    const s = await season(q.get('season')), lg = leagueOf(q.get('league'));
+    if (!s || !lg) return fail(400, 'season');
+    return json(await signupsOf(s.id, lg));
+  }
+  // POST: sign a person up (an admin does it; the tools are never public). Status: given, else 'in' while there is a place, else 'wait'.
+  if (m === 'POST' && path === '/league-players') {
+    const b = await readJson(req) || {}, s = await season(b.season_id), lg = leagueOf(b.league);
+    const p = await DB.prepare('SELECT id, sex FROM people WHERE id = ?').bind(Number(b.person_id) || 0).first();
+    if (!s || !lg || !p || !['s', 'g'].includes(b.pos) || (b.status && !['in', 'wait'].includes(b.status))) return fail(400, 'signup');
+    if (await isArchived(DB, s.id)) return fail(409, 'season_archived');
+    if (await DB.prepare('SELECT 1 FROM league_players WHERE season_id = ? AND league = ? AND person_id = ?').bind(s.id, lg.slug, p.id).first()) return fail(409, 'signup_exists');
+    const cur = await signupsOf(s.id, lg), slot = b.pos === 'g' ? 'g' : p.sex === 'f' ? 'f' : 'm';
+    const status = b.status || (cur.places[slot] != null && cur.counts[slot] >= cur.places[slot] ? 'wait' : 'in');
+    // on the section's list too (salary set there; a replacement player is already on it)
+    await DB.prepare('INSERT OR IGNORE INTO section_players (season_id, section, person_id, created_at, created_by) VALUES (?, ?, ?, ?, ?)').bind(s.id, lg.section, p.id, now(), admin.id).run();
+    const r = await DB.prepare('INSERT INTO league_players (season_id, league, person_id, pos, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(s.id, lg.slug, p.id, b.pos, status, now(), admin.id).run();
+    await audit('signup.add', 'person:' + p.id, { season: s.id, league: lg.slug, pos: b.pos, status });
+    return json({ ok: true, id: r.meta.last_row_id, status }, 201);
+  }
+  // POST /league-players/:id: change the status (in, wait, out) or the position. Out is refused while the person is on a team of the league.
+  x = path.match(/^\/league-players\/(\d+)(\/delete)?$/);
+  if (m === 'POST' && x) {
+    const u = await DB.prepare('SELECT * FROM league_players WHERE id = ?').bind(Number(x[1])).first();
+    if (!u) return fail(404, 'signup');
+    if (await isArchived(DB, u.season_id)) return fail(409, 'season_archived');
+    const onTeam = await DB.prepare('SELECT 1 FROM rosters WHERE season_id = ? AND league = ? AND person_id = ? AND removed_at IS NULL').bind(u.season_id, u.league, u.person_id).first();
+    if (x[2]) {   // delete: a sign-up made by mistake
+      if (onTeam) return fail(409, 'on_roster');
+      await DB.prepare('DELETE FROM league_players WHERE id = ?').bind(u.id).run();
+      await audit('signup.delete', 'person:' + u.person_id, { season: u.season_id, league: u.league });
+      return json({ ok: true });
+    }
+    const b = await readJson(req) || {}, status = b.status || u.status, pos = b.pos || u.pos;
+    if (!['in', 'wait', 'out'].includes(status) || !['s', 'g'].includes(pos)) return fail(400, 'signup');
+    if (onTeam && status !== 'in') return fail(409, 'on_roster');
+    await DB.prepare('UPDATE league_players SET status = ?, pos = ?, updated_at = ?, updated_by = ? WHERE id = ?').bind(status, pos, now(), admin.id, u.id).run();
+    await audit('signup.update', 'person:' + u.person_id, { season: u.season_id, league: u.league, status, pos });
     return json({ ok: true });
   }
 
@@ -230,14 +299,16 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
   if (m === 'POST' && path === '/rules') {
     const b = await readJson(req) || {}, s = await season(b.season_id);
     const cap = num(b.salary_cap), am = int(b.min_age_m, 0, 99), af = int(b.min_age_f, 0, 99), ag = int(b.min_age_g, 0, 99);
+    const pm = int(b.places_m, 0, 30), pf = int(b.places_f, 0, 30), pg = int(b.places_g, 0, 5);
     const notes = b.notes ? cleanText(b.notes, 500) : null, ageOn = b.age_on === 'year' ? 'year' : b.age_on == null || b.age_on === '' || b.age_on === 'game' ? null : NaN;
-    if (!s || !leagueOf(b.league) || bad(cap, am, af, ag, ageOn) || (b.notes && !notes)) return fail(400, 'rules');
+    if (!s || !leagueOf(b.league) || bad(cap, am, af, ag, ageOn, pm, pf, pg) || (b.notes && !notes)) return fail(400, 'rules');
     if (await isArchived(DB, s.id)) return fail(409, 'season_archived');
-    await DB.prepare(`INSERT INTO season_leagues (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    await DB.prepare(`INSERT INTO season_leagues (season_id, league, salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes, places_m, places_f, places_g, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (season_id, league) DO UPDATE SET salary_cap = excluded.salary_cap, min_age_m = excluded.min_age_m, min_age_f = excluded.min_age_f,
-      min_age_g = excluded.min_age_g, age_on = excluded.age_on, notes = excluded.notes, updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
-      .bind(s.id, b.league, cap, am, af, ag, ageOn, notes, now(), admin.id).run();
-    await audit('rules.set', 'season:' + s.id, { league: b.league, salary_cap: cap, min_age_m: am, min_age_f: af, min_age_g: ag, age_on: ageOn });
+      min_age_g = excluded.min_age_g, age_on = excluded.age_on, notes = excluded.notes, places_m = excluded.places_m, places_f = excluded.places_f, places_g = excluded.places_g,
+      updated_at = excluded.updated_at, updated_by = excluded.updated_by`)
+      .bind(s.id, b.league, cap, am, af, ag, ageOn, notes, pm, pf, pg, now(), admin.id).run();
+    await audit('rules.set', 'season:' + s.id, { league: b.league, salary_cap: cap, min_age_m: am, min_age_f: af, min_age_g: ag, age_on: ageOn, places_m: pm, places_f: pf, places_g: pg });
     return json({ ok: true });
   }
   return null;

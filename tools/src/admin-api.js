@@ -169,7 +169,7 @@ export async function adminApi(req, env, url) {
         await env.DB.prepare('SELECT 1 FROM rosters WHERE season_id = ? AND removed_at IS NULL').bind(id).first()) return fail(409, 'season_in_use');
     await env.DB.batch([
       env.DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE season_id = ?)').bind(id),
-      ...['replacements', 'games', 'captain_access', 'rosters', 'section_players', 'season_leagues', 'teams', 'seasons'].map((tb) =>
+      ...['replacements', 'games', 'captain_access', 'rosters', 'league_players', 'section_players', 'season_leagues', 'teams', 'seasons'].map((tb) =>
         env.DB.prepare(`DELETE FROM ${tb} WHERE ${tb === 'seasons' ? 'id' : 'season_id'} = ?`).bind(id))]);
     await audit(env, admin, 'season.delete', 'season:' + id);
     return json({ ok: true });
