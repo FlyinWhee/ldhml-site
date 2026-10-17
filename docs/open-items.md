@@ -18,7 +18,7 @@ Roles: **admin** and **captain** only. Players get nothing directly; other roles
 - **NBHPA permission** matters more before phase 2 goes live (the tools depend on their data).
 
 ## Past seasons on the public site (owner, 2026-10-16: wanted "at some point")
-A player's performance in earlier seasons, the results of past years. Ready: our person ids stay the same across seasons (`registry/people.json`), and a season's stats are kept at the switch (`data/archive/<seasonId>/`, docs/operations.md). To decide: how far back (does NBHPA still serve the older seasons?), the URLs (for example `/archives/<season>/draft/retro/`), what a person page shows (one line per season: a career table), and whether past seasons also show tools data (salaries, replacements; public or not). Past seasons are frozen: built once, no live polling.
+A player's performance in earlier seasons, the results of past years. Ready: our person ids stay the same across seasons (`registry/people.json`), and a season's stats are kept at the switch (`data/archive/<seasonId>/`, docs/operations.md). **No backfill** (owner, 2026-10-16): history starts with Automne 2026 and grows from our own cache, archived at each season switch; older NBHPA seasons are not fetched. To decide: the URLs (for example `/archives/<season>/draft/retro/`), what a person page shows (one line per season: a career table), and whether past seasons also show tools data (salaries, replacements; public or not). Past seasons are frozen: built once, no live polling.
 
 ## Possible work
 - PWA "Install" button (Android hides "Add to Home screen"). Check offline behavior in a real browser.
