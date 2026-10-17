@@ -121,8 +121,9 @@ The main captain tool. **The same builder in both areas** (`tools/public/shared/
 
 ## Actual lineups and the schedule (built 2026-10-16)
 The lineup of a team for a game = its roster, minus the absent players, plus their replacements from the requests on file (approved ✓ or pending !; an approved request wins over a pending one for the same absent player; refused ones do not count). With the night's counts (skaters, goalies) and payroll against the cap. Code: `tools/src/lineups.js` (server), `lineupHtml` / `gameHtml` in `tools/public/shared/builder.js` (display).
+- **Only what changes is shown** (owner: the full roster per game is noise): the replacements and the absent players; "Aucun remplacement" otherwise.
 - **Admin: Calendrier tab** (scope bar, league): the game nights as date chips (the next one chosen), each game with both teams side by side; "Remplacement…" per team opens the builder with that team and game (step 2). API: `GET /api/admin/lineups?season&league&date`.
-- **Captain page:** "Prochain match" (the team's lineup for the next game, "Remplacement pour ce match…") and "Mes matchs" (every game, folded; past games in a fold). The captain sees their own team only, not the other team's absences. API: `GET /api/captain/lineups?team`.
+- **Captain dashboard** (owner: a dashboard, not a list of items): the team and "Demander un remplacement" on top; four key numbers (next game, pending requests, payroll against the cap with a bar, roster); then two columns: my requests | my games (one line each, the next one marked, replacements under a game; past games folded) and the roster. One column on a phone. No second request link per game (the main button does it). The captain sees their own team only, not the other team's absences. API: `GET /api/captain/lineups?team`.
 - The schedule is the stats snapshot; the roster is the current one (a past game shows today's roster). Game-night lineups from NBHPA come later (NBHPA accounts, next season).
 
 ## Next

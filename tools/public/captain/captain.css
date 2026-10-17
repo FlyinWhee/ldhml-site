@@ -1,19 +1,42 @@
 /* LDHML captain area. On top of assets/site.css, admin/admin.css (the tool look) and shared/builder.css. */
-.cp-team { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 6px 0 4px; }
-.cp-team .tcell { font-size: 22px; }
 .cp-switch { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .cp-switch button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 3px; padding: 4px 10px 4px 4px; cursor: pointer; font: 500 15px/1.2 var(--f-text); }
 .cp-switch button[aria-pressed="true"] { border-color: var(--ball); outline: 2px solid var(--ball); outline-offset: -1px; }
 .cp-switch button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.cp-ask { margin: 12px 0 18px; }
-.cp-ask .ad-btn { min-height: 52px; font-size: 22px; padding: 0 26px; }
-.cp-roster { max-width: 560px; }
 @media (max-width: 600px) { .cp-ask .ad-btn { width: 100%; } }
 @media (max-width: 520px) { .cp-team .tcell .crest { display: inline-grid; } }
-/* next game and my games: the actual lineup */
-.cp-next .ld-team { max-width: 560px; }
-.cp-gline { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
-.cp-game { border: 1px solid var(--line); border-radius: 3px; background: var(--surface); padding: 6px 12px; margin: 0 0 6px; max-width: 760px; }
-.cp-game > summary { cursor: pointer; padding: 4px 0; }
-.cp-game[open] > summary { margin-bottom: 6px; }
+/* my games: one line each, the next one marked; replacements under a game */
+.cp-games { list-style: none; display: grid; gap: 6px; max-width: 760px; margin: 0 0 6px; }
+.cp-game { border: 1px solid var(--line); border-radius: 3px; background: var(--surface); padding: 6px 12px; display: grid; gap: 4px; }
 .cp-game.cp-has-subs { border-left: 4px solid var(--ball); }
+.cp-gl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.cp-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--ball); color: var(--on-ball); font: 700 12px/1.4 var(--f-text); }
+.cp-game .ld-team { border-left: 0; padding-left: 0; }
+/* ---------- the dashboard ---------- */
+.cp-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 10px 0 14px; }
+.cp-team { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.cp-team .tcell { font: 600 34px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+.cp-team .tcell .crest { width: 48px; height: 48px; }
+.cp-ask { margin: 0; }
+.cp-ask .ad-btn { min-height: 52px; font-size: 22px; padding: 0 26px; }
+.cp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.cp-kpi { display: grid; gap: 4px; align-content: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); min-width: 0; }
+.cp-kl { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cp-kv { font: 600 34px/1 var(--f-display); text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.cp-kv small { font-size: 20px; color: var(--muted); }
+.cp-ks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 13px; color: var(--muted); }
+.cp-k-next { border-top: 3px solid var(--ball); }
+.cp-bar { display: block; width: 100%; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.cp-bar i { display: block; height: 100%; background: var(--good, #43a047); }
+.cp-bar.cp-over i { background: var(--bad, #e57373); }
+.cp-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cp-col { display: grid; gap: 16px; min-width: 0; }
+.cp-panel { border: 1px solid var(--line); border-radius: 4px; background: var(--bg); padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.cp-ph { font: 600 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin: 0; }
+.cp-panel .bd-reqs { margin: 0; }
+.cp-panel .ad-add { margin: 4px 0 0; }
+.cp-roster .ad-roster { width: 100%; }
+@media (max-width: 900px) { .cp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cp-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .cp-team .tcell { font-size: 26px; } .cp-kv { font-size: 28px; } .cp-ask { width: 100%; } .cp-ask .ad-btn { width: 100%; } }
+.cp-panel .ad-add { padding: 2px 12px; }
+.cp-panel .ad-add > summary { font-size: 15px; padding: 6px 0; letter-spacing: .06em; }

@@ -9,7 +9,7 @@
  *   LDBuilder.requestCard(q, ctx, actionsHtml, o)   one request (queue, history), compact: the problems in words,
  *       every check in a fold. o = { team: show the team (false on the captain's own team page), result: show the result chip }
  * Replacements are always the same sex as the absent player (every league): other-sex players are not offered.
- *   LDBuilder.lineupHtml(lu, ctx, o)   the actual lineup of a team for a game (roster - absents + replacements), from /lineups
+ *   LDBuilder.lineupHtml(lu, ctx, o)   the changes to a team's lineup for a game (replacements in, absent players out), from /lineups
  *   LDBuilder.gameHtml(item, ctx, actFn)   a game of a night: both teams' lineups side by side (admin calendar)
  *   LDBuilder.t(lang, key, vars)
  * Leagues, teams and people look and link like the stats site (shared/look.js, docs/presentation.md).
@@ -40,7 +40,7 @@
       fits: 'admissible', noTeam: 'sans équipe', nAbsent: '{n} absent(s)', nSubs: '{n} remplaçant(s)', changeTeam: 'Changer d’équipe',
       sameSex: 'remplaçant du même sexe',
       ldAbsent: 'Absents', ldFor: 'remplace {n}', ldCounts: '{s} joueurs · {g} gardien(s)', ldPay: 'masse {a} / {c}', ldPayNoCap: 'masse {a}',
-      ldMissing: 'Équipe pas encore dans les outils (Configuration).', ldFull: 'Alignement régulier, aucun absent.', ldG: 'G', ldGoalieTitle: 'Gardien',
+      ldNone: 'Aucun remplacement.', ldMissing: 'Équipe pas encore dans les outils (Configuration).', ldFull: 'Alignement régulier, aucun absent.', ldG: 'G', ldGoalieTitle: 'Gardien',
       guestBtn: 'Joueur hors-ligue…', guestLegend: 'Joueur hors-ligue (pas sur la liste)', guestName: 'Nom', guestSex: 'Sexe', sexM: 'Homme', sexF: 'Femme',
       guestAge: 'Âge (facultatif)', guestNid: 'No NBHPA (facultatif)', guestUse: 'Utiliser ce joueur',
       guestHint: 'Un joueur hors-ligue rend la demande non conforme : une note est requise, l’administration décide. Même sexe que {a}.',
@@ -91,7 +91,7 @@
       fits: 'eligible', noTeam: 'no team', nAbsent: '{n} absent', nSubs: '{n} replacement(s)', changeTeam: 'Change team',
       sameSex: 'replacement of the same sex',
       ldAbsent: 'Absent', ldFor: 'replaces {n}', ldCounts: '{s} skaters · {g} goalie(s)', ldPay: 'payroll {a} / {c}', ldPayNoCap: 'payroll {a}',
-      ldMissing: 'Team not in the tools yet (Setup).', ldFull: 'Regular roster, nobody absent.', ldG: 'G', ldGoalieTitle: 'Goalie',
+      ldNone: 'No replacement.', ldMissing: 'Team not in the tools yet (Setup).', ldFull: 'Regular roster, nobody absent.', ldG: 'G', ldGoalieTitle: 'Goalie',
       guestBtn: 'Player not on the list…', guestLegend: 'Player not on the list', guestName: 'Name', guestSex: 'Sex', sexM: 'Man', sexF: 'Woman',
       guestAge: 'Age (optional)', guestNid: 'NBHPA no. (optional)', guestUse: 'Use this player',
       guestHint: 'A player not on the list makes the request non-conforming: a note is required, the admins decide. Same sex as {a}.',
@@ -591,9 +591,10 @@
     if (b.teamId && !b.d && !b.loading) load(b); else draw(b);
   }
 
-  /* ---------- the actual lineup of a team for a game (from /lineups) ----------
-   * Replacements first (✓ approved, ! pending, with who they replace), then the regular players, then the absent players
-   * struck through. The night's counts and payroll against the cap. o = { head: false (the page already shows the team), actions } */
+  /* ---------- the changes to a team's lineup for a game (from /lineups) ----------
+   * Only what changes (owner: the full roster is noise): the replacements (✓ approved, ! pending, with who they replace)
+   * and the absent players struck through, with the night's counts and payroll against the cap.
+   * o = { head: false (the page already shows the team), actions } */
   function lineupHtml(lu, ctx, o) {
     o = o || {};
     var L = ctx.lang, league = lu.team.league, head = o.head === false ? '' : '<div class="ld-h">' + teamHead(ctx, lu.team, league) + (o.actions || '') + '</div>';
@@ -603,12 +604,11 @@
       return '<li class="ld-sub ld-' + x.req.status + '"><span class="ld-mark" aria-hidden="true">' + (x.req.status === 'approved' ? '✓' : '!') + '</span><span><b>' + person(ctx, league, x.name, x.site_id) + '</b>' + g(x) +
         (x.guest ? ' ' + guestTag(ctx, x.guest) : '') + ' <span class="note">' + esc(t(L, 'ldFor', { n: x.for }) + ' · ' + t(L, 'st_' + x.req.status)) + '</span></span></li>';
     }).join('');
-    var pls = lu.players.map(function (p) { return '<li><span class="ld-mark" aria-hidden="true"></span><span>' + person(ctx, league, p.name, p.site_id) + g(p) + '</span></li>'; }).join('');
     var p = lu.payroll, over = p.cap != null && p.after > p.cap + 1e-9;
     var sum = t(L, 'ldCounts', lu.counts) + ' · ' + (p.cap != null ? t(L, 'ldPay', { a: money(p.after), c: money(p.cap) }) : t(L, 'ldPayNoCap', { a: money(p.after) }));
     return '<div class="ld-team" style="--tc:' + window.LDLook.colorVar(league, lu.team.abb) + '">' + head +
       '<p class="ld-sum' + (over ? ' bd-fail' : '') + '">' + esc(sum) + '</p>' +
-      '<ul class="ld-list">' + subs + pls + '</ul>' +
+      (subs ? '<ul class="ld-list">' + subs + '</ul>' : '<p class="ld-none">' + esc(t(L, 'ldNone')) + '</p>') +
       (lu.absents.length ? '<p class="ld-abs">' + esc(t(L, 'ldAbsent')) + ' : ' + lu.absents.map(function (a) { return '<s>' + esc(a.name) + '</s>'; }).join(', ') + '</p>' : '') + '</div>';
   }
   /* A game of a night: time, venue, then both teams side by side. actFn(lineup, game) -> HTML of the team's actions. */

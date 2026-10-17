@@ -153,3 +153,4 @@
 .ld-dates button[aria-pressed="true"] { border-color: var(--ball); outline: 2px solid var(--ball); outline-offset: -1px; color: var(--ink); }
 .ld-nights { display: grid; gap: 12px; }
 @media (max-width: 700px) { .ld-cols { grid-template-columns: 1fr; } .ld-vs { justify-self: start; } }
+.ld-none { margin: 0; font-size: 13px; color: var(--muted); }

@@ -588,6 +588,7 @@ assert.ok(d.querySelector('.nav a[href="#cal"][aria-current="page"]') && d.query
 d.querySelector('[data-cal-date="' + gameA2.date + '"]').click(); await wait(250);
 const calA = [...d.querySelectorAll('.ld-team')].find((x) => x.querySelector('[data-sub-game^="' + teamA + ':"]'));
 assert.equal(d.querySelectorAll('.ld-game').length * 2, d.querySelectorAll('.ld-team').length, 'each game: both teams');
+assert.ok(!d.querySelector('.ld-list li:not(.ld-sub)') && d.querySelector('.ld-none'), 'only the replacements, not the whole roster ("Aucun remplacement" otherwise)');
 assert.ok(calA && calA.querySelector('.ld-sub.ld-approved') && calA.querySelector('.ld-abs s'), 'the actual lineup: the replacement in (approved), the absent player struck through');
 calA.querySelector('[data-sub-game]').click(); await wait(250);
 assert.ok(w.location.hash === '#subs/new/' + teamA + '/' + gameA2.id && q('.bd-sp.bd-now [data-b-step="2"]'), 'Remplacement… from the calendar: the builder with the game chosen (step 2)');
@@ -715,11 +716,10 @@ assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there'
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ?').bind(teamA).first('n')), 'their team’s requests (current and past)');
 assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
 const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
-assert.ok(cd.querySelector('.ld-team'), 'the actual lineup of the team\'s games');
-assert.equal(cd.querySelectorAll('.cp-game').length + (cd.querySelector('.cp-next') ? 1 : 0), totalGamesA, 'the next game in full, every other game folded');
-cd.querySelector('[data-ask-game]').click(); await wait(250);
-assert.ok(/^#demande\/\w+$/.test(cw.location.hash) && cd.querySelector('#cp-builder .bd-sp.bd-now [data-b-step="2"]'), 'a replacement for that game: the builder starts at step 2');
-cw.location.hash = '#equipe'; await wait(250);
+assert.equal(cd.querySelectorAll('.cp-game').length, totalGamesA, 'every game of the team, one line each (past games in a fold)');
+assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1 && !cd.querySelector('[data-ask-game]'), 'the next game marked; no second request link (the button is above)');
+const subsGame = cd.querySelector('.cp-game.cp-has-subs');
+assert.ok(subsGame && subsGame.querySelector('.ld-sub') && !subsGame.querySelector('.ld-list li:not(.ld-sub)'), 'under a game: only its replacements and absent players, not the whole roster');
 
 cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
