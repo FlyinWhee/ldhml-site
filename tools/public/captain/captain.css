@@ -69,3 +69,23 @@
   .cp-tl .cp-game .bd-req { padding: 8px 10px; }
   .cp-roster .ad-roster td { padding: 6px 4px; }
 }
+.cp-panel, .cp-kpi, .cp-game { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.cp-roster .ad-roster td:first-child a { white-space: normal; overflow-wrap: anywhere; }
+/* two key numbers on every screen */
+.cp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+@media (max-width: 340px) { .cp-kpis { grid-template-columns: minmax(0, 1fr) !important; } }
+/* the timeline: one line per game, "Déclarer…" on it, its replacements folded under it */
+.cp-gl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.cp-gt { flex: 1 1 auto; min-width: 0; }
+.cp-gchips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.cp-st { padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; font: 600 12px/1.5 var(--f-text); white-space: nowrap; }
+.cp-st-approved { color: var(--good, #43a047); }
+.cp-st-pending { color: var(--warn, #f0a500); }
+.cp-st-refused { color: var(--bad, #e57373); }
+.cp-ask-g { min-height: 30px; padding: 0 10px; font-size: 14px; }
+.cp-game details > summary { cursor: pointer; list-style: none; }
+.cp-game details > summary::-webkit-details-marker { display: none; }
+.cp-game details > summary .cp-gt::before { content: "▸ "; color: var(--muted); }
+.cp-game details[open] > summary .cp-gt::before { content: "▾ "; }
+.cp-gsum { margin: 4px 0 0; }
+@media (max-width: 600px) { .cp-ask-g { margin-left: auto; } }

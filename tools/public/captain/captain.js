@@ -18,7 +18,8 @@
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
-      langShort: 'EN', sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
+      langShort: 'EN', askGame: 'Déclarer…', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
+      sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
       myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
@@ -38,7 +39,8 @@
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
-      langShort: 'FR', sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
+      langShort: 'FR', askGame: 'Declare…', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
+      sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
       myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
@@ -53,7 +55,7 @@
   };
   var t = function (k, v) { var s = STR[lang][k] != null ? STR[lang][k] : k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 
-  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, data: null, teams: [], teamId: null, reqs: [], games: [], today: '', sub: null, flash: null };
+  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, data: null, teams: [], teamId: null, reqs: [], games: [], today: '', sub: null, flash: null, openGames: {} };
   try { S.teamId = Number(localStorage.getItem('ldhml-captain-team')) || null; } catch (e) { /* ignore */ }
 
   function api(path, method, body) {
@@ -117,7 +119,7 @@
       '<p class="cp-ask"><button type="button" class="ad-btn" data-act="ask">' + t('ask') + '</button></p></div>';
     return switcher() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
-  /* The four key numbers. */
+  /* The two key numbers (owner: the others were noise): the next game, with what is declared for it, and the payroll. */
   function kpis(tm, reqs) {
     var tile = function (cls, label, value, sub) { return '<div class="cp-kpi ' + cls + '"><span class="cp-kl">' + esc(label) + '</span><span class="cp-kv">' + value + '</span>' + (sub ? '<span class="cp-ks">' + sub + '</span>' : '') + '</div>'; };
     var next = S.games.filter(function (g) { return g.game.date >= S.today; })[0], nextV, nextS;
@@ -127,6 +129,8 @@
       var lu = next.lineup;
       nextS = esc(t(next.home ? 'vsT' : 'atT')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, tm.league, 'sm') + '<b title="' + esc(next.opp.name) + '">' + esc(next.opp.abb) + '</b> · ' +
         esc(lu.subs.length ? t('gSubs', { n: lu.subs.length }) : t('kRegular'));
+      var nextPend = reqs.filter(function (q) { return q.status === 'pending' && (q.game_id ? q.game_id === next.game.id : q.game_date === next.game.date); }).length;
+      if (nextPend) nextS += ' · ' + esc(t('gPend', { n: nextPend }));
     } else { nextV = '—'; nextS = esc(t('kNoGame')); }
     var pending = reqs.filter(function (q) { return q.status === 'pending'; }).length, approvedUp = reqs.filter(function (q) { return q.status === 'approved' && q.game_date >= S.today; }).length;
     var total = 0, cap = tm.rules && tm.rules.salary_cap != null ? tm.rules.salary_cap : null;
@@ -140,9 +144,7 @@
     var nS = tm.roster.filter(function (r) { return r.pos === 's'; }).length, nG = tm.roster.length - nS;
     return '<div class="cp-kpis">' +
       tile('cp-k-next', t('kNext'), nextV, nextS) +
-      tile('cp-k-req', t('kReqs'), String(pending), esc(approvedUp ? t('kApprovedUp', { n: approvedUp }) : pending ? '' : t('kNoReq'))) +
-      tile('cp-k-pay', t('kPay'), esc(money(total)) + (cap != null ? ' <small>/ ' + esc(money(cap)) + '</small>' : ''), payS) +
-      tile('cp-k-ros', t('kRoster'), String(tm.roster.length), esc(t('kCounts', { s: nS, g: nG }))) + '</div>';
+      tile('cp-k-pay', t('kPay'), esc(money(total)) + (cap != null ? ' <small>/ ' + esc(money(cap)) + '</small>' : ''), payS) + '</div>';
   }
   /* The timeline: one line per game of the team (the next one marked), its requests under it (compact, without the game
    * again), and the night's counts and payroll when something changes. A request for a date typed by hand gets its own line.
@@ -164,11 +166,15 @@
       return '';
     };
     var row = function (r, i) {
-      var lu = r.x && r.x.lineup, changed = lu && (lu.subs.length || lu.absents.length), next = i === 0 && r.date >= S.today;
-      var sum = changed ? ' <span class="note">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</span>' : '';
-      return '<li class="cp-game' + (next ? ' cp-nextg' : '') + (r.reqs.length ? ' cp-has-subs' : '') + '"><div class="cp-gl"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' +
-        (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + sum + '</div>' +
-        (r.reqs.length ? '<div class="bd-reqs">' + r.reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx(), actions(q), { team: false, game: false, result: q.status === 'pending' }); }).join('') + '</div>' : '') + '</li>';
+      var lu = r.x && r.x.lineup, changed = lu && (lu.subs.length || lu.absents.length), next = i === 0 && r.date >= S.today, upcoming = r.date >= S.today;
+      var n = { approved: 0, pending: 0, refused: 0 }; r.reqs.forEach(function (q) { n[q.status] = (n[q.status] || 0) + 1; });
+      var chips = ['approved', 'pending', 'refused'].filter(function (k) { return n[k]; }).map(function (k) { return '<span class="cp-st cp-st-' + k + '">' + esc(t('gSt_' + k, { n: n[k] })) + '</span>'; }).join('');
+      var sum = changed ? '<p class="note cp-gsum">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</p>' : '';
+      var ask = upcoming && r.x ? '<button type="button" class="ad-btn ad-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '';
+      var line = '<span class="cp-gt"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</span><span class="cp-gchips">' + chips + '</span>' + ask;
+      if (!r.reqs.length) return '<li class="cp-game' + (next ? ' cp-nextg' : '') + '"><div class="cp-gl">' + line + '</div></li>';
+      return '<li class="cp-game cp-has-subs' + (next ? ' cp-nextg' : '') + '"><details' + (next || S.openGames[r.x ? r.x.game.id : r.date] ? ' open' : '') + ' data-game-key="' + esc(r.x ? r.x.game.id : r.date) + '"><summary class="cp-gl">' + line + '</summary>' + sum +
+        '<div class="bd-reqs">' + r.reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx(), actions(q), { team: false, game: false, result: q.status === 'pending' }); }).join('') + '</div></details></li>';
     };
     return '<section class="cp-panel cp-tl"><h2 class="cp-ph">' + t('myGames') + '</h2>' +
       (up.length ? '<ul class="cp-games">' + up.map(row).join('') + '</ul>' : '<p class="note">' + t('noGames') + '</p>') +
@@ -245,10 +251,11 @@
       });
     }
   });
+  document.addEventListener('toggle', function (e) { var k = e.target && e.target.getAttribute && e.target.getAttribute('data-game-key'); if (k) S.openGames[k] = e.target.open; }, true);
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide],[data-ask-game]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
@@ -256,6 +263,7 @@
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
     if (act === 'ask') { S.msg = null; location.hash = '#remplacement'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
+    if (b.hasAttribute('data-ask-game')) { e.preventDefault(); S.msg = null; location.hash = '#remplacement/' + b.getAttribute('data-ask-game'); return; }
     if (b.hasAttribute('data-hide')) { api('/replacements/' + b.getAttribute('data-hide') + '/hide', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('hidden')); else say('err', errMsg(r)); refresh(); }); return; }
     if (b.hasAttribute('data-cancel')) {
       if (!window.confirm(t('confirmCancel'))) return;

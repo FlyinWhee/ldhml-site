@@ -229,3 +229,11 @@ a.ad-kpi:hover { border-color: var(--ball); }
   .ad-filt > summary { display: list-item; cursor: pointer; padding: 6px 0; font-weight: 600; color: var(--muted); }
   .ad-lgset .tcell .crest { display: inline-grid; }
 }
+/* every card is one column that never grows wider than the card (a long name wraps instead of pushing out) */
+.ad-team, .ad-panel, .ad-kpi, .bd-req, .bd-line, .bd-sum { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.ad-roster { width: 100%; }
+.ad-roster td:first-child, .ad-roster td:first-child a { white-space: normal; overflow-wrap: anywhere; }
+.ad-h3-row { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .ad-players tr { padding: 10px 12px; }
+}

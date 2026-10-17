@@ -162,3 +162,5 @@
   .bd-line { padding: 10px; }
   .bd-lh h3 { font-size: 19px; }
 }
+.bd-req, .bd-line, .bd-sum, .ld-team, .ld-game { min-width: 0; }
+.bd-lines li, .ld-list li { overflow-wrap: anywhere; }

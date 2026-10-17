@@ -782,7 +782,13 @@ assert.ok(capRows.every((tr) => /^(H|F|—)$/.test(tr.children[1].textContent)) 
 const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
 const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA) && g.date >= todayT).length, 'one line per upcoming game; past games only with requests, folded');
-assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1 && !cd.querySelector('[data-ask-game]'), 'the next game marked; no second request link (the button is above)');
+assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1, 'the next game marked');
+assert.equal(cd.querySelectorAll('.cp-kpis .cp-kpi').length, 2, 'two key numbers: the next game and the payroll');
+assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game [data-ask-game]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each upcoming game: "Déclarer…"');
+assert.ok(![...cd.querySelectorAll('.cp-game details')].some((x) => x.open && !x.closest('.cp-nextg')), 'the replacements of a game fold under it (only the next game is open)');
+cd.querySelector('.cp-tl [data-ask-game]').click(); await wait(250);
+assert.ok(cw.location.hash.indexOf('#remplacement/') === 0 && cd.querySelector('#cp-builder .bd-sp.bd-now [data-b-step="2"]'), '"Déclarer…" on a game: the builder on that game (step 2)');
+cw.location.hash = '#equipe'; await wait(250);
 const nReq = cd.querySelectorAll('.bd-req').length, hideBtn = cd.querySelector('[data-hide]');
 assert.ok(hideBtn, 'a refused request can be hidden');
 hideBtn.click(); await wait(250);
