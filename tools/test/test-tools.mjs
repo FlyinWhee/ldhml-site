@@ -606,7 +606,7 @@ assert.ok(d.querySelector('#modal .ad-modal #f-cap') && d.documentElement.classL
 d.querySelector('#f-cap [name=name]').value = 'Nouvelle Capitaine'; d.querySelector('#f-cap [name=email]').value = 'cap2@example.test';
 await submit('#f-cap');
 assert.ok(!d.querySelector('#modal .ad-modal') && !d.documentElement.classList.contains('ad-modal-open'), 'the modal closes after saving');
-const nocap = () => [...d.querySelectorAll('#ad-accounts .ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+const nocap = () => [...d.querySelectorAll('#ad-accounts .ad-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 assert.ok(nocap(), 'a new captain is in the captain accounts panel');
 nocap().querySelector('[data-access-cap]').click(); await wait(20);
 const af = d.querySelector('#f-access');
@@ -627,7 +627,7 @@ assert.ok(card().textContent.includes('Capitaine Express') && !d.querySelector('
 card().querySelector('[data-access-team]').click(); await wait(20);
 d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
 assert.ok(!d.querySelector('#modal .ad-modal'), 'Escape closes the modal');
-const line = () => [...d.querySelectorAll('#ad-accounts .ad-cap')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+const line = () => [...d.querySelectorAll('#ad-accounts .ad-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 w.location.hash = '#/config'; await wait(200);
 line().querySelector('[data-edit-cap]').click(); await wait(20);
 const ef = d.querySelector('#modal [data-edit]');

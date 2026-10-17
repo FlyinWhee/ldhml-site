@@ -139,6 +139,9 @@
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
       tabOverview: 'Aperçu', tabLgSetup: 'Réglages', ctxAll: 'Toute la LDHML', ctxLabel: 'Où vous êtes', navLabel: 'Pages',
       todoMissRow: '{s} : {w}', todoNbhpaRow: 'Calendrier NBHPA : {a} nouveaux matchs, {u} changements (importer)', todoNeverRow: 'capitaine(s) jamais connecté(s)',
+      colTeamsSeason: 'Équipes cette saison', colLogin: 'Dernière connexion', neverShort: 'Jamais', capSearch: 'Filtrer par nom ou courriel', noCapsMatch: 'Aucun capitaine ne correspond.',
+      cf_all: 'Tous', cf_noaccess: 'Sans équipe', cf_never: 'Jamais connectés', cf_off: 'Désactivés', nbhpaShort: 'No NBHPA', leagueOnShort: 'Active',
+      capsHint: 'Un compte par personne : un capitaine peut avoir des équipes dans plusieurs ligues. Donner un accès ici ou depuis la carte d’une équipe.',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -200,6 +203,9 @@
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
       tabOverview: 'Overview', tabLgSetup: 'Settings', ctxAll: 'All of LDHML', ctxLabel: 'Where you are', navLabel: 'Pages',
       todoMissRow: '{s}: {w}', todoNbhpaRow: 'NBHPA schedule: {a} new games, {u} changes (import)', todoNeverRow: 'captain(s) never signed in',
+      colTeamsSeason: 'Teams this season', colLogin: 'Last sign-in', neverShort: 'Never', capSearch: 'Filter by name or email', noCapsMatch: 'No captain matches.',
+      cf_all: 'All', cf_noaccess: 'No team', cf_never: 'Never signed in', cf_off: 'Disabled', nbhpaShort: 'NBHPA no.', leagueOnShort: 'On',
+      capsHint: 'One account per person: a captain can have teams in several leagues. Give access here or from a team card.',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -351,22 +357,36 @@
       '<span class="note ad-cap-mail" title="' + esc(c.email) + '">' + esc(c.email) + '</span></div><div class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="ad-x" data-revoke="' + acc.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></div></li>';
   }
-  /* A captain account in the accounts panel: everything, with their access of this season as badges. */
-  function captainAccount(c) {
-    var person = c.person_id ? '<span class="note">' + esc(t('profile')) + ' : ' + personLink(c.person_id) + '</span>' : '';
+  /* The captain accounts (Configuration): one row per captain, with a search and quick filters, so 40+ captains stay
+   * readable. A row: name (and their player profile), email, the teams of this season as badges, the last sign-in, and
+   * (edit mode) give access, edit, disable or enable, delete. */
+  function captainRow(c) {
     var acc = c.access.filter(function (a) { return a.season_id === S.seasonId; });
-    return '<li class="ad-cap' + (c.disabled_at ? ' ad-off' : '') + '" data-cap="' + c.id + '"><div class="ad-cap-who"><b>' + esc(c.name) + '</b>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') +
-      '<span>' + esc(c.email) + '</span>' + person + '<span class="note">' + esc(c.last_login_at ? t('lastLogin', { d: fmt(c.last_login_at) }) : t('never')) + '</span>' +
-      '<span class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">' + t('noAccess') + '</span>') + '</span></div>' +
-      '<div class="ad-acts ad-ed">' + (c.disabled_at ? '' : '<button type="button" class="lnk ad-linkbtn" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
+    var person = c.person_id ? '<span class="note ad-cap-prof">' + personLink(c.person_id) + '</span>' : '';
+    return '<tr class="ad-caprow' + (c.disabled_at ? ' ad-off' : '') + '" data-cap="' + c.id + '"><td class="ad-c-name"><b>' + esc(c.name) + '</b>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + person + '</td>' +
+      '<td class="ad-cap-mail" data-label="' + esc(t('email')) + '" title="' + esc(c.email) + '">' + esc(c.email) + '</td>' +
+      '<td data-label="' + esc(t('colTeamsSeason')) + '"><div class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">—</span>') + '</div></td>' +
+      '<td class="ad-c-sm" data-label="' + esc(t('colLogin')) + '">' + (c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
+      '<td class="ad-acts ad-ed">' + (c.disabled_at ? '' : '<button type="button" class="lnk ad-linkbtn" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
       '<button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
-      '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></div></li>';
+      '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></td></tr>';
   }
   function accountsPanel() {
-    return '<details class="ad-add" id="ad-accounts" open><summary>' + esc(t('accounts', { n: S.captains.length })) + '</summary>' +
-      '<p class="ad-ed"><button type="button" class="ad-btn ad-btn-sm" data-act="new-cap">' + t('newCaptain') + '</button></p>' +
-      (S.captains.length ? '<ul class="ad-caps">' + S.captains.map(captainAccount).join('') + '</ul>' : '<p class="note">' + t('noCaptains') + '</p>') + '</details>';
+    var q = (S.cq || '').trim().toLowerCase(), f = S.cf || '';
+    var hasAcc = function (c) { return c.access.some(function (a) { return a.season_id === S.seasonId; }); };
+    var keep = { '': function () { return true; }, noaccess: function (c) { return !c.disabled_at && !hasAcc(c); }, never: function (c) { return !c.disabled_at && !c.last_login_at; }, off: function (c) { return !!c.disabled_at; } };
+    var n = function (k) { return S.captains.filter(keep[k]).length; };
+    var list = S.captains.filter(function (c) { return keep[f](c) && (!q || (c.name + ' ' + c.email).toLowerCase().indexOf(q) >= 0); })
+      .sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
+    var seg = '<div class="seg" role="group">' + [['', 'cf_all'], ['noaccess', 'cf_noaccess'], ['never', 'cf_never'], ['off', 'cf_off']].map(function (x) {
+      return '<button type="button" data-cf="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + esc(t(x[1])) + ' (' + n(x[0]) + ')</button>';
+    }).join('') + '</div>';
+    return '<section class="sec" id="ad-accounts"><div class="sec-h ad-sec-h"><h2>' + t('tabCaptains') + '</h2><button type="button" class="ad-btn ad-btn-sm ad-ed" data-act="new-cap">+ ' + t('newCaptain') + '</button></div>' +
+      '<p class="note">' + t('capsHint') + '</p>' +
+      '<div class="controls"><input id="ad-cq" class="ctl" type="search" data-cq placeholder="' + esc(t('capSearch')) + '" value="' + esc(S.cq || '') + '" aria-label="' + esc(t('capSearch')) + '">' + seg + '<span class="count">' + esc(t('nCaptains', { n: list.length })) + '</span></div>' +
+      (list.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colTeamsSeason') + '</th><th>' + t('colLogin') + '</th><th class="ad-ed"></th></tr></thead><tbody>' +
+        list.map(captainRow).join('') + '</tbody></table></div>' : '<p class="empty">' + t(S.captains.length ? 'noCapsMatch' : 'noCaptains') + '</p>') + '</section>';
   }
 
   /* Person and salary fields of the forms (salaries in millions). */
@@ -562,22 +582,22 @@
   }
   function viewConfig() {
     var s = curSeason();
-    var seasonRows = S.seasons.map(function (x) { return '<tr><td><b>' + esc(x.name) + '</b></td><td data-label="' + esc(t('key')) + '">' + esc(x.key) + '</td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td><td data-label="' + esc(t('created')) + '">' + esc(fmt(x.created_at)) + '</td><td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
-    var html = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>' + scopeBar('', editToggle()) +
-      '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
-      (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
-    var accounts = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('tabCaptains') + '</h2></div>' + accountsPanel() + '</section>';
-    if (!s || !S.data) return html + accounts;
+    var seasonRows = S.seasons.map(function (x) { return '<tr' + (x.id === S.seasonId ? ' class="ad-cur"' : '') + '><td><b>' + esc(x.name) + '</b></td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td>' +
+      '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
+    var seasons = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
+      (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th class="num">' + t('nbhpaShort') + '</th><th>' + t('status') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
+    var head = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>' + scopeBar('', editToggle());
+    if (!s || !S.data) return head + seasons + accountsPanel();
     /* the leagues of the season: on or off (a league off is hidden from the daily work); its rules and teams are in its settings */
     var lgs = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('leaguesOfSeason') + '</h2></div><p class="note">' + t('leaguesHint2') + '</p>' + (S.data.sections || []).map(function (sec) {
       return '<h3 class="ad-sec-sub">' + esc(nameOf(sec)) + '</h3><ul class="ad-lgrows">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
         var off = leagueOff(l.slug), n = S.teams.filter(function (x) { return x.league === l.slug; }).length;
         return '<li class="ad-lgrow' + (off ? ' ad-lgoff' : '') + '"><a href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) + '</a><span class="note">' + esc(t('nTeamsLg', { n: n })) + '</span>' +
           '<a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + ' →</a>' +
-          '<label class="ad-switch ad-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOn') + '</label></li>';
-      }).join('') + '</ul></div>';
+          '<label class="ad-switch ad-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOnShort') + '</label></li>';
+      }).join('') + '</ul>';
     }).join('') + '</section>';
-    return html + lgs + accounts;
+    return head + '<div class="ad-cfg-top">' + seasons + lgs + '</div>' + accountsPanel();
   }
   /* A league's settings for the chosen season: active or not, its rules, its teams (with the NBHPA link). */
   function viewLgSetup() {
@@ -1000,8 +1020,8 @@
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('input', function (e) {
     var x = e.target;
-    if (!x.hasAttribute || !(x.hasAttribute('data-pq') || x.hasAttribute('data-pf'))) return;
-    if (x.hasAttribute('data-pq')) S.pq = x.value; else S.pf[x.getAttribute('data-pf')] = x.value;
+    if (!x.hasAttribute || !(x.hasAttribute('data-pq') || x.hasAttribute('data-pf') || x.hasAttribute('data-cq'))) return;
+    if (x.hasAttribute('data-pq')) S.pq = x.value; else if (x.hasAttribute('data-cq')) S.cq = x.value; else S.pf[x.getAttribute('data-pf')] = x.value;
     var pos = x.selectionStart, id = x.id;
     render();
     var n = document.getElementById(id);
@@ -1018,7 +1038,7 @@
   document.addEventListener('click', function (e) { var c = $('#ad-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ad-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-plg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
+      '[data-plg],[data-plf],[data-cf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -1035,6 +1055,7 @@
     if (b.hasAttribute('data-home-miss')) { var hm = b.getAttribute('data-home-miss').split(':'); S.plf = ''; S.pf.miss = hm[1]; location.hash = hrefS(hm[0]); return; }
     if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config'; return; }
     /* scope */
+    if (b.hasAttribute('data-cf')) { S.cf = b.getAttribute('data-cf'); render(); return; }
     if (b.hasAttribute('data-plg')) { S.plLeague = b.getAttribute('data-plg'); render(); return; }
     if (b.hasAttribute('data-cal-date')) { S.calDate = b.getAttribute('data-cal-date'); refresh(); return; }
     if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + sg[0] + '/' + sg[1]; return; }

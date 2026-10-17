@@ -347,3 +347,21 @@ a.ad-lc-warn:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ad-todo-n { min-width: 2.2em; font: 600 22px/1 var(--f-display); color: var(--ball); text-align: right; }
 .ad-todo-l { min-width: 0; }
 .ad-todo-go { color: var(--muted); }
+/* League settings: room between the team list and its buttons */
+.ad-lgset .ad-btns { margin-top: 14px; }
+/* Configuration: seasons and the leagues side by side; leagues as compact tiles */
+.ad-cfg-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 32px; align-items: start; }
+@media (min-width: 1000px) { .ad-cfg-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
+.ad-cfg-top .sec { min-width: 0; }
+.ad-lgrows { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.ad-lgrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; }
+.ad-lgrow .ad-switch { margin-left: 0; justify-self: end; }
+.ad-lgrow > .note { justify-self: end; }
+tr.ad-cur td:first-child b { color: var(--ball); }
+/* Captain accounts: a table */
+.ad-caps-t td { vertical-align: middle; }
+.ad-caps-t .ad-cap-mail { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ad-caps-t .ad-cap-prof { display: block; font-size: 12px; }
+.ad-caps-t tr.ad-off td { opacity: .55; }
+.ad-caps-t .ad-acts { white-space: nowrap; }
+@media (max-width: 600px) { .ad-caps-t .ad-cap-mail { max-width: none; white-space: normal; overflow-wrap: anywhere; } }
