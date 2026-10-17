@@ -89,3 +89,16 @@
 .cp-game details[open] > summary .cp-gt::before { content: "▾ "; }
 .cp-gsum { margin: 4px 0 0; }
 @media (max-width: 600px) { .cp-ask-g { margin-left: auto; } }
+/* a folded game: one line per replacement */
+.cp-slim { list-style: none; display: grid; gap: 2px; margin: 4px 0 0 18px; font-size: 14px; }
+.cp-slim li { display: flex; align-items: baseline; gap: 6px; overflow-wrap: anywhere; }
+.cp-slim i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; transform: translateY(-1px); }
+.cp-slim b { font-weight: 600; color: var(--ink); }
+.cp-slim .cp-sr { font-size: 12px; }
+.cp-slim li { color: var(--muted); }
+.cp-slim li.cp-st-approved i { background: var(--good, #43a047); }
+.cp-slim li.cp-st-pending i { background: var(--warn, #f0a500); }
+.cp-slim li.cp-st-refused i { background: var(--bad, #e57373); }
+.cp-game details[open] .cp-slim { display: none; }
+.cp-slim li { display: block; position: relative; padding-left: 14px; }
+.cp-slim i { position: absolute; left: 0; top: .45em; transform: none; }

@@ -18,7 +18,7 @@
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
-      langShort: 'EN', askGame: 'Déclarer…', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
+      st_pending: 'À valider', st_approved: 'Validé', st_refused: 'Refusé', langShort: 'EN', askGame: 'Remplacement…', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
       sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
@@ -39,7 +39,7 @@
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
-      langShort: 'FR', askGame: 'Declare…', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
+      st_pending: 'To validate', st_approved: 'Validated', st_refused: 'Refused', langShort: 'FR', askGame: 'Replacement…', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
       sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
@@ -173,7 +173,10 @@
       var ask = upcoming && r.x ? '<button type="button" class="ad-btn ad-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '';
       var line = '<span class="cp-gt"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</span><span class="cp-gchips">' + chips + '</span>' + ask;
       if (!r.reqs.length) return '<li class="cp-game' + (next ? ' cp-nextg' : '') + '"><div class="cp-gl">' + line + '</div></li>';
-      return '<li class="cp-game cp-has-subs' + (next ? ' cp-nextg' : '') + '"><details' + (next || S.openGames[r.x ? r.x.game.id : r.date] ? ' open' : '') + ' data-game-key="' + esc(r.x ? r.x.game.id : r.date) + '"><summary class="cp-gl">' + line + '</summary>' + sum +
+      /* folded, the game still shows each replacement on one line: absent → replacement, with a status dot */
+      var slim = '<ul class="cp-slim">' + r.reqs.map(function (q) { return q.lines.map(function (l) {
+        return '<li class="cp-st-' + q.status + '"><i aria-hidden="true"></i>' + esc(l.absent_name) + ' <span aria-hidden="true">→</span> <b>' + esc(l.sub_name) + '</b><span class="cp-sr"> · ' + esc(t('st_' + q.status)) + '</span></li>'; }).join(''); }).join('') + '</ul>';
+      return '<li class="cp-game cp-has-subs' + (next ? ' cp-nextg' : '') + '"><details' + (next || S.openGames[r.x ? r.x.game.id : r.date] ? ' open' : '') + ' data-game-key="' + esc(r.x ? r.x.game.id : r.date) + '"><summary><span class="cp-gl">' + line + '</span>' + slim + '</summary>' + sum +
         '<div class="bd-reqs">' + r.reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx(), actions(q), { team: false, game: false, result: q.status === 'pending' }); }).join('') + '</div></details></li>';
     };
     return '<section class="cp-panel cp-tl"><h2 class="cp-ph">' + t('myGames') + '</h2>' +
