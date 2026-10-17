@@ -138,7 +138,7 @@
       suChipPool: 'inscrit, sans équipe', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
       tabOverview: 'Aperçu', tabLgSetup: 'Réglages', ctxAll: 'Toute la LDHML', ctxLabel: 'Où vous êtes', navLabel: 'Pages',
-      pLeagues: 'Les ligues', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
+      pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
       leaguesHint2: 'Une ligue inactive est cachée du travail courant. Ses règles et ses équipes se règlent dans ses Réglages.',
@@ -198,7 +198,7 @@
       suChipPool: 'signed up, no team', suChipSub: 'Replacement', plSubs: 'Replacements',
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
       tabOverview: 'Overview', tabLgSetup: 'Settings', ctxAll: 'All of LDHML', ctxLabel: 'Where you are', navLabel: 'Pages',
-      pLeagues: 'The leagues', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
+      pLeagues: 'The leagues', secPlayers: 'Section players →', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
       leaguesHint2: 'A league that is off is hidden from the daily work. Its rules and teams are set in its Settings.',
@@ -573,7 +573,7 @@
         return '<li class="ad-lgrow' + (off ? ' ad-lgoff' : '') + '"><a href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) + '</a><span class="note">' + esc(t('nTeamsLg', { n: n })) + '</span>' +
           '<a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + ' →</a>' +
           '<label class="ad-switch ad-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOn') + '</label></li>';
-      }).join('') + '</ul>';
+      }).join('') + '</ul></div>';
     }).join('') + '</section>';
     return html + lgs + accounts;
   }
@@ -640,8 +640,9 @@
       (pending.length ? '<div class="bd-reqs">' + pending.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
       '</section>';
     // the leagues, by section: each card opens the league (next night, to validate, teams without a captain)
-    var leaguesP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pLeagues') + '</h2>' + (S.data.sections || []).map(function (sec) {
-      return '<h3 class="ad-h3"><a class="lnk" href="' + hrefS(sec.key) + '">' + esc(nameOf(sec)) + '</a></h3><ul class="ad-lgcards">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
+    /* the first place to dive (owner): the leagues, full width under the title, by section */
+    var leaguesP = '<section class="ad-dive" aria-label="' + esc(t('pLeagues')) + '">' + (S.data.sections || []).map(function (sec) {
+      return '<div class="ad-dive-sec"><div class="ad-dive-h"><h2>' + esc(nameOf(sec)) + '</h2><a class="lnk" href="' + hrefS(sec.key) + '">' + t('secPlayers') + '</a></div><ul class="ad-lgcards">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
         var n = nights.filter(function (x) { return x.l.slug === l.slug; })[0], off = leagueOff(l.slug);
         var nc = d.noCaptain.filter(function (x) { return x.league === l.slug; }).length, pend = S.pending[l.slug] || 0;
         return '<li><a class="ad-lgcard' + (off ? ' ad-lgoff' : '') + '" href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) +
@@ -669,7 +670,7 @@
     if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push('<li><b>' + esc(t('todoNbhpa', { a: d.nbhpa.add, u: d.nbhpa.update })) + '</b> <button type="button" class="ad-btn ad-btn-sm ad-ar" data-games-import>' + esc(t('importGames')) + '</button></li>');
     if (d.captainsNeverIn) todo.push('<li><button type="button" class="lnk ad-linkbtn" data-home-accounts>' + esc(t('todoNever', { n: d.captainsNeverIn })) + '</button></li>');
     var todoP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2>' + (todo.length ? '<ul class="ad-todo">' + todo.join('') + '</ul>' : '<p class="note">' + t('todoNone') + '</p>') + '</section>';
-    return head + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + leaguesP + todoP + '</div></div>' +
+    return head + leaguesP + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + todoP + '</div></div>' +
       '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
   }
   /* ---------- A league: its overview (what needs doing in this league now) ----------

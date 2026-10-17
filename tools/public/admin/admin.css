@@ -308,3 +308,11 @@ a.ad-kpi:hover { border-color: var(--ball); }
 .ad-ovteams td.ad-over { color: var(--bad); font-weight: 600; }
 @media (max-width: 600px) { .ad-ctx-pop { position: fixed; left: 16px; right: 16px; top: 120px; width: auto; max-width: none; } }
 .ad-ctx:not([open]) > .ad-ctx-pop { display: none; }
+/* Home: the leagues first, full width, by section (the place to dive in) */
+.ad-dive { display: grid; gap: 14px; margin: 4px 0 22px; }
+.ad-dive-sec { min-width: 0; }
+.ad-dive-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 8px; }
+.ad-dive-h h2 { font: 600 26px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+.ad-dive .ad-lgcards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 8px; margin: 0; }
+.ad-dive .ad-lgcard { grid-template-columns: minmax(0, 1fr); grid-template-areas: "b" "l" "k"; align-content: start; gap: 6px; height: 100%; padding: 12px; background: var(--surface); }
+.ad-dive .ad-lgcard > :first-child { justify-self: start; }
