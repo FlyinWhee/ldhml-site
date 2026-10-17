@@ -21,7 +21,7 @@
       otherSeasons: '+{n} dans une autre saison', grant: 'Donner l’accès', league: 'Ligue', team: 'Équipe', chooseLeague: 'Ligue…', chooseTeam: 'Équipe…',
       revoke: 'Retirer l’accès', disable: 'Désactiver', enable: 'Réactiver', disabled: 'Désactivé', lastLogin: 'Dernière connexion : {d}', never: 'Jamais connecté',
       noData: 'Pas de données d’équipes pour cette saison. Les données des outils couvrent la saison {s}.', profile: 'Profil de joueur',
-      seasons: 'Saisons', newSeason: 'Nouvelle saison', nbhpaId: 'No de saison NBHPA', status: 'Statut', st_upcoming: 'À venir', st_active: 'En cours', st_archived: 'Archivée',
+      leaguesOfSeason: 'Ligues de la saison', leaguesHint: 'Pour la saison choisie : chaque ligue, active ou non, ses règles et ses équipes.', seasons: 'Saisons', newSeason: 'Nouvelle saison', nbhpaId: 'No de saison NBHPA', status: 'Statut', st_upcoming: 'À venir', st_active: 'En cours', st_archived: 'Archivée',
       created: 'Créée', key: 'Clé', noSeasons: 'Aucune saison.', seasonHint: 'Chaque outil et chaque accès appartient à une saison. Le no NBHPA lie la saison aux statistiques.',
       audit: 'Journal des actions', when: 'Quand', who: 'Qui', what: 'Action', target: 'Cible', detail: 'Détail', auditNote: 'Les 100 dernières actions.', system: 'Système (script)',
       edit: 'Modifier', save: 'Enregistrer', cancel: 'Annuler', editEmailNote: 'Un nouveau courriel ferme les sessions ouvertes du capitaine et annule un code en attente.',
@@ -66,7 +66,7 @@
       otherSeasons: '+{n} in another season', grant: 'Give access', league: 'League', team: 'Team', chooseLeague: 'League…', chooseTeam: 'Team…',
       revoke: 'Remove access', disable: 'Disable', enable: 'Enable', disabled: 'Disabled', lastLogin: 'Last sign-in: {d}', never: 'Never signed in',
       noData: 'No team data for this season. The tools data covers the {s} season.', profile: 'Player profile',
-      seasons: 'Seasons', newSeason: 'New season', nbhpaId: 'NBHPA season no.', status: 'Status', st_upcoming: 'Upcoming', st_active: 'Active', st_archived: 'Archived',
+      leaguesOfSeason: 'Leagues of the season', leaguesHint: 'For the chosen season: each league, active or not, its rules and its teams.', seasons: 'Seasons', newSeason: 'New season', nbhpaId: 'NBHPA season no.', status: 'Status', st_upcoming: 'Upcoming', st_active: 'Active', st_archived: 'Archived',
       created: 'Created', key: 'Key', noSeasons: 'No season.', seasonHint: 'Every tool and every access belongs to a season. The NBHPA no. links the season to the stats.',
       audit: 'Action log', when: 'When', who: 'Who', what: 'Action', target: 'Target', detail: 'Detail', auditNote: 'The last 100 actions.', system: 'System (script)',
       edit: 'Edit', save: 'Save', cancel: 'Cancel', editEmailNote: 'A new email closes the captain’s open sessions and cancels a pending code.',
@@ -315,7 +315,7 @@
   /* A captain in a team card: name, email, edit, and × to remove this access. */
   function teamCaptain(c, acc) {
     return '<li class="ad-cap ad-cap-sm' + (c.disabled_at ? ' ad-off' : '') + '"><div class="ad-cap-who"><b>' + esc(c.name) + '</b>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') +
-      '<span class="note">' + esc(c.email) + '</span></div><div class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
+      '<span class="note ad-cap-mail" title="' + esc(c.email) + '">' + esc(c.email) + '</span></div><div class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="ad-x" data-revoke="' + acc.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></div></li>';
   }
   /* A captain account in the accounts panel: everything, with their access of this season as badges. */
@@ -530,16 +530,15 @@
   }
   function viewSetup() {
     var s = curSeason();
-    var seasonRows = S.seasons.map(function (x) { return '<tr><td><b>' + esc(x.name) + '</b></td><td>' + esc(x.key) + '</td><td class="num">' + esc(x.nbhpa_season_id || '') + '</td><td>' + esc(t('st_' + x.status)) + '</td><td>' + esc(fmt(x.created_at)) + '</td><td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
+    var seasonRows = S.seasons.map(function (x) { return '<tr><td><b>' + esc(x.name) + '</b></td><td data-label="' + esc(t('key')) + '">' + esc(x.key) + '</td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td><td data-label="' + esc(t('created')) + '">' + esc(fmt(x.created_at)) + '</td><td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
     var html = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('setupLede') + '</p>' +
-      '<section class="sec"><div class="sec-h"><h2>' + t('seasons') + '</h2></div><p class="note">' + t('seasonHint') + '</p>' +
-      (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') +
-      '<p><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">' + t('newSeason') + '</button></p></section>';
+      '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
+      (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
     if (!s || !S.data) return html;
-    return html + '<div class="ad-scope">' + seasonSelect() + '</div>' + (S.data.sections || []).map(function (sec) {
-      return '<section class="sec"><div class="sec-h"><h2>' + esc(nameOf(sec)) + '</h2></div><div class="ad-lgsets">' +
-        S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) { return leagueSetup(l, s); }).join('') + '</div></section>';
-    }).join('');
+    return html + '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('leaguesOfSeason') + '</h2>' + seasonSelect() + '</div><p class="note">' + t('leaguesHint') + '</p>' + (S.data.sections || []).map(function (sec) {
+      return '<h3 class="ad-sec-sub">' + esc(nameOf(sec)) + '</h3><div class="ad-lgsets">' +
+        S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) { return leagueSetup(l, s); }).join('') + '</div>';
+    }).join('') + '</section>';
   }
   /* ---------- Replacements: the league's queue and history; admins can also build a request for a captain ---------- */
   var builderCtx = function () {

@@ -255,3 +255,14 @@ a.ad-kpi:hover { border-color: var(--ball); }
   .ad-su-t td { padding: 4px 5px; }
   .ad-su-t .tcell .crest { display: inline-grid; }
 }
+/* Configuration: a button or the season choice in a section header; the section names as sub-headings */
+.ad-sec-h { align-items: center; flex-wrap: wrap; }
+.ad-sec-sub { font: 600 22px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin: 18px 0 10px; color: var(--muted); }
+/* Team card: one captain = one line (name + email | actions); the email never pushes the actions down */
+.ad-cap-sm { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; }
+.ad-cap-sm .ad-cap-who span.ad-cap-mail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.ad-cap-sm .ad-acts { flex-wrap: nowrap; font-size: 14px; }
+/* Team card: add a player on one line (person | position | Ajouter) */
+.ad-team .ad-grant { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
+.ad-team .ad-grant .ctl { max-width: none; }
+@media (max-width: 600px) { .ad-tbl td.num[data-label] { text-align: left; } }
