@@ -109,7 +109,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
   if (m === 'GET' && path === '/teams') {
     const s = await season(q.get('season'));
     if (!s) return fail(400, 'season');
-    const { results: teams } = await DB.prepare('SELECT id, league, name, abb, nbhpa_team_id FROM teams WHERE season_id = ? ORDER BY league, name COLLATE NOCASE').bind(s.id).all();
+    const { results: teams } = await DB.prepare('SELECT id, league, name, abb, logo, nbhpa_team_id FROM teams WHERE season_id = ? ORDER BY league, name COLLATE NOCASE').bind(s.id).all();
     const { results: ros } = await DB.prepare(`SELECT r.id, r.team_id, r.league, r.pos, r.added_at, p.id AS person_id, p.name, p.site_id, p.sex
       FROM rosters r JOIN people p ON p.id = r.person_id
       WHERE r.season_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(s.id).all();
@@ -140,8 +140,8 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (!data || s.nbhpa_season_id !== data.seasonId) return fail(400, 'no_season_data');
     let added = 0;
     for (const l of data.leagues.filter((x) => !b.league || x.slug === b.league)) for (const t of l.teams) {
-      const r = await DB.prepare('INSERT OR IGNORE INTO teams (season_id, league, name, abb, nbhpa_team_id, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .bind(s.id, l.slug, t.name, t.abb, t.id, now(), admin.id).run();
+      const r = await DB.prepare('INSERT OR IGNORE INTO teams (season_id, league, name, abb, nbhpa_team_id, logo, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(s.id, l.slug, t.name, t.abb, t.id, t.logo || null, now(), admin.id).run();
       added += r.meta.changes;
     }
     await audit('team.import', 'season:' + s.id, { added, league: b.league || null });
@@ -167,6 +167,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (!tsid) return fail(404, 'team');
     if (await isArchived(DB, tsid)) return fail(409, 'season_archived');
     if (await DB.prepare('SELECT 1 FROM rosters WHERE team_id = ? AND removed_at IS NULL').bind(id).first() ||
+        await DB.prepare('SELECT 1 FROM games WHERE away_team = ? OR home_team = ?').bind(id, id).first() ||
         await DB.prepare('SELECT 1 FROM captain_access WHERE team_ref = ? AND revoked_at IS NULL').bind(id).first()) return fail(409, 'team_in_use');
     await DB.batch([
       DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE team_id = ?)').bind(id),

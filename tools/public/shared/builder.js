@@ -136,6 +136,7 @@
   function teamHead(ctx, team, league) {
     var l = leagueOf(ctx, league) || { slug: league, teams: [] };
     var dt = (l.teams || []).filter(function (x) { return x.id === team.nbhpa_team_id; })[0] || {};
+    if (team.logo) dt = { logo: team.logo };
     var name = team.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(home(ctx, l) + '#team-' + team.nbhpa_team_id) + '">' + esc(team.name) + '</a>' : '<b>' + esc(team.name) + '</b>';
     return '<span class="tcell">' + window.LDLook.crest({ abb: team.abb, logo: dt.logo }, league, 'sm') + name + '</span>';
   }
@@ -150,15 +151,13 @@
   var day = function (ctx, d) { try { return new Date(d + 'T12:00:00').toLocaleDateString(locale(ctx), { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return d; } };
   var stamp = function (ctx, sec) { return sec ? new Date(sec * 1000).toLocaleString(locale(ctx), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' }) : ''; };
   /* "jeu. 16 oct. · 18:00 · contre GHO · Surface X 1" from the team's point of view */
-  function gameText(ctx, league, teamNb, g, noVenue) {
-    var l = leagueOf(ctx, league) || { teams: [] };
-    var abb = function (id) { return ((l.teams || []).filter(function (x) { return x.id === id; })[0] || {}).abb || '?'; };
-    var isHome = g.home === teamNb, opp = abb(isHome ? g.away : g.home);
-    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + (isHome ? t(ctx.lang, 'vs') : t(ctx.lang, 'at')) + ' ' + opp + (g.venue && !noVenue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
+  /* g = { date, time, venue, court, home (true when the team plays at home), opp: { abb } } (from the tools' schedule) */
+  function gameText(ctx, g, noVenue) {
+    var opp = (g.opp && g.opp.abb) || '?';
+    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + (g.home ? t(ctx.lang, 'vs') : t(ctx.lang, 'at')) + ' ' + opp + (g.venue && !noVenue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
   }
   function requestGame(ctx, q) {
-    var l = leagueOf(ctx, q.league), g = q.game_id && l && (l.games || []).filter(function (x) { return x.id === q.game_id; })[0];
-    if (g) return gameText(ctx, q.league, q.team.nbhpa_team_id, g, true);   // a card header: no venue (it is in the schedule)
+    if (q.game) return gameText(ctx, q.game, true);   // a card header: no venue (it is in the schedule)
     return day(ctx, q.game_date) + (q.game_time ? ' · ' + q.game_time : '') + (q.game_label ? ' · ' + q.game_label.split(' · ')[0] : '');
   }
   var guestTag = function (ctx, g) {
@@ -294,7 +293,7 @@
   }
   function body(b) {
     var o = { team_id: b.teamId, lines: complete(b).map(function (l) { return l.guest ? { absent_id: l.absent_id, guest: l.guest, sub_pos: l.sub_pos } : { absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos }; }) };
-    if (b.slot && b.slot !== 'manual') o.game_id = b.slot; else { o.game_date = b.date; o.game_time = b.time || null; }
+    if (b.slot && b.slot !== 'manual') o.game_ref = Number(b.slot); else { o.game_date = b.date; o.game_time = b.time || null; }
     return o;
   }
   var rosterOf = function (b, id) { return b.d.roster.filter(function (r) { return r.person_id === id; })[0] || {}; };
@@ -356,21 +355,20 @@
   function slotText(b) {
     var d = b.d;
     if (b.slot === 'manual') return day(b.ctx, b.date) + (b.time ? ' · ' + b.time : '');
-    var g = d.games.filter(function (x) { return x.id === b.slot; })[0];
+    var g = d.games.filter(function (x) { return String(x.id) === String(b.slot); })[0];
     return g ? day(b.ctx, g.date) + (g.time ? ' · ' + g.time : '') : '';
   }
   function gameCard(b, g) {
-    var d = b.d, l = leagueOf(b.ctx, d.team.league) || { teams: [] }, isHome = g.home === d.team.nbhpa_team_id;
-    var opp = (l.teams || []).filter(function (x) { return x.id === (isHome ? g.away : g.home); })[0] || { abb: '?' };
-    return '<button type="button" class="bd-gcard' + (b.slot === g.id ? ' bd-on' : '') + '" data-b-game="' + esc(g.id) + '" aria-pressed="' + (b.slot === g.id) + '">' +
+    var d = b.d, isHome = g.home, opp = g.opp || { abb: '?' }, on = String(b.slot) === String(g.id);
+    return '<button type="button" class="bd-gcard' + (on ? ' bd-on' : '') + '" data-b-game="' + esc(g.id) + '" aria-pressed="' + on + '">' +
       '<span class="bd-gday">' + esc(day(b.ctx, g.date)) + '</span><span class="bd-gtime">' + esc(g.time || '') + '</span>' +
       '<span class="bd-gopp">' + esc(t(b.ctx.lang, isHome ? 'vs' : 'at')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, d.team.league, 'sm') + '<b title="' + esc(opp.name || opp.abb) + '">' + esc(opp.abb) + '</b></span>' +
       (g.venue ? '<span class="note">' + esc(g.venue + (g.court ? ' ' + g.court : '')) + '</span>' : '') + '</button>';
   }
   function step1(b) {
     var L = b.ctx.lang, d = b.d, up = d.games.filter(function (g) { return g.date >= d.today; }), past = d.games.filter(function (g) { return g.date < d.today; }).reverse();
-    var cards = up.slice(0, GAME_CARDS), inCards = cards.some(function (g) { return g.id === b.slot; });
-    var opt = function (g) { return '<option value="' + esc(g.id) + '"' + (b.slot === g.id ? ' selected' : '') + '>' + esc(gameText(b.ctx, d.team.league, d.team.nbhpa_team_id, g)) + '</option>'; };
+    var cards = up.slice(0, GAME_CARDS), inCards = cards.some(function (g) { return String(g.id) === String(b.slot); });
+    var opt = function (g) { return '<option value="' + esc(g.id) + '"' + (String(b.slot) === String(g.id) ? ' selected' : '') + '>' + esc(gameText(b.ctx, g)) + '</option>'; };
     var other = '<label>' + esc(t(L, 'game')) + '<select class="ctl" data-b-slot data-b-key="slot"><option value="">' + esc(t(L, 'chooseGame')) + '</option>' +
       (up.length > GAME_CARDS ? '<optgroup label="' + esc(t(L, 'upcoming')) + '">' + up.slice(GAME_CARDS).map(opt).join('') + '</optgroup>' : '') +
       (past.length ? '<optgroup label="' + esc(t(L, 'past')) + '">' + past.map(opt).join('') + '</optgroup>' : '') +
@@ -455,7 +453,7 @@
     var L = b.ctx.lang, d = b.d, c = b.check, lines = complete(b);
     var names = lines.map(function (l) { return { a: rosterOf(b, l.absent_id).name, s: l.guest ? l.guest.name : (candOf(b, l.sub_id) || {}).name }; });
     var sums = lines.map(function (l) { var x = candOf(b, l.sub_id) || {}; return { absent_salary: rosterOf(b, l.absent_id).salary, sub_salary: l.guest ? null : l.sub_pos === 'g' ? x.salary_g : x.salary_s }; });
-    var summary = '<div class="bd-sum"><p><b>' + esc(slotText(b)) + '</b>' + (b.slot !== 'manual' ? ' · ' + esc(gameText(b.ctx, d.team.league, d.team.nbhpa_team_id, d.games.filter(function (g) { return g.id === b.slot; })[0] || {}).split(' · ').slice(2).join(' · ')) : '') + '</p>' +
+    var summary = '<div class="bd-sum"><p><b>' + esc(slotText(b)) + '</b>' + (b.slot !== 'manual' ? ' · ' + esc(gameText(b.ctx, d.games.filter(function (g) { return String(g.id) === String(b.slot); })[0] || {}).split(' · ').slice(2).join(' · ')) : '') + '</p>' +
       '<ul class="bd-lines">' + lines.map(function (l, i) {
         return '<li>' + esc(names[i].a) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + esc(names[i].s) + '</b>' + (l.guest ? ' ' + guestTag(b.ctx, l.guest) : '') + ' <span class="note">' + esc(posName(b.ctx, l.sub_pos)) + ' · ' + esc(money(sums[i].absent_salary)) + ' → ' + esc(money(sums[i].sub_salary)) + '</span></li>';
       }).join('') + '</ul></div>';
@@ -617,9 +615,9 @@
       (lu.absents.length ? '<p class="ld-abs">' + esc(t(L, 'ldAbsent')) + ' : ' + lu.absents.map(function (a) { return '<s>' + esc(a.name) + '</s>'; }).join(', ') + '</p>' : '') + '</div>';
   }
   /* A game of a night: time, venue, then both teams side by side. actFn(lineup, game) -> HTML of the team's actions. */
-  function gameHtml(item, ctx, actFn) {
+  function gameHtml(item, ctx, actFn, gameActs) {
     var gm = item.game;
-    return '<article class="ld-game"><div class="ld-gh"><b>' + esc(gm.time || '') + '</b>' + (gm.venue ? ' <span class="note">' + esc(gm.venue + (gm.court ? ' ' + gm.court : '')) + '</span>' : '') + '</div>' +
+    return '<article class="ld-game"><div class="ld-gh"><b>' + esc(gm.time || '') + '</b>' + (gm.venue ? ' <span class="note">' + esc(gm.venue + (gm.court ? ' ' + gm.court : '')) + '</span>' : '') + (gameActs ? gameActs(gm) : '') + '</div>' +
       '<div class="ld-cols">' + item.teams.map(function (lu) { return lineupHtml(lu, ctx, { actions: actFn ? actFn(lu, gm) : '' }); }).join('<span class="ld-vs" aria-hidden="true">@</span>') + '</div></article>';
   }
 
@@ -633,5 +631,5 @@
     });
   }
   window.LDBuilder = { rosterOrder: rosterOrder, state: state, mount: mount, requestCard: requestCard, checksHtml: checksHtml, lineupHtml: lineupHtml, gameHtml: gameHtml,
-    day: function (ctx, d) { return day(ctx, d); }, gameText: function (ctx, league, nb, g) { return gameText(ctx, league, nb, g, true); }, t: t, STR: STR };
+    day: function (ctx, d) { return day(ctx, d); }, gameText: function (ctx, g) { return gameText(ctx, g, true); }, t: t, STR: STR };
 })();

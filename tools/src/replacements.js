@@ -21,6 +21,7 @@
 import { json, fail, readJson, cleanText, now } from './http.js';
 import { cleanGuest } from './guest.js';
 import { isArchived } from './seasons.js';
+import { gameById, teamGames, teamsPlayingAt, gameLabel } from './games.js';
 
 const MAX_LINES = 8;
 const OPEN = "('pending', 'approved')";
@@ -54,25 +55,25 @@ export function ageCheck(rules, p, pos, date) {
   return a.lo >= min ? { s: 'ok', d: { min } } : a.hi < min ? { s: 'fail', d: { min } } : { s: 'warn', d: { min, why: 'birthday' } };
 }
 
+// the leagues of our config (leagues.json, in the build): only for a league's section
 const leagueOf = (data, slug) => data && data.leagues.find((l) => l.slug === slug);
-/** The stats data covers this team's season (its schedule can be used). */
-const sameSeason = (data, season) => data && season && season.nbhpa_season_id === data.seasonId;
-const label = (lg, g) => {
-  const abb = (id) => ((lg.teams.find((t) => t.id === id) || {}).abb || '?');
-  return abb(g.away) + ' @ ' + abb(g.home) + (g.venue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
-};
 
-/** The game of a request: an NBHPA game of this team, or a date (and time) typed by hand. null when not valid. */
-function resolveGame(data, season, team, b) {
-  const lg = leagueOf(data, team.league);
-  if (b.game_id) {
-    if (!sameSeason(data, season) || !lg || !team.nbhpa_team_id) return null;
-    const g = (lg.games || []).find((x) => x.id === String(b.game_id) && (x.away === team.nbhpa_team_id || x.home === team.nbhpa_team_id));
-    return g ? { id: g.id, date: g.date, time: g.time || null, label: label(lg, g) } : null;
+/** The game of a request: one of OUR games of this team (game_ref; game_id = its NBHPA no. is accepted too),
+ *  or a date (and time) typed by hand. null when not valid. */
+async function resolveGame(DB, team, b) {
+  if (b.game_ref || b.game_id) {
+    let g = null;
+    if (b.game_ref) g = await gameById(DB, b.game_ref);
+    if (!g && b.game_id) {
+      const row = await DB.prepare('SELECT id FROM games WHERE season_id = ? AND league = ? AND nbhpa_game_id = ?').bind(team.season_id, team.league, String(b.game_id)).first();
+      g = row && await gameById(DB, row.id);
+    }
+    if (!g || g.cancelled || (g.away.id !== team.id && g.home.id !== team.id)) return null;
+    return { ref: g.id, id: g.nbhpa_game_id || null, date: g.date, time: g.time || null, label: gameLabel(g) };
   }
   const date = String(b.game_date || ''), time = b.game_time ? String(b.game_time) : null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || (time && !/^\d{2}:\d{2}$/.test(time))) return null;
-  return { id: null, date, time, label: null };
+  return { ref: null, id: null, date, time, label: null };
 }
 
 /** Lines from a request body: [{ absent_id, sub_id | guest: { name, age, nid }, sub_pos }], each person once.
@@ -103,19 +104,17 @@ async function teamRoster(DB, team, section) {
 
 /** Who plays at that slot: person id -> { abb, league } (their own team's game) or { req } (another open request).
  *  Only when the time is known. exceptReq: the request being checked again. */
-async function busyAt(DB, data, season, team, slot, exceptReq) {
+async function busyAt(DB, season, team, slot, exceptReq) {
   const out = new Map();
   if (!slot.time) return out;
-  if (sameSeason(data, season)) {
-    const playing = new Map();   // nbhpa team id + league -> playing at that slot
-    for (const l of data.leagues) for (const g of l.games || []) if (!g.cancelled && g.date === slot.date && g.time === slot.time) {
-      playing.set(l.slug + ':' + g.away, 1); playing.set(l.slug + ':' + g.home, 1);
-    }
-    if (playing.size) {
-      const { results } = await DB.prepare(`SELECT r.person_id, r.league, t.abb, t.nbhpa_team_id FROM rosters r JOIN teams t ON t.id = r.team_id
-        WHERE r.season_id = ? AND r.removed_at IS NULL AND t.nbhpa_team_id IS NOT NULL`).bind(season.id).all();
-      for (const r of results) if (r.nbhpa_team_id !== team.nbhpa_team_id || r.league !== team.league) if (playing.has(r.league + ':' + r.nbhpa_team_id)) out.set(r.person_id, { abb: r.abb, league: r.league });
-    }
+  // our schedule, every league of the season: the teams playing at that slot, and their rostered players
+  const playing = await teamsPlayingAt(DB, season.id, slot.date, slot.time);
+  playing.delete(team.id);
+  if (playing.size) {
+    const ids = [...playing];
+    const { results } = await DB.prepare(`SELECT r.person_id, r.league, t.abb FROM rosters r JOIN teams t ON t.id = r.team_id
+      WHERE r.season_id = ? AND r.removed_at IS NULL AND r.team_id IN (${ids.map(() => '?').join(',')})`).bind(season.id, ...ids).all();
+    for (const r of results) out.set(r.person_id, { abb: r.abb, league: r.league });
   }
   const { results: subs } = await DB.prepare(`SELECT l.sub_id, q.id, t.abb, q.league FROM replacement_lines l JOIN replacements q ON q.id = l.replacement_id JOIN teams t ON t.id = q.team_id
     WHERE q.season_id = ? AND q.game_date = ? AND q.game_time = ? AND q.status IN ${OPEN} AND q.id <> ?`).bind(season.id, slot.date, slot.time, exceptReq || 0).all();
@@ -132,7 +131,7 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   const listed = new Map((await DB.prepare(`SELECT p.id, p.name, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g, sp.id AS sp
     FROM people p LEFT JOIN section_players sp ON sp.person_id = p.id AND sp.season_id = ? AND sp.section = ?
     WHERE p.id IN (${lines.map(() => '?').join(',')})`).bind(team.season_id, section, ...lines.map((l) => l.sub_id || 0)).all()).results.map((p) => [p.id, p]));
-  const busy = await busyAt(DB, data, season, team, slot, exceptReq);
+  const busy = await busyAt(DB, season, team, slot, exceptReq);
   const cap = rules && rules.salary_cap != null ? rules.salary_cap : null;
   const checks = [], out = [];
   /* A guest: not on the list (fails), sex and age from what was given (age optional), salary unknown.
@@ -208,10 +207,11 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const season = await seasonOf(team.season_id), lg = leagueOf(data, team.league);
     const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
     const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null }));
-    const games = sameSeason(data, season) && lg && team.nbhpa_team_id
-      ? (lg.games || []).filter((g) => !g.cancelled && (g.away === team.nbhpa_team_id || g.home === team.nbhpa_team_id)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)) : [];
-    const out = { team: { id: team.id, season_id: team.season_id, league: team.league, name: team.name, abb: team.abb, nbhpa_team_id: team.nbhpa_team_id }, season: season && { id: season.id, name: season.name }, rules, roster, games, today: today(), candidates: null };
-    const slot = (q.get('game') || q.get('date')) ? resolveGame(data, season, team, { game_id: q.get('game'), game_date: q.get('date'), game_time: q.get('time') }) : null;
+    const games = (await teamGames(DB, team)).map((g) => ({ id: g.id, date: g.date, time: g.time, venue: g.venue, court: g.court, home: g.home,
+      opp: { id: g.opp.id, abb: g.opp.abb, name: g.opp.name, logo: g.opp.logo, nbhpa_team_id: g.opp.nbhpa_team_id } }));
+    const out = { team: { id: team.id, season_id: team.season_id, league: team.league, name: team.name, abb: team.abb, logo: team.logo, nbhpa_team_id: team.nbhpa_team_id }, season: season && { id: season.id, name: season.name }, rules, roster, games, today: today(), candidates: null };
+    const slot = q.get('game') ? (await resolveGame(DB, team, { game_ref: q.get('game') }) || await resolveGame(DB, team, { game_id: q.get('game') }))
+      : q.get('date') ? await resolveGame(DB, team, { game_date: q.get('date'), game_time: q.get('time') }) : null;
     if (slot) {
       const { results: list } = await DB.prepare(`SELECT p.id, p.name, p.site_id, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g
         FROM section_players sp JOIN people p ON p.id = sp.person_id WHERE sp.season_id = ? AND sp.section = ? ORDER BY p.name COLLATE NOCASE`).bind(team.season_id, lg ? lg.section : '').all();
@@ -219,7 +219,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
         WHERE r.season_id = ? AND r.league = ? AND r.removed_at IS NULL`).bind(team.season_id, team.league).all();
       const teamOf = new Map(ros.map((r) => [r.person_id, r]));
       const fullRules = await DB.prepare('SELECT * FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
-      const busy = await busyAt(DB, data, season, team, slot, 0);
+      const busy = await busyAt(DB, season, team, slot, 0);
       out.slot = slot;
       out.candidates = list.filter((p) => !(teamOf.get(p.id) && teamOf.get(p.id).team_id === team.id)).map((p) => {
         const age = (pos) => { const a = ageCheck(fullRules, p, pos, slot.date); return a ? a.s : null; };
@@ -236,7 +236,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const b = await readJson(req, 16384) || {};
     const team = await teamRow(b.team_id);
     if (!team) return fail(404, 'team');
-    const season = await seasonOf(team.season_id), slot = resolveGame(data, season, team, b), lines = readLines(b);
+    const season = await seasonOf(team.season_id), slot = await resolveGame(DB, team, b), lines = readLines(b);
     if (!slot) return fail(400, 'game');
     if (path === '/replacements' && await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
     if (path === '/replacements' && (await DB.prepare('SELECT enabled FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first('enabled')) === 0) return fail(409, 'league_off');
@@ -247,13 +247,13 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (b.note && !note) return fail(400, 'replacement');
     if (ev.result === 'fail' && !note) return fail(400, 'note_required', { checks: ev.checks });
     const approveNow = isAdmin && b.approve === true, t = now();
-    const r = await DB.prepare(`INSERT INTO replacements (season_id, league, team_id, game_id, game_date, game_time, game_label, status, result, checks, note, created_at, created_kind, created_by, decided_at, decided_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(team.season_id, team.league, team.id, slot.id, slot.date, slot.time, slot.label,
+    const r = await DB.prepare(`INSERT INTO replacements (season_id, league, team_id, game_ref, game_id, game_date, game_time, game_label, status, result, checks, note, created_at, created_kind, created_by, decided_at, decided_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(team.season_id, team.league, team.id, slot.ref, slot.id, slot.date, slot.time, slot.label,
       approveNow ? 'approved' : 'pending', ev.result, JSON.stringify({ checks: ev.checks, payroll: ev.payroll }), note, t, actor.kind, actor.id, approveNow ? t : null, approveNow ? actor.id : null).run();
     const id = r.meta.last_row_id;
     await DB.batch(ev.lines.map((l) => DB.prepare('INSERT INTO replacement_lines (replacement_id, absent_id, absent_pos, absent_salary, sub_id, sub_pos, sub_salary, guest_name, guest_sex, guest_age, guest_nid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(id, l.absent_id, l.absent_pos, l.absent_salary, l.sub_id, l.sub_pos, l.sub_salary, l.guest ? l.guest.name : null, l.guest ? l.guest.sex : null, l.guest ? l.guest.age : null, l.guest ? l.guest.nid : null)));
-    await audit('replacement.create', 'replacement:' + id, { team: team.id, game: slot.id || slot.date, lines: lines.length, guests: lines.filter((l) => l.guest).length, result: ev.result, status: approveNow ? 'approved' : 'pending' });
+    await audit('replacement.create', 'replacement:' + id, { team: team.id, game: slot.ref || slot.date, lines: lines.length, guests: lines.filter((l) => l.guest).length, result: ev.result, status: approveNow ? 'approved' : 'pending' });
     return json({ ok: true, id, status: approveNow ? 'approved' : 'pending', result: ev.result }, 201);
   }
 
@@ -268,7 +268,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     // A captain does not see the refused requests they hid; the admins see everything.
     const where = isAdmin ? 'q.season_id = ?' : `q.team_id IN (${allowed.map(() => '?').join(',') || 'NULL'}) AND q.captain_hidden_at IS NULL`;
     const args = isAdmin ? [intId(q.get('season')) || 0] : allowed;
-    const { results: reqs } = await DB.prepare(`SELECT q.*, t.name AS team_name, t.abb, t.nbhpa_team_id,
+    const { results: reqs } = await DB.prepare(`SELECT q.*, t.name AS team_name, t.abb, t.logo AS team_logo, t.nbhpa_team_id,
         CASE q.created_kind WHEN 'captain' THEN c.name ELSE a.name END AS created_name, d.name AS decided_name
       FROM replacements q JOIN teams t ON t.id = q.team_id
       LEFT JOIN captains c ON q.created_kind = 'captain' AND c.id = q.created_by
@@ -278,17 +278,20 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const { results: lines } = await DB.prepare(`SELECT l.*, pa.name AS absent_name, pa.site_id AS absent_site, COALESCE(ps.name, l.guest_name) AS sub_name, ps.site_id AS sub_site
       FROM replacement_lines l JOIN people pa ON pa.id = l.absent_id LEFT JOIN people ps ON ps.id = l.sub_id
       WHERE l.replacement_id IN (SELECT q.id FROM replacements q WHERE ${where}) ORDER BY l.id`).bind(...args).all();
-    const out = [];
+    const out = [], games = new Map();
     for (const r of reqs) {
       const ls = lines.filter((l) => l.replacement_id === r.id);
+      if (r.game_ref && !games.has(r.game_ref)) games.set(r.game_ref, await gameById(DB, r.game_ref));
+      const gm = r.game_ref && games.get(r.game_ref), home = gm && gm.home.id === r.team_id, opp = gm && (home ? gm.away : gm.home);
       let saved = {}; try { saved = JSON.parse(r.checks); } catch { /* old row */ }
       let live = null;
       if (r.status === 'pending' && ls.length) {
         const team = await DB.prepare('SELECT * FROM teams WHERE id = ?').bind(r.team_id).first();
         live = await evaluate(DB, data, await seasonOf(r.season_id), team, { id: r.game_id, date: r.game_date, time: r.game_time }, fromRows(ls), r.id);
       }
-      out.push({ id: r.id, season_id: r.season_id, league: r.league, team: { id: r.team_id, name: r.team_name, abb: r.abb, nbhpa_team_id: r.nbhpa_team_id },
-        game_id: r.game_id, game_date: r.game_date, game_time: r.game_time, game_label: r.game_label, status: r.status,
+      out.push({ id: r.id, season_id: r.season_id, league: r.league, team: { id: r.team_id, name: r.team_name, abb: r.abb, logo: r.team_logo, nbhpa_team_id: r.nbhpa_team_id },
+        game_ref: r.game_ref, game_id: r.game_id, game_date: r.game_date, game_time: r.game_time, game_label: r.game_label, status: r.status,
+        game: gm ? { id: gm.id, date: gm.date, time: gm.time, venue: gm.venue, court: gm.court, home, opp: { abb: opp.abb, name: opp.name, logo: opp.logo, nbhpa_team_id: opp.nbhpa_team_id } } : null,
         result: live ? live.result : r.result, checks: live ? live.checks : saved.checks || [], payroll: live ? live.payroll : saved.payroll || null,
         note: r.note, created_at: r.created_at, created_kind: r.created_kind, created_name: r.created_name, decided_at: r.decided_at, decided_name: r.decided_name,
         decision_note: r.decision_note,

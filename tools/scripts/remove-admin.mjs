@@ -21,7 +21,7 @@ export function removeAdminSql(email, now = Math.floor(Date.now() / 1000)) {
     `UPDATE captain_access SET created_by = NULL WHERE created_by = ${id};`,
     `UPDATE captain_access SET revoked_by = NULL WHERE revoked_by = ${id};`,
     ...[['people', 'created_by'], ['section_players', 'created_by'], ['teams', 'created_by'], ['rosters', 'added_by'], ['rosters', 'removed_by'],
-      ['season_leagues', 'updated_by'], ['replacements', 'decided_by']].map(([tb, col]) => `UPDATE ${tb} SET ${col} = NULL WHERE ${col} = ${id};`),
+      ['season_leagues', 'updated_by'], ['replacements', 'decided_by'], ['games', 'created_by'], ['games', 'updated_by']].map(([tb, col]) => `UPDATE ${tb} SET ${col} = NULL WHERE ${col} = ${id};`),
     `UPDATE replacements SET created_by = NULL WHERE created_kind = 'admin' AND created_by = ${id};`,
     `DELETE FROM sessions WHERE kind = 'admin' AND user_id = ${id};`,
     `DELETE FROM login_codes WHERE kind = 'admin' AND user_id = ${id};`,

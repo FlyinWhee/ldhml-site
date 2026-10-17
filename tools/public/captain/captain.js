@@ -81,7 +81,7 @@
     var dt = (l.teams || []).filter(function (x) { return x.id === tm.nbhpa_team_id; })[0] || {};
     var name = tm.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(home(l) + '#team-' + tm.nbhpa_team_id) + '">' + esc(tm.name) + '</a>' : '<b>' + esc(tm.name) + '</b>';
     var badge = l.path ? window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: home(l), title: l.name, theme: l.theme }) : '';
-    return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: dt.logo }, tm.league, '') + name + '</span>' + badge;
+    return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo || dt.logo }, tm.league, '') + name + '</span>' + badge;
   }
   /* A player of the team: their page in THIS league (most detail); the section page when they have not played in it yet. */
   function person(tm, p) {
@@ -124,12 +124,13 @@
     var tile = function (cls, label, value, sub) { return '<div class="cp-kpi ' + cls + '"><span class="cp-kl">' + esc(label) + '</span><span class="cp-kv">' + value + '</span>' + (sub ? '<span class="cp-ks">' + sub + '</span>' : '') + '</div>'; };
     var next = S.games.filter(function (g) { return g.game.date >= S.today; })[0], nextV, nextS;
     if (next) {
-      var l = leagueOf(tm.league) || { teams: [] }, opp = (l.teams || []).filter(function (x) { return x.id === next.opp.nbhpa_team_id; })[0] || { abb: next.opp.abb };
+      var l = leagueOf(tm.league) || { teams: [] }, dOpp = (l.teams || []).filter(function (x) { return next.opp.nbhpa_team_id && x.id === next.opp.nbhpa_team_id; })[0] || {};
+      var opp = { abb: next.opp.abb, logo: next.opp.logo || dOpp.logo };   // the opponent: our team (its logo, else the stats data's)
       nextV = esc(window.LDBuilder.day(ctx(), next.game.date)) + (next.game.time ? ' <small>' + esc(next.game.time) + '</small>' : '');
       var lu = next.lineup;
       nextS = esc(t(next.home ? 'vsT' : 'atT')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, tm.league, 'sm') + '<b title="' + esc(next.opp.name) + '">' + esc(next.opp.abb) + '</b> · ' +
         esc(lu.subs.length ? t('gSubs', { n: lu.subs.length }) : t('kRegular'));
-      var nextPend = reqs.filter(function (q) { return q.status === 'pending' && (q.game_id ? q.game_id === next.game.id : q.game_date === next.game.date); }).length;
+      var nextPend = reqs.filter(function (q) { return q.status === 'pending' && (q.game_ref ? q.game_ref === next.game.id : q.game_date === next.game.date); }).length;
       if (nextPend) nextS += ' · ' + esc(t('gPend', { n: nextPend }));
     } else { nextV = '—'; nextS = esc(t('kNoGame')); }
     var pending = reqs.filter(function (q) { return q.status === 'pending'; }).length, approvedUp = reqs.filter(function (q) { return q.status === 'approved' && q.game_date >= S.today; }).length;
@@ -149,11 +150,11 @@
   /* The timeline: one line per game of the team (the next one marked), its requests under it (compact, without the game
    * again), and the night's counts and payroll when something changes. A request for a date typed by hand gets its own line.
    * Past games show only when they had requests, in a fold. Refused requests can be hidden; open ones cancelled. */
-  var gameLine = function (tm, x) { return window.LDBuilder.gameText(ctx(), tm.league, tm.nbhpa_team_id, x.game); };
+  var gameLine = function (tm, x) { return window.LDBuilder.gameText(ctx(), { date: x.game.date, time: x.game.time, venue: x.game.venue, court: x.game.court, home: x.home, opp: x.opp }); };
   function timeline(tm, reqs) {
     var byGame = {}, ids = {}, rows = [];
     S.games.forEach(function (x) { ids[x.game.id] = 1; });
-    reqs.forEach(function (q) { var k = q.game_id && ids[q.game_id] ? q.game_id : 'd:' + q.game_date + ':' + (q.game_time || ''); (byGame[k] = byGame[k] || []).push(q); });
+    reqs.forEach(function (q) { var k = q.game_ref && ids[q.game_ref] ? q.game_ref : 'd:' + q.game_date + ':' + (q.game_time || ''); (byGame[k] = byGame[k] || []).push(q); });
     S.games.forEach(function (x) { rows.push({ date: x.game.date, time: x.game.time || '', x: x, reqs: byGame[x.game.id] || [] }); });
     Object.keys(byGame).filter(function (k) { return k.indexOf('d:') === 0; }).forEach(function (k) {
       var q = byGame[k][0]; rows.push({ date: q.game_date, time: q.game_time || '', x: null, reqs: byGame[k], label: window.LDBuilder.day(ctx(), q.game_date) + (q.game_time ? ' · ' + q.game_time : '') + ' · ' + t('offSchedule') });

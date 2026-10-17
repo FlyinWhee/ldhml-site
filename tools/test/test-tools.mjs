@@ -138,6 +138,38 @@ assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, bo
 assert.equal((await call('/api/admin/teams/import', { method: 'POST', cookie, body: { season_id: seasonId, league: 'nope' } })).status, 400, 'import: unknown league');
 const teamsNow = (await call('/api/admin/teams?season=' + seasonId, { cookie })).data.teams;
 const ref = (l, t) => teamsNow.find((x) => x.league === l.slug && x.nbhpa_team_id === t.id).id;
+
+// ---- our schedule: imported from the stats data (optional), or typed by hand; an import never overwrites a hand edit ----
+const dataGames = season.leagues.reduce((a, l) => a + (l.games || []).length, 0);
+r = await call('/api/admin/games/import?season=' + seasonId, { cookie });
+assert.ok(r.data.available && r.data.add > 0 && r.data.add + r.data.unmatched === dataGames && r.data.update === 0, 'import preview: every game of the data, nothing written');
+assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM games').first('n'), 0, 'a preview writes nothing');
+const addN = r.data.add;
+r = await call('/api/admin/games/import', { method: 'POST', cookie, body: { season_id: seasonId } });
+assert.equal(r.data.added, addN, 'the import adds the games');
+assert.equal((await call('/api/admin/games/import', { method: 'POST', cookie, body: { season_id: seasonId } })).data.added, 0, 'import twice: nothing new');
+assert.equal((await call('/api/admin/games/import', { method: 'POST', cookie, body: { season_id: futureId } })).data.error, 'no_season_data', 'no schedule data for a future season');
+assert.equal((await call('/api/admin/games/import?season=' + futureId, { cookie })).data.available, false);
+const gamesRetro = (await call('/api/admin/games?season=' + seasonId + '&league=retro', { cookie })).data.games;
+const gref = (nbId) => gamesRetro.find((x) => x.nbhpa_game_id === String(nbId)).id;   // NBHPA game no. -> our game id
+{
+  const g0 = gamesRetro[0], same = { season_id: seasonId, league: 'retro', date: g0.date, time: g0.time, venue: 'Aréna test', court: g0.court, away_team: g0.away.id, home_team: g0.home.id };
+  assert.equal((await call('/api/admin/games/' + g0.id, { method: 'POST', cookie, body: same })).status, 200, 'a game edited by hand');
+  r = await call('/api/admin/games/import?season=' + seasonId, { cookie });
+  assert.equal(r.data.kept, 1, 'the import leaves a hand-edited game alone');
+  await call('/api/admin/games/import', { method: 'POST', cookie, body: { season_id: seasonId } });
+  assert.equal(await DB.prepare('SELECT venue FROM games WHERE id = ?').bind(g0.id).first('venue'), 'Aréna test', 'still as edited');
+  await DB.prepare('UPDATE games SET venue = ?, edited = 0 WHERE id = ?').bind(g0.venue, g0.id).run();
+  const mk = (x) => call('/api/admin/games', { method: 'POST', cookie, body: { ...same, date: '2027-03-01', time: '20:00', ...x } });
+  assert.equal((await mk({ home_team: g0.away.id })).data.error, 'game', 'two different teams');
+  assert.equal((await mk({ date: 'mardi' })).data.error, 'game', 'a real date');
+  assert.equal((await mk({ away_team: 999999 })).data.error, 'game', 'teams of the league');
+  r = await mk({});
+  assert.equal(r.status, 201, 'a game created by hand (no NBHPA)');
+  assert.equal((await DB.prepare('SELECT edited, nbhpa_game_id FROM games WHERE id = ?').bind(r.data.id).first()).edited, 1);
+  assert.equal((await call('/api/admin/games/' + r.data.id + '/delete', { method: 'POST', cookie, body: {} })).status, 200, 'an unused game can be deleted');
+  assert.equal((await call('/api/admin/games', { method: 'POST', body: same })).status, 401, 'visitors: no schedule edits');
+}
 const teamRef = ref(lg, team);
 r = await call('/api/admin/teams', { method: 'POST', cookie, body: { season_id: futureId, league: lg.slug, name: 'Équipe Future', abb: 'fut' } });
 assert.equal(r.status, 201, 'a team can exist before NBHPA has it'); const futureTeam = r.data.id;
@@ -172,13 +204,14 @@ const { seedSql } = await import('../scripts/seed-local.mjs');
 const regJson = JSON.parse(await readFile(path.join(root, 'registry/people.json'), 'utf8'));
 const count = async (tb) => DB.prepare(`SELECT COUNT(*) AS n FROM ${tb}`).first('n');
 DB.raw.exec(seedSql(season, regJson));
-const seeded = { people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams') };
+const seeded = { people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams'), games: await count('games') };
 assert.equal(seeded.people, season.people.length, 'one person per player of the data');
 const secOf = Object.fromEntries(season.leagues.map((l) => [l.slug, l.section]));
 assert.equal(seeded.lists, season.people.reduce((a, p) => a + new Set(Object.keys(p.lg).map((s) => secOf[s])).size, 0), 'each person on the list of each section they play in');
 assert.equal(seeded.rosters, season.people.reduce((a, p) => a + Object.keys(p.lg).length, 0), 'each person on their main team, in each league');
 DB.raw.exec(seedSql(season, regJson));
-assert.deepEqual({ people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams') }, seeded, 'running the seed again changes nothing');
+assert.deepEqual({ people: await count('people'), lists: await count('section_players'), rosters: await count('rosters'), teams: await count('teams'), games: await count('games') }, seeded, 'running the seed again changes nothing');
+assert.equal(seeded.games, addN, 'the seed brings the schedule (the games imported above stay as they are)');
 // demo salaries (local tests only): from the stats, 2 to 6 by 0.5, goalies 4, every Retro team under the 41 cap
 {
   const { demoSalaries, demoSql } = await import('../scripts/seed-local.mjs');
@@ -246,6 +279,7 @@ const teamA = tRef(mainAbb), nbA = retro.teams.find((x) => x.abb === mainAbb).id
 const gamesA = retro.games.filter((g) => !g.cancelled && g.time && (g.away === nbA || g.home === nbA));
 assert.ok(gamesA.length >= 2, 'the season export carries the schedule');
 const gameA = gamesA[0], gameA2 = gamesA[1], oppNb = gameA.home === nbA ? gameA.away : gameA.home;
+gameA.ref = gref(gameA.id); gameA2.ref = gref(gameA2.id);   // our ids of those games
 const oppTeam = teamsNow.find((x) => x.league === 'retro' && x.nbhpa_team_id === oppNb).id;
 r = await call('/api/admin/replacements/builder?team=' + teamA, { cookie });
 assert.equal(r.status, 200); assert.equal(r.data.games.length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length, 'builder: the team’s games');
@@ -253,7 +287,8 @@ assert.equal(r.data.candidates, null, 'no candidates before a game is chosen');
 const rosterA = r.data.roster, payrollA = rosterA.reduce((a, x) => a + x.salary, 0);
 assert.ok(rosterA.every((x) => x.salary != null) && !('birth_year' in rosterA[0]), 'roster with salaries, no birth dates');
 await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: payrollA, min_age_m: 40, min_age_f: 35, min_age_g: 30 } });
-r = await call('/api/admin/replacements/builder?team=' + teamA + '&game=' + gameA.id, { cookie });
+assert.equal((await call('/api/admin/replacements/builder?team=' + teamA + '&game=' + gameA.id, { cookie })).data.slot.ref, gameA.ref, 'builder: an NBHPA game no. maps to our game');
+r = await call('/api/admin/replacements/builder?team=' + teamA + '&game=' + gameA.ref, { cookie });
 const cands = r.data.candidates, onA = new Set(rosterA.map((x) => x.person_id));
 assert.ok(cands.length > 0 && cands.every((c) => !onA.has(c.id)), 'candidates: the section list without the team’s own players');
 assert.ok(cands.every((c) => !('birth_year' in c)), 'candidates carry no birth dates (only the age result)');
@@ -368,7 +403,7 @@ assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { metho
 assert.equal(await DB.prepare('SELECT (SELECT COUNT(*) FROM replacements WHERE id = ?) + (SELECT COUNT(*) FROM replacement_lines WHERE replacement_id = ?) AS n').bind(rqB, rqB).first('n'), 0, 'a cancelled request is deleted, with its lines');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 404, 'gone');
 assert.equal((await call('/api/admin/replacements/' + rqA + '/cancel', { method: 'POST', cookie, body: {} })).data.error, 'not_open', 'a refused request is not cancelled (it stays in the history)');
-r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(sub1), game_id: gameA2.id, approve: true, note: 'Fait pour le capitaine' } });
+r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(sub1), game_id: undefined, game_ref: gameA2.ref, approve: true, note: 'Fait pour le capitaine' } });
 assert.equal(r.data.status, 'approved', 'an admin making the request for a captain can approve it at once');
 assert.equal((await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.find((q) => q.id === r.data.id).decided_name, 'Boss');
 r = await call('/api/admin/audit', { cookie });
@@ -388,17 +423,17 @@ assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE id =
 // ---- the actual lineup of a game: roster - absent players + replacements on file (approved or pending; refused ones do not count) ----
 r = await call('/api/admin/lineups?season=' + seasonId + '&league=retro&date=' + gameA2.date, { cookie });
 assert.ok(r.data.dates.includes(gameA2.date) && r.data.date === gameA2.date, 'the game nights of the league, the one asked');
-const nightA = r.data.games.find((x) => x.game.id === gameA2.id);
+const nightA = r.data.games.find((x) => x.game.id === gameA2.ref);
 assert.equal(nightA.teams.length, 2, 'both teams of the game');
 const luA = nightA.teams.find((x) => x.team.id === teamA), sub1Name = await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub1).first('name');
 assert.ok(luA.absents.some((a) => a.person_id === absentA) && !luA.players.some((p) => p.person_id === absentA), 'the absent player is out');
 assert.ok(luA.subs.some((x) => x.name === sub1Name && x.req.status === 'approved' && x.for), 'the replacement is in (approved, with who they replace)');
 assert.equal(luA.counts.s + luA.counts.g, luA.players.length + luA.subs.length, 'the night\'s counts');
 r = await call('/api/admin/lineups?season=' + seasonId + '&league=retro&date=' + gameA.date, { cookie });
-assert.equal(r.data.games.find((x) => x.game.id === gameA.id).teams.find((x) => x.team.id === teamA).subs.length, 0, 'a refused request does not change the lineup');
+assert.equal(r.data.games.find((x) => x.game.id === gameA.ref).teams.find((x) => x.team.id === teamA).subs.length, 0, 'a refused request does not change the lineup');
 r = await call('/api/captain/lineups?team=' + teamA, { cookie: ccookie });
 assert.equal(r.data.games.length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length, 'captain: every game of their team');
-assert.equal(r.data.games.find((x) => x.game.id === gameA2.id).lineup.subs.length, 1, 'with the lineup of each');
+assert.equal(r.data.games.find((x) => x.game.id === gameA2.ref).lineup.subs.length, 1, 'with the lineup of each');
 assert.equal((await call('/api/captain/lineups?team=' + oppTeam, { cookie: ccookie })).status, 404, 'not another team');
 assert.equal((await call('/api/captain/lineups', { cookie: ccookie })).status, 400, 'captains: one of their teams only');
 
@@ -580,7 +615,7 @@ assert.ok(q('.bd-rmodal .bd-rlist li') && /même sexe/.test(q('.bd-rlist').textC
 q('[data-b-rules-close]').click(); await wait(30);
 assert.ok(!q('.bd-rmodal'), 'closed');
 assert.ok(q('[data-b-step="3"]').disabled, 'later steps wait');
-await pickGame(d, '#ad-builder', w.Event, gameA2.id);
+await pickGame(d, '#ad-builder', w.Event, gameA2.ref);
 assert.ok(q('.bd-sp.bd-now [data-b-step="2"]'), 'a game chosen: on to step 2');
 q('[data-b-absent="' + absentA + '"]').click(); await wait(80);
 assert.ok(q('[data-b-absent="' + absentA + '"]').classList.contains('bd-on'), 'tap a player: absent');
@@ -638,8 +673,17 @@ const calA = [...d.querySelectorAll('.ld-team')].find((x) => x.querySelector('[d
 assert.equal(d.querySelectorAll('.ld-game').length * 2, d.querySelectorAll('.ld-team').length, 'each game: both teams');
 assert.ok(!d.querySelector('.ld-list li:not(.ld-sub)') && d.querySelector('.ld-none'), 'only the replacements, not the whole roster ("Aucun remplacement" otherwise)');
 assert.ok(calA && calA.querySelector('.ld-sub.ld-approved') && calA.querySelector('.ld-abs s'), 'the actual lineup: the replacement in (approved), the absent player struck through');
-calA.querySelector('[data-sub-game]').click(); await wait(250);
-assert.ok(w.location.hash === '#subs/new/' + teamA + '/' + gameA2.id && q('.bd-sp.bd-now [data-b-step="2"]'), 'Remplacement… from the calendar: the builder with the game chosen (step 2)');
+assert.ok(!d.getElementById('main').classList.contains('ad-editing') && d.querySelector('[data-game-edit="' + gameA2.ref + '"]') && d.querySelector('[data-game-new]') && d.querySelector('[data-games-import]'), 'Calendrier: the schedule tools are there, hidden until Modifier');
+d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
+d.querySelector('[data-game-edit="' + gameA2.ref + '"]').click(); await wait(30);
+{
+  const gf = d.querySelector('#modal [data-game-f="' + gameA2.ref + '"]');
+  assert.ok(gf && gf.elements.date.value === gameA2.date && gf.elements.away.value && gf.elements.home.value && gf.elements.away.value !== gf.elements.home.value, 'edit a game: the form holds the game');
+  d.querySelector('#modal [data-act="close-modal"]').click(); await wait(30);
+}
+d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
+d.querySelector('[data-sub-game^="' + teamA + ':"]').click(); await wait(250);
+assert.ok(w.location.hash === '#subs/new/' + teamA + '/' + gameA2.ref && q('.bd-sp.bd-now [data-b-step="2"]'), 'Remplacement… from the calendar: the builder with the game chosen (step 2)');
 assert.ok(/Calendrier/.test(d.querySelector('.ad-back').textContent), 'back to the calendar');
 
 w.location.hash = '#teams'; await wait(150);
@@ -799,7 +843,7 @@ cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
 assert.equal(cw.location.hash, '#remplacement', 'the builder is a page of its own');
 assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');
-await pickGame(cd, '#cp-builder', cw.Event, gameA.id);
+await pickGame(cd, '#cp-builder', cw.Event, gameA.ref);
 cq('[data-b-absent="' + absentA + '"]').click(); await wait(80);
 cq('.bd-nav [data-b-step="3"]').click(); await wait(60);
 const csq = cq('[data-b-q="' + absentA + '"]'); csq.value = (await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub2).first('name'));

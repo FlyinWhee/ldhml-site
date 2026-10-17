@@ -1,4 +1,4 @@
-// Seed the LOCAL tools database from the stats data, for tests: the current season, its teams, the people,
+// Seed the LOCAL tools database from the stats data, for tests: the current season, its teams (with logos), the schedule, the people,
 // the player list of each section, and each player on their main team (most games) at their main position.
 // No salaries, no birth dates (the league file will bring them). Safe to run again: existing rows stay.
 //   node tools/scripts/seed-local.mjs          (after npm run build; local database only, never --remote)
@@ -22,7 +22,13 @@ export function seedSql(data, reg, now = Math.floor(Date.now() / 1000)) {
   out.push(`INSERT INTO seasons (key, name, nbhpa_season_id, status, created_at) SELECT ${sq(seasonKey(data.seasonName))}, ${sq(data.seasonName)}, ${data.seasonId}, 'active', ${now}
     WHERE NOT EXISTS (SELECT 1 FROM seasons WHERE nbhpa_season_id = ${data.seasonId}) AND NOT EXISTS (SELECT 1 FROM seasons WHERE key = ${sq(seasonKey(data.seasonName))});`);
   for (const l of data.leagues) for (const t of l.teams)
-    out.push(`INSERT OR IGNORE INTO teams (season_id, league, name, abb, nbhpa_team_id, created_at) VALUES (${S}, ${sq(l.slug)}, ${sq(t.name)}, ${sq(t.abb)}, ${sq(t.id)}, ${now});`);
+    out.push(`INSERT OR IGNORE INTO teams (season_id, league, name, abb, nbhpa_team_id, logo, created_at) VALUES (${S}, ${sq(l.slug)}, ${sq(t.name)}, ${sq(t.abb)}, ${sq(t.id)}, ${sq(t.logo || null)}, ${now});`);
+  // the schedule (as the admin "Importer le calendrier NBHPA" does; a game already there stays as it is)
+  const T = (slug, nb) => `(SELECT id FROM teams WHERE season_id = ${S} AND league = ${sq(slug)} AND nbhpa_team_id = ${sq(nb)})`;
+  for (const l of data.leagues) for (const g of l.games || [])
+    out.push(`INSERT OR IGNORE INTO games (season_id, league, date, time, venue, court, away_team, home_team, cancelled, nbhpa_game_id, created_at)
+      SELECT ${S}, ${sq(l.slug)}, ${sq(g.date)}, ${sq(g.time || null)}, ${sq(g.venue || null)}, ${sq(g.court || null)}, ${T(l.slug, g.away)}, ${T(l.slug, g.home)}, ${g.cancelled ? 1 : 0}, ${sq(g.id)}, ${now}
+      WHERE ${T(l.slug, g.away)} IS NOT NULL AND ${T(l.slug, g.home)} IS NOT NULL;`);
   const sectionOf = Object.fromEntries(data.leagues.map((l) => [l.slug, l.section]));
   for (const p of data.people) {
     out.push(`INSERT OR IGNORE INTO people (site_id, nid, name, sex, created_at) VALUES (${sq(p.id)}, ${sq(nid.get(p.id) || null)}, ${sq(p.name)}, ${sq(p.sex === 'm' || p.sex === 'f' ? p.sex : null)}, ${now});`);

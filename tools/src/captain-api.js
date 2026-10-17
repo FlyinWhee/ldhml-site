@@ -17,7 +17,7 @@ async function seasonData(env, url) {
 }
 
 /** The captain's teams: open access, seasons not archived, newest season first. */
-const myTeams = (env, cap) => env.DB.prepare(`SELECT t.id, t.season_id, t.league, t.name, t.abb, t.nbhpa_team_id, s.name AS season_name, s.status AS season_status
+const myTeams = (env, cap) => env.DB.prepare(`SELECT t.id, t.season_id, t.league, t.name, t.abb, t.logo, t.nbhpa_team_id, s.name AS season_name, s.status AS season_status
   FROM captain_access a JOIN teams t ON t.id = a.team_ref JOIN seasons s ON s.id = t.season_id
   LEFT JOIN season_leagues sl ON sl.season_id = t.season_id AND sl.league = t.league
   WHERE a.captain_id = ? AND a.revoked_at IS NULL AND s.status <> 'archived' AND COALESCE(sl.enabled, 1) = 1 ORDER BY s.created_at DESC, s.id DESC, t.league, t.name COLLATE NOCASE`).bind(cap.id).all().then((r) => r.results);

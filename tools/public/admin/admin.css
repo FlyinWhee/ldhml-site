@@ -237,3 +237,5 @@ a.ad-kpi:hover { border-color: var(--ball); }
 @media (max-width: 600px) {
   .ad-players tr { padding: 10px 12px; }
 }
+.ld-gacts { margin-left: auto; display: inline-flex; gap: 10px; }
+.ld-gh { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }

@@ -123,6 +123,13 @@
       noLive: 'Aucune saison en cours. Choisissez-en une dans Configuration (Modifier, Statut : En cours).', liveHint: 'Une seule saison est en cours : c’est la référence des outils (capitaines, accueil) et du site public. Une saison archivée est en lecture seule.',
       leagueOn: 'Active cette saison', leagueOffNote: 'Ligue désactivée pour cette saison : elle n’apparaît plus dans les outils pour cette saison, et ne prend plus de remplacements. Ses données restent.',
       e_league_off: 'Cette ligue est désactivée pour cette saison.', e_season_league: 'Réglage invalide.',
+      gameNew: 'Ajouter un match', gameEdit: 'Modifier le match', importGames: 'Importer le calendrier NBHPA', away: 'Visiteurs', home: 'Receveurs', venue: 'Lieu', court: 'Surface',
+      date: 'Date', time: 'Heure', gameCancelled: 'Match annulé (il disparaît du calendrier)', confirmDeleteGame: 'Supprimer ce match ?',
+      gameNewNote: 'Le calendrier des outils est le leur : un match ajouté ici existe même sans NBHPA.', gameEditNote: 'Un match modifié ici ne sera plus changé par l’import NBHPA.',
+      calEmpty: 'Aucun match au calendrier pour cette ligue. Importez le calendrier NBHPA, ou ajoutez des matchs (✎ Modifier).',
+      gamesImported: 'Calendrier importé : {a} nouveaux matchs, {u} changements ({k} modifiés à la main, laissés tels quels).',
+      todoNoGames: 'Aucun match au calendrier.', todoNbhpa: 'Calendrier NBHPA : {a} nouveaux matchs, {u} changements à importer.',
+      e_game: 'Match invalide (date, et deux équipes différentes de la ligue).', e_no_season_data: 'Le calendrier NBHPA de cette saison n’est pas dans les données du site.', e_game_in_use: 'Des remplacements visent ce match : annulez-le plutôt.',
       tabMore: 'Plus', langShort: 'EN', filters: 'Filtres',
       tabHome: 'Accueil', homeTitle: 'Tableau de bord', kToValidate: 'À valider', kNextNight: 'Prochaine soirée', kNoCaptain: 'Équipes sans capitaine', kMissing: 'Données à compléter',
       kOfTeams: 'sur {n} équipes', kOnFile: '{n} remplacement(s) déclaré(s)', kMissSub: 'joueurs sans salaire · {b} sans naissance · {d} sans no NBHPA', kNothing: 'rien à valider', kAllComplete: 'tout est complet',
@@ -163,6 +170,13 @@
       noLive: 'No current season. Choose one in Setup (Edit, Status: Active).', liveHint: 'One season is current: it is the reference for the tools (captains, home) and the public site. An archived season is read only.',
       leagueOn: 'Active this season', leagueOffNote: 'League switched off for this season: it no longer shows in the tools for this season and takes no replacement. Its data stays.',
       e_league_off: 'This league is switched off for this season.', e_season_league: 'Invalid setting.',
+      gameNew: 'Add a game', gameEdit: 'Edit the game', importGames: 'Import the NBHPA schedule', away: 'Visitors', home: 'Home', venue: 'Venue', court: 'Court',
+      date: 'Date', time: 'Time', gameCancelled: 'Game cancelled (it leaves the schedule)', confirmDeleteGame: 'Delete this game?',
+      gameNewNote: 'The tools have their own schedule: a game added here exists even without NBHPA.', gameEditNote: 'A game changed here is no longer changed by the NBHPA import.',
+      calEmpty: 'No game in the schedule for this league. Import the NBHPA schedule, or add games (✎ Edit).',
+      gamesImported: 'Schedule imported: {a} new games, {u} changes ({k} changed by hand, left as they are).',
+      todoNoGames: 'No game in the schedule.', todoNbhpa: 'NBHPA schedule: {a} new games, {u} changes to import.',
+      e_game: 'Invalid game (a date, and two different teams of the league).', e_no_season_data: 'The NBHPA schedule of this season is not in the site data.', e_game_in_use: 'Replacements point to this game: cancel it instead.',
       tabMore: 'More', langShort: 'FR', filters: 'Filters',
       tabHome: 'Home', homeTitle: 'Dashboard', kToValidate: 'To validate', kNextNight: 'Next game night', kNoCaptain: 'Teams without a captain', kMissing: 'Data to complete',
       kOfTeams: 'of {n} teams', kOnFile: '{n} replacement(s) declared', kMissSub: 'players without a salary · {b} without birth date · {d} without NBHPA no.', kNothing: 'nothing to validate', kAllComplete: 'everything is complete',
@@ -241,7 +255,7 @@
   function teamHead(tm) {
     var l = leagueOf(tm.league) || { slug: tm.league, teams: [] };
     var dataTeam = (l.teams || []).filter(function (x) { return x.id === tm.nbhpa_team_id; })[0] || {};
-    return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: dataTeam.logo }, tm.league, 'sm') +
+    return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo || dataTeam.logo }, tm.league, 'sm') +
       (tm.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(leagueHome(l) + '#team-' + tm.nbhpa_team_id) + '">' + esc(tm.name) + '</a>' : '<b>' + esc(tm.name) + '</b>') + '</span>';
   }
 
@@ -343,8 +357,7 @@
     var num = function (v) { return v === '' || v == null || isNaN(Number(String(v).replace(',', '.'))) ? null : Number(String(v).replace(',', '.')); };
     var smin = num(f.smin), smax = num(f.smax);
     /* Position: a goalie on a roster of this section, or a goalie this season in the stats (any league of the section). */
-    var dataPos = {}; (S.data ? S.data.people : []).forEach(function (x) { dataPos[x.id] = lgs.map(function (l) { return (x.pos || {})[l.slug] || ''; }).join(''); });
-    var plays = function (p, k) { return p.rosters.some(function (r) { return r.pos === k; }) || (p.site_id && (dataPos[p.site_id] || '').indexOf(k) >= 0); };
+    var plays = function (p, k) { return p.rosters.some(function (r) { return r.pos === k; }); };   // the rosters say who is a goalie
     var isG = function (p) { return plays(p, 'g'); }, isS = function (p) { return plays(p, 's') || !isG(p); };
     /* The salary the range filters: G$ for goalies, J$ for skaters; with both, each person's salary at their own position. */
     var salOf = function (p) { return f.pos === 'g' ? p.salary_g : f.pos === 's' ? p.salary_s : isG(p) && !plays(p, 's') ? p.salary_g : p.salary_s; };
@@ -509,13 +522,11 @@
     var pending = S.subs.filter(function (q) { return q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
     var byLg = {}; pending.forEach(function (q) { byLg[q.league] = (byLg[q.league] || 0) + 1; });
     var pendSub = Object.keys(byLg).map(function (slug) { var l = leagueOf(slug); return l ? leagueOnly(l, false) + ' <b>' + byLg[slug] + '</b>' : ''; }).join(' ') || esc(t('kNothing'));
-    // the next game night of each league (the schedule is the stats snapshot of this season)
-    var inData = s.nbhpa_season_id === S.data.seasonId;
-    var nights = inData ? S.data.leagues.filter(function (l) { return !leagueOff(l.slug); }).map(function (l) {
-      var gs = (l.games || []).filter(function (g) { return !g.cancelled && g.date >= today; }), date = gs.length ? gs.map(function (g) { return g.date; }).sort()[0] : null;
-      var subs = date ? S.subs.filter(function (q) { return q.league === l.slug && q.game_date === date && open(q); }) : [];
-      return { l: l, date: date, games: gs.filter(function (g) { return g.date === date; }).length, v: subs.filter(function (q) { return q.status === 'approved'; }).length, p: subs.filter(function (q) { return q.status === 'pending'; }).length };
-    }).filter(function (n) { return n.date; }).sort(function (a, b) { return a.date.localeCompare(b.date); }) : [];
+    // the next game night of each league (the tools' own schedule)
+    var nights = (d.nights || []).filter(function (n) { return leagueOf(n.league) && !leagueOff(n.league); }).map(function (n) {
+      var subs = S.subs.filter(function (q) { return q.league === n.league && q.game_date === n.date && open(q); });
+      return { l: leagueOf(n.league), date: n.date, games: n.games, v: subs.filter(function (q) { return q.status === 'approved'; }).length, p: subs.filter(function (q) { return q.status === 'pending'; }).length };
+    });
     var first = nights[0], firstDay = first ? nights.filter(function (n) { return n.date === first.date; }) : [];
     var nextV = first ? esc(window.LDBuilder.day(ctx, first.date)) : '—';
     var nextS = first ? firstDay.map(function (n) { return leagueOnly(n.l, false); }).join(' ') + ' · ' + esc(t('kOnFile', { n: firstDay.reduce(function (a, n) { return a + n.v + n.p; }, 0) })) : esc(t('noNight'));
@@ -547,6 +558,8 @@
       var link = function (kind, text) { return '<button type="button" class="lnk ad-linkbtn" data-home-miss="' + esc(m.section) + ':' + kind + '">' + esc(text) + '</button>'; };
       todo.push('<li><b>' + esc(nameOf(sec) || m.section) + ' :</b> ' + link('sal', m.no_salary + ' ' + t('fNoSal').toLowerCase()) + ' · ' + link('birth', m.no_birth + ' ' + t('fNoBirth').toLowerCase()) + ' · ' + link('nid', m.no_nid + ' ' + t('fNoNid').toLowerCase()) + '</li>');
     });
+    if (!d.games) todo.push('<li><b>' + esc(t('todoNoGames')) + '</b> <a class="lnk" href="#cal">' + esc(t('tabCal')) + '</a></li>');
+    if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push('<li><b>' + esc(t('todoNbhpa', { a: d.nbhpa.add, u: d.nbhpa.update })) + '</b> <button type="button" class="ad-btn ad-btn-sm ad-ar" data-games-import>' + esc(t('importGames')) + '</button></li>');
     if (d.captainsNeverIn) todo.push('<li><button type="button" class="lnk ad-linkbtn" data-home-accounts>' + esc(t('todoNever', { n: d.captainsNeverIn })) + '</button></li>');
     var todoP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2>' + (todo.length ? '<ul class="ad-todo">' + todo.join('') + '</ul>' : '<p class="note">' + t('todoNone') + '</p>') + '</section>';
     return head + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + nightsP + todoP + '</div></div>' +
@@ -554,16 +567,18 @@
   }
   /* ---------- Calendar: the game nights of the league, each game with both teams' actual lineups ---------- */
   function viewCal() {
-    var head = '<h1 class="ph">' + t('tabCal') + '</h1><p class="lede">' + t('calLede') + '</p>' + scopeBar('league');
+    var head = '<h1 class="ph">' + t('tabCal') + '</h1><p class="lede">' + t('calLede') + '</p>' + scopeBar('league', editToggle()) +
+      '<p class="ad-btns ad-ed"><button type="button" class="ad-btn ad-btn-sm" data-game-new>' + t('gameNew') + '</button><button type="button" class="ad-btn ad-btn-sm ad-ghost" data-games-import>' + t('importGames') + '</button></p>';
     var c = S.cal;
     if (!curSeason() || !leagueOf(S.league) || !c) return head;
-    if (c.noData) return head + '<p class="note">' + t('calNoData') + '</p>';
+    if (!c.dates.length) return head + '<p class="note">' + t('calEmpty') + '</p>';
     var ctx = builderCtx();
     var chips = '<div class="ld-dates" role="group" aria-label="' + esc(t('tabCal')) + '">' + c.dates.map(function (d) {
       return '<button type="button" data-cal-date="' + d + '" aria-pressed="' + (d === c.date) + '"' + (d < c.today ? ' class="ld-past"' : '') + '>' + esc(window.LDBuilder.day(ctx, d)) + '</button>'; }).join('') + '</div>';
+    var gameActs = function (g) { return '<span class="ad-acts ad-ed ld-gacts"><button type="button" class="lnk ad-linkbtn" data-game-edit="' + g.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-game-del="' + g.id + '">' + t('del') + '</button></span>'; };
     var act = function (lu, g) { return lu.team.id ? '<button type="button" class="lnk ad-linkbtn ad-ar" data-sub-game="' + lu.team.id + ':' + g.id + '">' + t('subForTeam') + '…</button>' : ''; };
     return head + chips + (c.date ? '<h2 class="ad-h3">' + esc(window.LDBuilder.day(ctx, c.date)) + '</h2>' : '') +
-      (c.games.length ? '<div class="ld-nights">' + c.games.map(function (item) { return window.LDBuilder.gameHtml(item, ctx, act); }).join('') + '</div>' : '<p class="note">' + t('calNone') + '</p>');
+      (c.games.length ? '<div class="ld-nights">' + c.games.map(function (item) { return window.LDBuilder.gameHtml(item, ctx, act, gameActs); }).join('') + '</div>' : '<p class="note">' + t('calNone') + '</p>');
   }
   function viewSubs() {
     if (S.sub) return viewSubBuild();
@@ -632,6 +647,19 @@
     if (m.kind === 'team-edit' && tm) return { title: t('editTeamTitle'), body: '<form class="ad-form ad-col" data-edit-team="' + tm.id + '">' + teamFields(tm) + footer() + '</form>' };
     var nl = leagueOf(m.league) || l;
     if (m.kind === 'team-new' && nl) return { title: t('newTeamTitle', { l: nl.name }), body: '<form class="ad-form ad-col" data-newteam="' + esc(nl.slug) + '">' + teamFields() + footer(t('create')) + '</form>' };
+    if (m.kind === 'game-new' || m.kind === 'game-edit') {
+      var lg2 = leagueOf(S.league), gm = m.kind === 'game-edit' && S.cal && S.cal.games.map(function (x) { return x.game; }).filter(function (x) { return x.id === m.id; })[0];
+      var it = gm && S.cal.games.filter(function (x) { return x.game.id === m.id; })[0];
+      var tms = S.teams.filter(function (x) { return x.league === S.league; });
+      var sel = function (name, cur) { return '<select class="ctl" name="' + name + '" required><option value="">' + t('chooseTeam') + '</option>' + tms.map(function (x) { return '<option value="' + x.id + '"' + (x.id === cur ? ' selected' : '') + '>' + esc(x.name + ' (' + x.abb + ')') + '</option>'; }).join('') + '</select>'; };
+      var cur = gm ? { date: gm.date, time: gm.time, venue: gm.venue, court: gm.court, away: it.teams[0].team.id, home: it.teams[1].team.id } : { date: (S.cal && S.cal.date) || '', time: '', venue: '', court: '' };
+      return { title: (gm ? t('gameEdit') : t('gameNew')) + (lg2 ? ' · ' + lg2.short : ''), body: '<form class="ad-form ad-col" data-game-f="' + (gm ? gm.id : '') + '">' +
+        '<span class="ad-pair"><label>' + t('date') + '<input class="ctl" type="date" name="date" required value="' + esc(cur.date) + '"></label><label>' + t('time') + '<input class="ctl" type="time" name="time" value="' + esc(cur.time || '') + '"></label></span>' +
+        '<label>' + t('away') + sel('away', cur.away) + '</label><label>' + t('home') + sel('home', cur.home) + '</label>' +
+        '<span class="ad-pair"><label>' + t('venue') + '<input class="ctl" name="venue" maxlength="80" value="' + esc(cur.venue || '') + '"></label><label>' + t('court') + '<input class="ctl" name="court" maxlength="10" value="' + esc(cur.court || '') + '"></label></span>' +
+        (gm ? '<label class="ad-switch"><input type="checkbox" name="cancelled"> ' + t('gameCancelled') + '</label>' : '') +
+        '<p class="note">' + t(gm ? 'gameEditNote' : 'gameNewNote') + '</p>' + footer(gm ? t('save') : t('create')) + '</form>' };
+    }
     if (m.kind === 'season-new') {
       var d = S.data || {}, known = S.seasons.some(function (x) { return x.nbhpa_season_id === d.seasonId; });
       return { title: t('newSeason'), body: '<form id="f-season" class="ad-form ad-col">' +
@@ -697,7 +725,7 @@
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : (views[S.tab] || viewHome)());
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
-    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && (S.tab === 'teams' || S.tab === 'players')));
+    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && (S.tab === 'teams' || S.tab === 'players' || S.tab === 'cal')));
     $('#main').classList.toggle('ad-archived', archived);
     if (archived && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ad-msg ad-arch" role="status">' + esc(t('archivedBanner')) + '</p>');
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
@@ -725,7 +753,7 @@
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && S.tab === 'home') more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
       if (S.seasonId && (S.tab === 'subs' || S.tab === 'home')) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
-      if (S.seasonId && ['teams', 'setup', 'subs'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
+      if (S.seasonId && ['teams', 'setup', 'subs', 'cal'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
       if (S.tab === 'players') more.push(api('/people?all=1').then(function (r) { S.allPeople = r.data.people || []; }));
       return Promise.all(more);
@@ -764,6 +792,10 @@
     } else if (f.id === 'f-cap') {
       var m = /L\d{4,}/.exec(v('person'));
       api('/captains', 'POST', { name: v('name'), email: v('email'), person_id: m ? m[0] : null }).then(function (r) { done(r); });
+    } else if (f.hasAttribute('data-game-f')) {
+      var gid = f.getAttribute('data-game-f'), gb = { season_id: S.seasonId, league: S.league, date: v('date'), time: v('time') || null, venue: v('venue') || null, court: v('court') || null,
+        away_team: Number(v('away')), home_team: Number(v('home')), cancelled: !!(f.elements.cancelled && f.elements.cancelled.checked) };
+      api(gid ? '/games/' + gid : '/games', 'POST', gb).then(function (r) { if (r.ok) S.calDate = gb.date; done(r); });
     } else if (f.hasAttribute('data-edit-season-f')) {
       var sid = Number(f.getAttribute('data-edit-season-f')), live = S.seasons.filter(function (x) { return x.status === 'active' && x.id !== sid; })[0];
       if (v('status') === 'active' && live && !window.confirm(t('confirmActivate', { n: v('name'), o: live.name }))) return;
@@ -832,7 +864,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season]');
+      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -870,6 +902,10 @@
     if (b.hasAttribute('data-edit-team-btn')) { openModal({ kind: 'team-edit', id: num('data-edit-team-btn') }); return; }
     if (b.hasAttribute('data-team-new')) { openModal({ kind: 'team-new', league: b.getAttribute('data-team-new') }); return; }
     if (act === 'season-new') { openModal({ kind: 'season-new' }); return; }
+    if (b.hasAttribute('data-games-import')) { api('/games/import', 'POST', { season_id: S.seasonId }).then(function (r) { done(r, r.ok ? t('gamesImported', { a: r.data.added, u: r.data.updated, k: r.data.kept }) : null); }); return; }
+    if (b.hasAttribute('data-game-new')) { openModal({ kind: 'game-new' }); return; }
+    if (b.hasAttribute('data-game-edit')) { openModal({ kind: 'game-edit', id: num('data-game-edit') }); return; }
+    if (b.hasAttribute('data-game-del')) { if (window.confirm(t('confirmDeleteGame'))) api('/games/' + b.getAttribute('data-game-del') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-edit-season')) { openModal({ kind: 'season-edit', id: num('data-edit-season') }); return; }
     /* replacements: the builder in a modal (from a team card: that team; from the tab: a team of the league to choose) */
     if (b.hasAttribute('data-sub-team')) { S.subFrom = 'teams'; location.hash = '#subs/new/' + b.getAttribute('data-sub-team'); return; }

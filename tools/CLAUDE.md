@@ -9,6 +9,7 @@ src/roster-api.js  /api/admin/...: people, league player lists, our teams, roste
 src/captain-api.js /api/captain/...: captain sign-in, my teams, then the replacement routes for those teams only
 src/replacements.js replacement requests and their checks, shared by both areas (admin: any team; captain: their teams)
 src/lineups.js     the actual lineup of a game (roster - absents + replacements on file): admin calendar, captain games
+src/games.js       our schedule (games table): read helpers, the optional NBHPA import (never over a hand edit), admin edits
 src/guest.js       a replacement player not on the list ("joueur hors-ligue")
 src/auth.js        passwordless sign-in (emailed code), sessions, cookies; admin and captain kinds kept apart
 src/email.js       sends the code: "console" (local only) or "resend"
@@ -26,7 +27,7 @@ wrangler.jsonc     Worker config. No secrets in it.
 1. **No personal data in git.** Admin and captain emails, sign-in data and sessions live only in D1. Never commit `.dev.vars`, exports or dumps of the database.
 2. **Every feature table has a `season_id`.** Access is per season. A new feature that is not per season needs a written reason in `../docs/decisions.md`.
 3. **Every change made by a person writes an `audit` row** (who, what, target, detail).
-4. **The Worker never fetches NBHPA** (Cloudflare servers are blocked). It reads our snapshot (`/data/season.json`).
+4. **The tools work without NBHPA** (owner, 2026-10-17): every feature reads the tools database only (schedule, teams, logos, rosters). NBHPA data comes in through imports (optional; from the build snapshot now, an API later) and a missing import never breaks a feature. **The Worker never fetches NBHPA** (Cloudflare servers are blocked). It reads our snapshot (`/data/season.json`).
 5. **Admin and captain stay apart:** separate tables, cookies (`__Host-ldhml_admin`, `__Host-ldhml_captain`), session kinds and URL areas (`/admin/`, `/captain/`).
 6. Sign-in security (do not weaken without a decision): same answer for any email; codes 6 digits, 10 min, single use, 5 tries; 5 codes per email and 20 per IP per hour; only HMAC hashes stored (CODE_PEPPER secret); cookie `HttpOnly; Secure; SameSite=Strict`; writes need our own `Origin`.
 7. The pages follow `../docs/presentation.md` (league badges, team chips, links to the stats site) and are fr/en (`STR` in `public/admin/admin.js`).
