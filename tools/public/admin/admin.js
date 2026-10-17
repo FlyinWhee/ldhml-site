@@ -114,6 +114,7 @@
       setupLink: 'Les équipes se créent et se modifient dans',
       colS: 'J$', colG: 'G$', colSFull: 'Salaire joueur (millions)', colGFull: 'Salaire gardien (millions)', fAll: 'Tous', fAllData: 'Toutes les données',
       fNoSal: 'Sans salaire', fNoBirth: 'Sans naissance', fNoNid: 'Sans no NBHPA', from: 'de', to: 'à',
+      fAllPos: 'Toutes positions', fSkaters: 'Joueurs', fGoalies: 'Gardiens', colPos: 'Salaire', colPosFull: 'Salaire à sa position (G$ pour un gardien, J$ sinon), en millions',
       colNid: 'NBHPA', colNidFull: 'No de joueur NBHPA (obligatoire à partir de 2027)', nidField: 'No NBHPA (facultatif)',
       nidHint: 'Le no de joueur NBHPA deviendra obligatoire en 2027 (compte NBHPA requis pour tous). Il lie la personne aux statistiques.',
       tabSubs: 'Remplacements', subsLede: 'Les demandes de remplacement de la ligue choisie, vérifiées avant d’arriver ici. Vous pouvez aussi faire une demande pour un capitaine.',
@@ -138,6 +139,7 @@
       setupLink: 'Teams are created and edited in',
       colS: 'S$', colG: 'G$', colSFull: 'Skater salary (millions)', colGFull: 'Goalie salary (millions)', fAll: 'All', fAllData: 'All data',
       fNoSal: 'No salary', fNoBirth: 'No birth date', fNoNid: 'No NBHPA no.', from: 'from', to: 'to',
+      fAllPos: 'All positions', fSkaters: 'Skaters', fGoalies: 'Goalies', colPos: 'Salary', colPosFull: 'Salary at their position (G$ for a goalie, S$ otherwise), in millions',
       colNid: 'NBHPA', colNidFull: 'NBHPA player no. (required from 2027)', nidField: 'NBHPA no. (optional)',
       nidHint: 'The NBHPA player no. becomes required in 2027 (an NBHPA account for everyone). It links the person to the stats.',
       tabSubs: 'Replacements', subsLede: 'The replacement requests of the chosen league, checked before they get here. You can also make a request for a captain.',
@@ -157,7 +159,7 @@
   /* ---------- state ----------
    * Scope: season, section, league. Every working tab shows only that context. Section and league are remembered in this browser. */
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'teams', seasons: [], captains: [], audit: [], data: null, seasonId: null,
-    section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'name', d: 1 }, modal: null, accountsOpen: false,
+    section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'name', d: 1 }, modal: null, accountsOpen: false,
     subs: [], pending: {}, sf: 'pending', sub: null, subFrom: 'subs', flash: null };
   var TABS = ['teams', 'subs', 'players', 'setup', 'audit'];
   var OLD_TABS = { seasons: 'setup', rules: 'setup', captains: 'teams' };   // old links still land somewhere sensible
@@ -297,10 +299,17 @@
     var inLg = function (p) { return p.rosters.some(function (r) { return r.league === S.league; }); };
     var num = function (v) { return v === '' || v == null || isNaN(Number(String(v).replace(',', '.'))) ? null : Number(String(v).replace(',', '.')); };
     var smin = num(f.smin), smax = num(f.smax);
+    /* Position: a goalie on a roster of this section, or a goalie this season in the stats (any league of the section). */
+    var dataPos = {}; (S.data ? S.data.people : []).forEach(function (x) { dataPos[x.id] = lgs.map(function (l) { return (x.pos || {})[l.slug] || ''; }).join(''); });
+    var plays = function (p, k) { return p.rosters.some(function (r) { return r.pos === k; }) || (p.site_id && (dataPos[p.site_id] || '').indexOf(k) >= 0); };
+    var isG = function (p) { return plays(p, 'g'); }, isS = function (p) { return plays(p, 's') || !isG(p); };
+    /* The salary the range filters: G$ for goalies, J$ for skaters; with both, each person's salary at their own position. */
+    var salOf = function (p) { return f.pos === 'g' ? p.salary_g : f.pos === 's' ? p.salary_s : isG(p) && !plays(p, 's') ? p.salary_g : p.salary_s; };
     var list = S.players.filter(function (p) {
       return (!q || p.name.toLowerCase().indexOf(q) >= 0) && (S.plf === 'in' ? inLg(p) : S.plf === 'free' ? !inLg(p) : true) &&
         (!f.sex || p.sex === f.sex) && (f.miss !== 'sal' || p.salary_s == null || p.salary_g == null) && (f.miss !== 'birth' || !p.birth_year) && (f.miss !== 'nid' || !p.nid) &&
-        (smin == null || (p.salary_s != null && p.salary_s >= smin)) && (smax == null || (p.salary_s != null && p.salary_s <= smax));
+        (f.pos !== 'g' || isG(p)) && (f.pos !== 's' || isS(p)) &&
+        (smin == null || (salOf(p) != null && salOf(p) >= smin)) && (smax == null || (salOf(p) != null && salOf(p) <= smax));
     });
     var key = SORTS[S.ps.k] || SORTS.name, d = S.ps.d;
     list.sort(function (a, b) {
@@ -314,10 +323,11 @@
     var filters = seg('data-plf', S.plf, [['', t('plAll')], ['in', t('plIn')], ['free', t('plFree')]]) + (S.plf && lgs.length > 1 ? '<div class="ad-lgpick">' + lgs.map(function (l) {
       return '<button type="button" class="ad-lgbtn" data-lg="' + esc(l.slug) + '" aria-pressed="' + (S.league === l.slug) + '" title="' + esc(l.name) + '">' + leagueOnly(l, false) + '</button>';
     }).join('') + '</div>' : (S.plf ? '<span class="note">' + esc(lgName) + '</span>' : ''));
-    var more = seg('data-pfsex', f.sex, [['', t('fAll')], ['m', t('sexM')], ['f', t('sexF')]]) +
+    var rl = f.pos === 'g' ? ['colG', 'colGFull'] : f.pos === 's' ? ['colS', 'colSFull'] : ['colPos', 'colPosFull'];
+    var more = seg('data-pfpos', f.pos, [['', t('fAllPos')], ['s', t('fSkaters')], ['g', t('fGoalies')]]) + seg('data-pfsex', f.sex, [['', t('fAll')], ['m', t('sexM')], ['f', t('sexF')]]) +
       seg('data-pfmiss', f.miss, [['', t('fAllData')], ['sal', t('fNoSal')], ['birth', t('fNoBirth')], ['nid', t('fNoNid')]]) +
-      '<span class="ad-range" title="' + esc(t('colSFull')) + '">' + esc(t('colS')) + ' <input id="ad-smin" class="ctl ad-xs" data-pf="smin" inputmode="decimal" value="' + esc(f.smin) + '" placeholder="' + esc(t('from')) + '" aria-label="' + esc(t('colSFull') + ' ' + t('from')) + '">' +
-      '–<input id="ad-smax" class="ctl ad-xs" data-pf="smax" inputmode="decimal" value="' + esc(f.smax) + '" placeholder="' + esc(t('to')) + '" aria-label="' + esc(t('colSFull') + ' ' + t('to')) + '"></span>';
+      '<span class="ad-range" title="' + esc(t(rl[1])) + '">' + esc(t(rl[0])) + ' <input id="ad-smin" class="ctl ad-xs" data-pf="smin" inputmode="decimal" value="' + esc(f.smin) + '" placeholder="' + esc(t('from')) + '" aria-label="' + esc(t(rl[1]) + ' ' + t('from')) + '">' +
+      '–<input id="ad-smax" class="ctl ad-xs" data-pf="smax" inputmode="decimal" value="' + esc(f.smax) + '" placeholder="' + esc(t('to')) + '" aria-label="' + esc(t(rl[1]) + ' ' + t('to')) + '"></span>';
     var rows = list.map(function (p) {
       return '<tr><td><b>' + personCell(p) + '</b></td><td class="num' + (p.nid ? '' : ' ad-missing') + '">' + esc(p.nid || '—') + '</td><td>' + esc(p.sex === 'm' ? t('sexM') : p.sex === 'f' ? t('sexF') : '—') + '</td><td class="num">' + esc(birthTxt(p)) + '</td>' +
         '<td class="num">' + esc(money(p.salary_s)) + '</td><td class="num">' + esc(money(p.salary_g)) + '</td><td><div class="lgbs">' + p.rosters.map(rosterBadge).join('') + '</div></td>' +
@@ -649,7 +659,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss]');
+      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -664,6 +674,7 @@
     if (b.hasAttribute('data-sf')) { S.sf = b.getAttribute('data-sf'); render(); return; }
     if (b.hasAttribute('data-psort')) { var pk = b.getAttribute('data-psort'); S.ps = S.ps.k === pk ? { k: pk, d: -S.ps.d } : { k: pk, d: pk === 's' || pk === 'g' ? -1 : 1 }; render(); return; }
     if (b.hasAttribute('data-pfsex')) { S.pf.sex = b.getAttribute('data-pfsex'); render(); return; }
+    if (b.hasAttribute('data-pfpos')) { S.pf.pos = b.getAttribute('data-pfpos'); render(); return; }
     if (b.hasAttribute('data-pfmiss')) { S.pf.miss = b.getAttribute('data-pfmiss'); render(); return; }
     /* modals */
     if (act === 'new-cap') { openModal({ kind: 'cap-new' }); return; }
