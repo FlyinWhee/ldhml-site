@@ -117,3 +117,11 @@ html.ad-modal-open, html.ad-modal-open body { overflow: hidden; }
 .ad-cnt { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ball); color: var(--on-ball); font: 700 12px/18px var(--f-text); text-align: center; }
 .ad-h3-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ad-h3-row .ad-btn { letter-spacing: .04em; }
+/* ---------- player list: sortable headers, compact salary columns, filters ---------- */
+.ad-sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; white-space: nowrap; }
+.ad-sort:hover, .ad-sort:focus-visible { color: var(--ink); }
+.ad-players th.num, .ad-players td.num { width: 1%; white-space: nowrap; }
+.ad-more { margin-top: 6px; }
+.ad-range { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.ad-xs { width: 4.5em; min-width: 0; padding-inline: 6px; }
+.ad-missing { color: var(--warn, #f0a500); }

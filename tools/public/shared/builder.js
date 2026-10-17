@@ -120,7 +120,7 @@
     Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); });
     return s;
   }
-  var money = function (v) { return v == null ? '—' : String(Math.round(v * 100) / 100); };
+  var money = function (v) { return v == null ? '—' : (Math.round(v * 100) / 100) + 'M'; };   // salaries are in millions
   var ICON = { ok: '✓', warn: '!', fail: '✗' };
 
   /* ---------- look: leagues, teams, people, games (like the stats site) ---------- */

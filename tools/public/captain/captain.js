@@ -51,7 +51,7 @@
   }
   var errMsg = function (r) { return t('e_' + ((r.data && r.data.error) || 'server')); };
   var say = function (kind, text) { S.msg = { kind: kind, text: text }; };
-  var money = function (v) { return v == null ? '—' : String(Math.round(v * 100) / 100); };
+  var money = function (v) { return v == null ? '—' : (Math.round(v * 100) / 100) + 'M'; };   // salaries are in millions
   var team = function () { return S.teams.filter(function (x) { return x.id === S.teamId; })[0]; };
   var leagueOf = function (slug) { return S.data && S.data.leagues.filter(function (l) { return l.slug === slug; })[0]; };
   var home = function (l) { return ((S.data && S.data.siteUrl) || '/') + l.sectionPath + '/' + l.path + '/'; };
