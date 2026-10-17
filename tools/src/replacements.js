@@ -7,6 +7,8 @@
 // No rule engine: each check is coded here as a league confirms it, and reads its numbers from league_rules.
 //   absent  the absent player is on the team's roster
 //   listed  the replacement is on the section's player list for the season
+//   guest   a player who is not on the list ("joueur hors-ligue": name and sex; age and NBHPA no. optional, given by
+//           hand): always fails (note required, the admins decide); sex and age checked from what was given; salary unknown
 //   sex     the replacement is the same sex as the absent player (every league, always: owner rule, not a setting)
 //   own     the replacement is not already on this team
 //   busy    the replacement does not play at the same time (their own team's game, or another request)
@@ -17,6 +19,7 @@
 // Each check: { k, s: 'ok' | 'warn' | 'fail', line?: index, d?: details }. Missing data gives 'warn' (to check), never a silent pass.
 // Captains never get birth dates: the age check says only whether the minimum is met.
 import { json, fail, readJson, cleanText, now } from './http.js';
+import { cleanGuest } from './guest.js';
 
 const MAX_LINES = 8;
 const OPEN = "('pending', 'approved')";
@@ -71,14 +74,22 @@ function resolveGame(data, season, team, b) {
   return { id: null, date, time, label: null };
 }
 
-/** Lines from a request body: [{ absent_id, sub_id, sub_pos }], each person once. null when not valid. */
+/** Lines from a request body: [{ absent_id, sub_id | guest: { name, age, nid }, sub_pos }], each person once.
+ *  null when not valid. */
 function readLines(b) {
   if (!Array.isArray(b.lines) || !b.lines.length || b.lines.length > MAX_LINES) return null;
-  const lines = b.lines.map((l) => ({ absent_id: intId(l && l.absent_id), sub_id: intId(l && l.sub_id), sub_pos: l && l.sub_pos }));
-  if (lines.some((l) => !l.absent_id || !l.sub_id || !['s', 'g'].includes(l.sub_pos))) return null;
-  const ids = lines.flatMap((l) => [l.absent_id, l.sub_id]);
+  const lines = b.lines.map((l) => {
+    const g = l && l.guest ? cleanGuest(l.guest) : null;
+    return { absent_id: intId(l && l.absent_id), sub_id: g ? null : intId(l && l.sub_id), guest: g, sub_pos: l && l.sub_pos, bad: !!(l && l.guest && !g) };
+  });
+  if (lines.some((l) => l.bad || !l.absent_id || (!l.sub_id && !l.guest) || !['s', 'g'].includes(l.sub_pos))) return null;
+  lines.forEach((l) => { delete l.bad; });
+  const ids = lines.flatMap((l) => [l.absent_id, l.sub_id].filter(Boolean));
   return new Set(ids).size === ids.length ? lines : null;
 }
+/** Lines as stored -> the evaluate() input. */
+const fromRows = (rows) => rows.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos,
+  guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null }));
 
 /** A team's active roster, with the salaries of its section's list (salary = at the roster position). */
 async function teamRoster(DB, team, section) {
@@ -119,11 +130,24 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   const onTeam = new Map(roster.map((r) => [r.person_id, r]));
   const listed = new Map((await DB.prepare(`SELECT p.id, p.name, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g, sp.id AS sp
     FROM people p LEFT JOIN section_players sp ON sp.person_id = p.id AND sp.season_id = ? AND sp.section = ?
-    WHERE p.id IN (${lines.map(() => '?').join(',')})`).bind(team.season_id, section, ...lines.map((l) => l.sub_id)).all()).results.map((p) => [p.id, p]));
+    WHERE p.id IN (${lines.map(() => '?').join(',')})`).bind(team.season_id, section, ...lines.map((l) => l.sub_id || 0)).all()).results.map((p) => [p.id, p]));
   const busy = await busyAt(DB, data, season, team, slot, exceptReq);
   const cap = rules && rules.salary_cap != null ? rules.salary_cap : null;
   const checks = [], out = [];
+  /* A guest: not on the list (fails), sex and age from what was given (age optional), salary unknown.
+   * Not on any roster, so no schedule or own-team check. */
+  function guestLine(l, i) {
+    const a = onTeam.get(l.absent_id);
+    out.push({ ...l, absent_pos: a ? a.pos : 's', absent_salary: a ? a.salary ?? null : null, sub_salary: null });
+    checks.push({ k: 'absent', s: a ? 'ok' : 'fail', line: i });
+    checks.push({ k: 'guest', s: 'fail', line: i, d: { nid: l.guest.nid || null } });
+    if (a) checks.push({ k: 'sex', s: a.sex ? (a.sex === l.guest.sex ? 'ok' : 'fail') : 'warn', line: i, d: { absent: a.sex || null, sub: l.guest.sex } });
+    const min = minAge(rules, l.guest.sex, l.sub_pos);
+    if (min !== undefined) checks.push(l.guest.age == null ? { k: 'age', s: 'warn', line: i, d: { min, why: 'no_age', pos: l.sub_pos } } : { k: 'age', s: l.guest.age >= min ? 'ok' : 'fail', line: i, d: { min, pos: l.sub_pos } });
+    if (cap != null) checks.push({ k: 'salary', s: 'warn', line: i, d: { missing: ['sub'].concat(a && a.salary == null ? ['absent'] : []) } });
+  }
   lines.forEach((l, i) => {
+    if (l.guest) { guestLine(l, i); return; }
     const a = onTeam.get(l.absent_id), p = listed.get(l.sub_id) || {};
     const absentPos = a ? a.pos : 's', subSalary = l.sub_pos === 'g' ? p.salary_g : p.salary_s;
     out.push({ ...l, absent_pos: absentPos, absent_salary: a ? a.salary ?? null : null, sub_salary: p.sp ? subSalary ?? null : null });
@@ -151,7 +175,7 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   const others = (await DB.prepare(`SELECT q.id, l.absent_id, l.sub_id FROM replacements q JOIN replacement_lines l ON l.replacement_id = q.id
     WHERE q.team_id = ? AND q.game_date = ? AND (q.game_time IS ? OR q.game_time IS NULL OR ? IS NULL) AND q.status IN ${OPEN} AND q.id <> ?`)
     .bind(team.id, slot.date, slot.time, slot.time, exceptReq || 0).all()).results;
-  const dupIds = [...new Set(others.filter((o) => lines.some((l) => l.absent_id === o.absent_id || l.sub_id === o.sub_id)).map((o) => o.id))];
+  const dupIds = [...new Set(others.filter((o) => lines.some((l) => l.absent_id === o.absent_id || (l.sub_id && l.sub_id === o.sub_id))).map((o) => o.id))];
   if (dupIds.length) checks.push({ k: 'dup', s: 'warn', d: { ids: dupIds } });
   const result = checks.some((c) => c.s === 'fail') ? 'fail' : checks.some((c) => c.s === 'warn') ? 'warn' : 'ok';
   return { result, checks, payroll, lines: out };
@@ -224,9 +248,9 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(team.season_id, team.league, team.id, slot.id, slot.date, slot.time, slot.label,
       approveNow ? 'approved' : 'pending', ev.result, JSON.stringify({ checks: ev.checks, payroll: ev.payroll }), note, t, actor.kind, actor.id, approveNow ? t : null, approveNow ? actor.id : null).run();
     const id = r.meta.last_row_id;
-    await DB.batch(ev.lines.map((l) => DB.prepare('INSERT INTO replacement_lines (replacement_id, absent_id, absent_pos, absent_salary, sub_id, sub_pos, sub_salary) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, l.absent_id, l.absent_pos, l.absent_salary, l.sub_id, l.sub_pos, l.sub_salary)));
-    await audit('replacement.create', 'replacement:' + id, { team: team.id, game: slot.id || slot.date, lines: lines.length, result: ev.result, status: approveNow ? 'approved' : 'pending' });
+    await DB.batch(ev.lines.map((l) => DB.prepare('INSERT INTO replacement_lines (replacement_id, absent_id, absent_pos, absent_salary, sub_id, sub_pos, sub_salary, guest_name, guest_sex, guest_age, guest_nid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, l.absent_id, l.absent_pos, l.absent_salary, l.sub_id, l.sub_pos, l.sub_salary, l.guest ? l.guest.name : null, l.guest ? l.guest.sex : null, l.guest ? l.guest.age : null, l.guest ? l.guest.nid : null)));
+    await audit('replacement.create', 'replacement:' + id, { team: team.id, game: slot.id || slot.date, lines: lines.length, guests: lines.filter((l) => l.guest).length, result: ev.result, status: approveNow ? 'approved' : 'pending' });
     return json({ ok: true, id, status: approveNow ? 'approved' : 'pending', result: ev.result }, 201);
   }
 
@@ -247,8 +271,8 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       LEFT JOIN admins a ON q.created_kind = 'admin' AND a.id = q.created_by
       LEFT JOIN admins d ON d.id = q.decided_by
       WHERE ${where} ORDER BY q.status = 'pending' DESC, q.game_date DESC, q.id DESC LIMIT 300`).bind(...args).all();
-    const { results: lines } = await DB.prepare(`SELECT l.*, pa.name AS absent_name, pa.site_id AS absent_site, ps.name AS sub_name, ps.site_id AS sub_site
-      FROM replacement_lines l JOIN people pa ON pa.id = l.absent_id JOIN people ps ON ps.id = l.sub_id
+    const { results: lines } = await DB.prepare(`SELECT l.*, pa.name AS absent_name, pa.site_id AS absent_site, COALESCE(ps.name, l.guest_name) AS sub_name, ps.site_id AS sub_site
+      FROM replacement_lines l JOIN people pa ON pa.id = l.absent_id LEFT JOIN people ps ON ps.id = l.sub_id
       WHERE l.replacement_id IN (SELECT q.id FROM replacements q WHERE ${where}) ORDER BY l.id`).bind(...args).all();
     const out = [];
     for (const r of reqs) {
@@ -257,7 +281,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       let live = null;
       if (r.status === 'pending' && ls.length) {
         const team = await DB.prepare('SELECT * FROM teams WHERE id = ?').bind(r.team_id).first();
-        live = await evaluate(DB, data, await seasonOf(r.season_id), team, { id: r.game_id, date: r.game_date, time: r.game_time }, ls.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos })), r.id);
+        live = await evaluate(DB, data, await seasonOf(r.season_id), team, { id: r.game_id, date: r.game_date, time: r.game_time }, fromRows(ls), r.id);
       }
       out.push({ id: r.id, season_id: r.season_id, league: r.league, team: { id: r.team_id, name: r.team_name, abb: r.abb, nbhpa_team_id: r.nbhpa_team_id },
         game_id: r.game_id, game_date: r.game_date, game_time: r.game_time, game_label: r.game_label, status: r.status,
@@ -265,7 +289,8 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
         note: r.note, created_at: r.created_at, created_kind: r.created_kind, created_name: r.created_name, decided_at: r.decided_at, decided_name: r.decided_name,
         decision_note: r.decision_note,
         lines: ls.map((l) => ({ absent_id: l.absent_id, absent_name: l.absent_name, absent_site: l.absent_site, absent_pos: l.absent_pos, absent_salary: l.absent_salary,
-          sub_id: l.sub_id, sub_name: l.sub_name, sub_site: l.sub_site, sub_pos: l.sub_pos, sub_salary: l.sub_salary })) });
+          sub_id: l.sub_id, sub_name: l.sub_name, sub_site: l.sub_site, sub_pos: l.sub_pos, sub_salary: l.sub_salary,
+          guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null })) });
     }
     return json({ replacements: out, today: today() });
   }
@@ -279,7 +304,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (!['approve', 'refuse'].includes(b.decision)) return fail(400, 'decision');
     const note = b.note ? cleanText(b.note, 1000) : null;
     if (b.note && !note) return fail(400, 'decision');
-    const ls = (await DB.prepare('SELECT absent_id, sub_id, sub_pos FROM replacement_lines WHERE replacement_id = ?').bind(r.id).all()).results;
+    const ls = fromRows((await DB.prepare('SELECT * FROM replacement_lines WHERE replacement_id = ?').bind(r.id).all()).results);
     const team = await DB.prepare('SELECT * FROM teams WHERE id = ?').bind(r.team_id).first();
     const ev = await evaluate(DB, data, await seasonOf(r.season_id), team, { id: r.game_id, date: r.game_date, time: r.game_time }, ls, r.id);
     const status = b.decision === 'approve' ? 'approved' : 'refused';

@@ -31,6 +31,7 @@
 .bd-gday { font: 600 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
 .bd-gtime { font: 600 18px/1 var(--f-display); color: var(--muted); }
 .bd-gopp { display: inline-flex; align-items: center; gap: 6px; }
+.bd-gcard, .bd-tile, .bd-cand { min-width: 0; overflow-wrap: anywhere; }
 .bd-other > summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 4px 0; }
 /* step 2: player tiles */
 .bd-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; }
@@ -120,3 +121,10 @@
 /* league rules: a link at the top, the text in a small window */
 .bd-topacts { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: flex-end; }
 .bd-rlist { display: grid; gap: 8px; padding-left: 20px; margin: 4px 0 8px; }
+/* "Joueur hors-ligue": a player not on the list */
+.bd-guest { border: 1px dashed var(--line); border-radius: 4px; padding: 8px 12px 10px; display: grid; gap: 10px; }
+.bd-guest legend { padding: 0 6px; font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.bd-gsex { display: flex; align-items: center; gap: 10px; }
+.bd-gl { font: 500 13px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.bd-gtag { display: inline-block; padding: 0 6px; border: 1px dashed var(--bad, #e57373); border-radius: 3px; font-size: 12px; color: var(--bad, #e57373); }
+.bd-guestbtn { font-size: 14px; }

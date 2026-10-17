@@ -274,6 +274,22 @@ assert.equal((await call('/api/admin/replacements/check', { method: 'POST', cook
 assert.equal((await call('/api/admin/replacements/check', { method: 'POST', cookie, body: { ...body(sub1), lines: [{ absent_id: absentA, sub_id: absentA, sub_pos: 's' }] } })).status, 400, 'each person once');
 assert.equal((await call('/api/admin/replacements/check', { method: 'POST', cookie, body: body(sub1, { game_id: gamesA.length ? '999999999' : '' }) })).data.error, 'game', 'a game of this team only');
 assert.equal(st(await chk(body(sub1, { game_id: undefined, game_date: '2026-12-01' })), 'busy'), undefined, 'a date without a time: no schedule check');
+// a player who is not on the list ("joueur hors-ligue"): never passes, note required; sex required, age and NBHPA no. optional
+const gb = (guest) => ({ team_id: teamA, game_id: gameA.id, lines: [{ absent_id: absentA, guest, sub_pos: 's' }] });
+let gc = await chk(gb({ name: 'Invité Test', sex: 'm', age: 45, nid: '987654' }));
+assert.deepEqual([gc.result, st(gc, 'guest'), st(gc, 'sex'), st(gc, 'age'), st(gc, 'salary'), st(gc, 'cap')], ['fail', 'fail', 'ok', 'ok', 'warn', 'warn'], 'a guest: not on the list (fails), sex and age from what was given, salary unknown');
+assert.equal(st(gc, 'busy'), undefined, 'no schedule check for a guest (no team)');
+assert.equal(st(await chk(gb({ name: 'Invité Test', sex: 'm' })), 'age'), 'warn', 'age not given: to check (only in a league with an age rule)');
+assert.equal(st(await chk(gb({ name: 'Invitée', sex: 'f', age: 50 })), 'sex'), 'fail', 'a guest of the other sex fails');
+assert.equal((await call('/api/admin/replacements/check', { method: 'POST', cookie, body: gb({ name: 'Sans Sexe', age: 45 }) })).status, 400, 'sex is required');
+assert.equal((await call('/api/admin/replacements/check', { method: 'POST', cookie, body: gb({ name: 'X', sex: 'm', nid: 'abc' }) })).status, 400, 'NBHPA no.: digits');
+assert.equal((await call('/api/admin/replacements', { method: 'POST', cookie, body: gb({ name: 'Invité Test', sex: 'm', age: 45 }) })).data.error, 'note_required');
+r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...gb({ name: 'Invité Test', sex: 'm', age: 45, nid: '987654' }), note: 'Personne d’autre de libre' } });
+assert.equal(r.status, 201); const rqG = r.data.id;
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM people WHERE name = 'Invité Test'").first('n'), 0, 'a guest is never added to people');
+const qG = (await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.find((x) => x.id === rqG);
+assert.deepEqual([qG.lines[0].sub_id, qG.lines[0].sub_name, qG.lines[0].guest], [null, 'Invité Test', { name: 'Invité Test', sex: 'm', age: 45, nid: '987654' }], 'the guest is on the line');
+assert.equal((await call('/api/admin/replacements/' + rqG + '/decide', { method: 'POST', cookie, body: { decision: 'refuse', note: 'Test' } })).data.status, 'refused', 'decided like any request (checks run again)');
 // admin: a failing request needs a note
 assert.equal((await call('/api/admin/replacements', { method: 'POST', cookie, body: body(sub2) })).data.error, 'note_required', 'a failing request needs a note');
 r = await call('/api/admin/replacements', { method: 'POST', cookie, body: body(sub2, { note: 'Le capitaine paie la différence' }) });
@@ -302,7 +318,7 @@ assert.equal(r.status, 201); assert.equal(r.data.status, 'pending', 'a captain c
 assert.equal((await call('/api/captain/replacements/' + rqB + '/decide', { method: 'POST', cookie: ccookie, body: { decision: 'approve' } })).status, 404, 'captains do not decide');
 assert.equal(st(await chk(body(sub3), ccookie, 'captain'), 'dup'), 'warn', 'another open request for this game names the same absent player');
 r = await call('/api/captain/replacements', { cookie: ccookie });
-assert.deepEqual(r.data.replacements.map((q) => q.id).sort(), [rqA, rqB].sort(), 'the captain sees every request of their team (also those made by the admins)');
+assert.deepEqual(r.data.replacements.map((q) => q.id).sort(), [rqG, rqA, rqB].sort(), 'the captain sees every request of their team (also those made by the admins)');
 assert.equal(r.data.replacements.find((q) => q.id === rqA).created_kind, 'admin');
 // admin: the queue, decisions
 assert.deepEqual((await call('/api/admin/replacements/pending?season=' + seasonId, { cookie })).data.counts, { retro: 2 });
@@ -517,6 +533,15 @@ assert.ok(q('.bd-cands').querySelectorAll('.bd-cand').length <= 6, 'a few sugges
 assert.ok(!q('[data-b-pick="' + absentA + ':' + sub3 + '"]'), 'the other sex is never offered');
 const sq3 = q('[data-b-q="' + absentA + '"]'); sq3.value = (await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub3).first('name')); sq3.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(40);
 assert.ok(!q('[data-b-pick="' + absentA + ':' + sub3 + '"]'), 'not even in the search');
+assert.ok(/hors-ligue/.test(q('.bd-line').textContent), 'no match: points to "Joueur hors-ligue"');
+q('[data-b-guest-open="' + absentA + '"]').click(); await wait(30);
+assert.ok(q('.bd-guest [data-b-gsex="' + absentA + ':m"][aria-pressed="true"]'), 'guest form: the sex of the absent player to start with');
+q('[data-b-guest-save="' + absentA + '"]').click(); await wait(30);
+assert.ok(q('.bd-guest .ad-msg.ad-err'), 'a name is required');
+const gname = q('[data-b-gf="' + absentA + ':name"]'); gname.value = 'Invité Page'; gname.dispatchEvent(new w.Event('input', { bubbles: true }));
+q('[data-b-guest-save="' + absentA + '"]').click(); await wait(150);
+assert.ok(q('.bd-line.bd-gset') && /Invité Page/.test(q('.bd-gset').textContent) && q('.bd-gset .bd-gtag'), 'the guest is the replacement, marked off the list');
+q('[data-b-unpick="' + absentA + '"]').click(); await wait(30);
 const sq2 = q('[data-b-q="' + absentA + '"]'); sq2.value = ''; sq2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(40);
 q('.bd-cand.bd-ok').click(); await wait(200);
 assert.ok(q('.bd-line.bd-set') && q('[data-b-unpick]'), 'chosen, can be changed');
