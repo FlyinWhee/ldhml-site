@@ -1,7 +1,7 @@
 /* LDHML captain area. Talks to /api/captain/... (tools/src/captain-api.js). Plain JavaScript, no framework, fr/en.
  * Straight to the point: after sign-in the captain lands on their team (most captains have one). A team switcher shows
  * only for a captain with several teams (the last one chosen is remembered in this browser). No sections, no setup.
- * The replacement builder (its own page: #demande) and the request cards are shared with the admin area (shared/builder.js). */
+ * The replacement builder (its own page: #remplacement) and the request cards are shared with the admin area (shared/builder.js). */
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -14,41 +14,41 @@
       title: 'Capitaine', signIn: 'Connexion capitaine', emailLabel: 'Votre adresse courriel', sendCode: 'Recevoir un code',
       codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.',
       codeLabel: 'Code à 6 chiffres', verify: 'Se connecter', otherEmail: 'Utiliser une autre adresse', devCode: 'Code (développement local) : {c}',
-      signOut: 'Déconnexion', lang: 'English', ask: 'Demander un remplacement', askTitle: 'Demande de remplacement', back: '← Mon équipe',
-      kNext: 'Prochain match', kReqs: 'Demandes en attente', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} en attente', kApprovedUp: '{n} approuvée(s) à venir',
-      kNoReq: 'Aucune demande ouverte', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
+      signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
+      kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
+      kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
-      nextTag: 'Prochain', myGames: 'Mes matchs et mes demandes', pastReqs: 'Matchs passés avec des demandes ({n})', noGames: 'Aucun match à venir pour votre équipe.',
-      offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Demande masquée.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
+      nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
+      offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
-      myReqs: 'Mes demandes', noReqs: 'Aucune demande pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
+      myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
       payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / plafond {c}', posS: 'Joueur', posG: 'Gardien',
       noTeams: 'Aucune équipe pour le moment. Un administrateur de la ligue doit vous donner l’accès à votre équipe.',
-      sent: 'Demande envoyée. Un administrateur va la traiter.', cancelReq: 'Annuler la demande', confirmCancel: 'Annuler cette demande ? Elle sera supprimée.', cancelled: 'Demande annulée et supprimée.',
-      older: 'Demandes passées ({n})', season: 'Saison {s}',
+      sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
+      older: 'Remplacements passés ({n})', season: 'Saison {s}',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
-      e_not_open: 'Cette demande n’est plus ouverte.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
-      foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi faire la demande pour vous.'
+      e_not_open: 'Ce remplacement n’est plus ouvert.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
+      foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi déclarer le remplacement pour vous.'
     },
     en: {
       title: 'Captain', signIn: 'Captain sign-in', emailLabel: 'Your email address', sendCode: 'Get a code',
       codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.',
       codeLabel: '6-digit code', verify: 'Sign in', otherEmail: 'Use another address', devCode: 'Code (local development): {c}',
-      signOut: 'Sign out', lang: 'Français', ask: 'Request a replacement', askTitle: 'Replacement request', back: '← My team',
-      kNext: 'Next game', kReqs: 'Pending requests', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} pending', kApprovedUp: '{n} approved, upcoming',
-      kNoReq: 'No open request', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
+      signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', askTitle: 'Declare a replacement', back: '← My team',
+      kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
+      kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
-      nextTag: 'Next', myGames: 'My games and requests', pastReqs: 'Past games with requests ({n})', noGames: 'No upcoming game for your team.',
-      offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Request hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
+      nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
+      offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
-      myReqs: 'My requests', noReqs: 'No request yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
+      myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
       payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / cap {c}', posS: 'Skater', posG: 'Goalie',
       noTeams: 'No team yet. A league admin must give you access to your team.',
-      sent: 'Request sent. An admin will handle it.', cancelReq: 'Cancel the request', confirmCancel: 'Cancel this request? It will be deleted.', cancelled: 'Request cancelled and deleted.',
-      older: 'Past requests ({n})', season: '{s} season',
+      sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
+      older: 'Past replacements ({n})', season: '{s} season',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
-      e_not_open: 'This request is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
-      foot: 'LDHML tools. Need help? Write to your league’s admins: they can also make the request for you.'
+      e_not_open: 'This replacement is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
+      foot: 'LDHML tools. Need help? Write to your league’s admins: they can also declare the replacement for you.'
     }
   };
   var t = function (k, v) { var s = STR[lang][k] != null ? STR[lang][k] : k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
@@ -180,7 +180,7 @@
       (rows ? '<table class="tbl ad-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       (tm.rules && tm.rules.notes ? '<p class="note">' + esc(tm.rules.notes) + '</p>' : '') + '</section>';
   }
-  /* The builder page (#demande[/<game id>]): the team, then the guided steps (a game chosen beforehand starts at step 2). */
+  /* The builder page (#remplacement[/<game id>]): the team, then the guided steps (a game chosen beforehand starts at step 2). */
   function viewAsk() {
     return '<p class="ad-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('askTitle') + '</h1><div class="bd-page" id="cp-builder"></div>';
   }
@@ -209,16 +209,16 @@
       return api('/lineups?team=' + S.teamId).then(function (r) { S.games = (r.ok && r.data.games) || []; });
     });
   }
-  /* #demande: the builder page for the current team; anything else: the team page. */
+  /* #remplacement: the builder page for the current team; anything else: the team page. */
   function route() {
-    var m = /^#demande(?:\/(\w+))?$/.exec(location.hash);
+    var m = /^#remplacement(?:\/(\w+))?$/.exec(location.hash);
     if (m && S.teamId) { var key = S.teamId + '/' + (m[1] || ''); if (!S.sub || S.sub.key !== key) { S.sub = window.LDBuilder.state({ area: 'captain', teamId: S.teamId, slot: m[1] || '' }); S.sub.key = key; } }
     else S.sub = null;
   }
   window.addEventListener('hashchange', function () {
     S.msg = S.flash; S.flash = null;
     if (!S.me) { render(); return; }
-    if (/^#demande/.test(location.hash)) { route(); render(); document.documentElement.scrollTop = 0; } else refresh();
+    if (/^#remplacement/.test(location.hash)) { route(); render(); document.documentElement.scrollTop = 0; } else refresh();
   });
   var refresh = function () { return load().then(render); };
   var pickTeam = function (id) { S.teamId = id; try { localStorage.setItem('ldhml-captain-team', String(id)); } catch (e) { /* ignore */ } };
@@ -253,7 +253,7 @@
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
     if (act === 'other-email') { S.step = 'email'; S.devCode = ''; S.msg = null; render(); return; }
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
-    if (act === 'ask') { S.msg = null; location.hash = '#demande'; return; }
+    if (act === 'ask') { S.msg = null; location.hash = '#remplacement'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
     if (b.hasAttribute('data-hide')) { api('/replacements/' + b.getAttribute('data-hide') + '/hide', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('hidden')); else say('err', errMsg(r)); refresh(); }); return; }
     if (b.hasAttribute('data-cancel')) {

@@ -734,7 +734,7 @@ assert.equal(cd.querySelectorAll('.bd-req').length, nReq - 1, 'Masquer: the refu
 
 cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
-assert.equal(cw.location.hash, '#demande', 'the request is a page of its own');
+assert.equal(cw.location.hash, '#remplacement', 'the builder is a page of its own');
 assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');
 await pickGame(cd, '#cp-builder', cw.Event, gameA.id);
 cq('[data-b-absent="' + absentA + '"]').click(); await wait(80);
