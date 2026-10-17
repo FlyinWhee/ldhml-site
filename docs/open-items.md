@@ -17,6 +17,9 @@ Roles: **admin** and **captain** only. Players get nothing directly; other roles
 - **Names to decide:** the non-draft section ("Équipes" for now) and the URL of the draft league (`/draft/ldhml/` for now). Both are one line in `leagues.json`.
 - **NBHPA permission** matters more before phase 2 goes live (the tools depend on their data).
 
+## Past seasons on the public site (owner, 2026-10-16: wanted "at some point")
+A player's performance in earlier seasons, the results of past years. Ready: our person ids stay the same across seasons (`registry/people.json`), and a season's stats are kept at the switch (`data/archive/<seasonId>/`, docs/operations.md). To decide: how far back (does NBHPA still serve the older seasons?), the URLs (for example `/archives/<season>/draft/retro/`), what a person page shows (one line per season: a career table), and whether past seasons also show tools data (salaries, replacements; public or not). Past seasons are frozen: built once, no live polling.
+
 ## Possible work
 - PWA "Install" button (Android hides "Add to Home screen"). Check offline behavior in a real browser.
 - Local clock countdown between polls (smooth game clock without more requests).
