@@ -35,13 +35,13 @@
       e_server: 'Erreur du serveur. Réessayez.', e_origin: 'Requête refusée.', e_net: 'Le serveur ne répond pas.',
       lang: 'English', foot: 'Outils LDHML. Les courriels restent dans la base de données des outils, jamais sur le site public.',
       tabPlayers: 'Joueurs', tabTeams: 'Équipes', tabRules: 'Règles', section: 'Section',
-      playersLede: 'La liste des joueurs de la ligue, par section et par saison. Une personne reste la même d’une saison à l’autre.',
+      playersLede: 'La liste des joueurs de la section pour la saison choisie : salaires, et équipes dans chaque ligue de la section. Une personne reste la même d’une saison à l’autre.',
       addPlayer: 'Ajouter un joueur…', addToList: 'Ajouter une personne existante à la liste', personField: 'Personne', salaryS: 'Salaire joueur (M)', salaryG: 'Salaire gardien (M)', add: 'Ajouter',
       newPerson: 'Nouvelle personne', sex: 'Sexe', sexM: 'H', sexF: 'F', birth: 'Naissance', month: 'Mois', year: 'Année',
       filterName: 'Filtrer par nom', nPlayers: '{n} joueurs', noPlayers: 'Aucun joueur dans cette liste.', teamsCol: 'Équipes', removeFromList: 'Retirer de la liste',
       confirmRemoveList: 'Retirer {n} de la liste de cette section pour cette saison ?', confirmDeletePerson: 'Supprimer définitivement {n} ? Toutes les saisons : listes et alignements. Impossible d’annuler.',
       seedHint: 'Tests locaux : « node tools/scripts/seed-local.mjs » remplit les listes et les alignements à partir des données actuelles.',
-      teamsLede: 'Les équipes de la ligue choisie : leurs capitaines et leurs alignements officiels. Seuls les administrateurs les modifient.', rosterH: 'Alignement', orNewCaptain: 'Ou créer un nouveau capitaine', accounts: 'Comptes des capitaines ({n})', e_pickOrNew: 'Choisissez un capitaine, ou entrez le nom et le courriel d’un nouveau.',
+      teamsLede: 'Les équipes de la ligue : leurs capitaines et leurs alignements officiels. Seuls les administrateurs les modifient.', rosterH: 'Alignement', orNewCaptain: 'Ou créer un nouveau capitaine', accounts: 'Comptes des capitaines ({n})', e_pickOrNew: 'Choisissez un capitaine, ou entrez le nom et le courriel d’un nouveau.',
       importTeams: 'Importer les équipes des données NBHPA', noTeams: 'Aucune équipe pour cette saison.', newTeam: 'Nouvelle équipe', abb: 'Code', nbhpaTeam: 'No d’équipe NBHPA (facultatif)',
       pos: 'Position', posS: 'Joueur', posG: 'Gardien', payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / {c}', overCap: 'au-dessus du plafond', missingSalary: '{n} sans salaire',
       removeFromRoster: 'Retirer de l’alignement', confirmRemoveRoster: 'Retirer {n} de cette équipe ? L’historique reste.', confirmDeleteTeam: 'Supprimer l’équipe {n} ?', emptyRoster: 'Alignement vide.',
@@ -80,13 +80,13 @@
       e_server: 'Server error. Try again.', e_origin: 'Request refused.', e_net: 'The server does not answer.',
       lang: 'Français', foot: 'LDHML tools. Emails stay in the tools database, never on the public site.',
       tabPlayers: 'Players', tabTeams: 'Teams', tabRules: 'Rules', section: 'Section',
-      playersLede: 'The league player list, per section and per season. A person stays the same person from one season to the next.',
+      playersLede: 'The section player list for the chosen season: salaries, and teams in each league of the section. A person stays the same person from one season to the next.',
       addPlayer: 'Add a player…', addToList: 'Add an existing person to the list', personField: 'Person', salaryS: 'Skater salary (M)', salaryG: 'Goalie salary (M)', add: 'Add',
       newPerson: 'New person', sex: 'Sex', sexM: 'M', sexF: 'W', birth: 'Birth', month: 'Month', year: 'Year',
       filterName: 'Filter by name', nPlayers: '{n} players', noPlayers: 'No player in this list.', teamsCol: 'Teams', removeFromList: 'Remove from the list',
       confirmRemoveList: 'Remove {n} from this section’s list for this season?', confirmDeletePerson: 'Delete {n} for good? Every season: lists and rosters. This cannot be undone.',
       seedHint: 'Local tests: "node tools/scripts/seed-local.mjs" fills the lists and rosters from the current data.',
-      teamsLede: 'The teams of the chosen league: their captains and official rosters. Only admins change them.', rosterH: 'Roster', orNewCaptain: 'Or create a new captain', accounts: 'Captain accounts ({n})', e_pickOrNew: 'Pick a captain, or enter the name and email of a new one.',
+      teamsLede: 'The teams of the league: their captains and official rosters. Only admins change them.', rosterH: 'Roster', orNewCaptain: 'Or create a new captain', accounts: 'Captain accounts ({n})', e_pickOrNew: 'Pick a captain, or enter the name and email of a new one.',
       importTeams: 'Import the teams from the NBHPA data', noTeams: 'No team for this season.', newTeam: 'New team', abb: 'Code', nbhpaTeam: 'NBHPA team no. (optional)',
       pos: 'Position', posS: 'Skater', posG: 'Goalie', payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / {c}', overCap: 'over the cap', missingSalary: '{n} without a salary',
       removeFromRoster: 'Remove from the roster', confirmRemoveRoster: 'Remove {n} from this team? The history stays.', confirmDeleteTeam: 'Delete the team {n}?', emptyRoster: 'Empty roster.',
@@ -137,6 +137,12 @@
       confirmDelSignup: 'Retirer l’inscription de {n} ?',
       suChipPool: 'inscrit, sans équipe', suChipSub: 'Remplaçant', plSubs: 'Remplaçants',
       e_signup: 'Choisissez une personne de la liste.', e_signup_exists: 'Cette personne est déjà inscrite dans cette ligue.',
+      tabOverview: 'Aperçu', tabLgSetup: 'Réglages', ctxAll: 'Toute la LDHML', ctxLabel: 'Où vous êtes', navLabel: 'Pages',
+      pLeagues: 'Les ligues', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
+      ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
+      configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
+      leaguesHint2: 'Une ligue inactive est cachée du travail courant. Ses règles et ses équipes se règlent dans ses Réglages.',
+      lgSetupLede: 'Ce qui se règle une fois par saison pour cette ligue : active ou non, ses règles et ses équipes (avec le lien vers NBHPA).',
       tabMore: 'Plus', langShort: 'EN', filters: 'Filtres',
       tabHome: 'Accueil', homeTitle: 'Tableau de bord', kToValidate: 'À valider', kNextNight: 'Prochaine soirée', kNoCaptain: 'Équipes sans capitaine', kMissing: 'Données à compléter',
       kOfTeams: 'sur {n} équipes', kOnFile: '{n} remplacement(s) déclaré(s)', kMissSub: 'joueurs sans salaire · {b} sans naissance · {d} sans no NBHPA', kNothing: 'rien à valider', kAllComplete: 'tout est complet',
@@ -191,6 +197,12 @@
       confirmDelSignup: 'Remove the sign-up of {n}?',
       suChipPool: 'signed up, no team', suChipSub: 'Replacement', plSubs: 'Replacements',
       e_signup: 'Choose a person from the list.', e_signup_exists: 'This person is already signed up in this league.',
+      tabOverview: 'Overview', tabLgSetup: 'Settings', ctxAll: 'All of LDHML', ctxLabel: 'Where you are', navLabel: 'Pages',
+      pLeagues: 'The leagues', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
+      ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
+      configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
+      leaguesHint2: 'A league that is off is hidden from the daily work. Its rules and teams are set in its Settings.',
+      lgSetupLede: 'What you set once a season for this league: on or off, its rules and its teams (with the NBHPA link).',
       tabMore: 'More', langShort: 'FR', filters: 'Filters',
       tabHome: 'Home', homeTitle: 'Dashboard', kToValidate: 'To validate', kNextNight: 'Next game night', kNoCaptain: 'Teams without a captain', kMissing: 'Data to complete',
       kOfTeams: 'of {n} teams', kOnFile: '{n} replacement(s) declared', kMissSub: 'players without a salary · {b} without birth date · {d} without NBHPA no.', kNothing: 'nothing to validate', kAllComplete: 'everything is complete',
@@ -215,12 +227,14 @@
   var t = function (k, v) { var s = STR[lang][k] != null ? STR[lang][k] : k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 
   /* ---------- state ----------
-   * Scope: season, section, league. Every working tab shows only that context. Section and league are remembered in this browser. */
-  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, tab: 'home', seasons: [], captains: [], audit: [], data: null, seasonId: null,
-    section: null, league: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'grp', d: 1 }, modal: null, accountsOpen: false,
-    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: 'subs', flash: null, cal: null, calDate: null, dash: null, edit: false };
-  var TABS = ['home', 'teams', 'cal', 'subs', 'players', 'setup', 'audit'];   // audit: a link at the bottom of the home page, not in the menu
-  var OLD_TABS = { seasons: 'setup', rules: 'setup', captains: 'teams' };   // old links still land somewhere sensible
+   * The context comes first (owner, 2026-10-17): LDHML (home, configuration, log) > section (its player list) > league
+   * (overview, schedule, teams, replacements, settings). The route says where we are: #/, #/config, #/audit, #/<section>,
+   * #/<section>/<league>[/<tab>]. The last league is remembered in this browser; old links (#teams, #cal…) land there. */
+  var S = { me: null, step: 'email', email: '', devCode: '', msg: null, level: 'ldhml', tab: 'home', seasons: [], captains: [], audit: [], data: null, seasonId: null,
+    section: null, league: null, plLeague: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'grp', d: 1 }, modal: null, accountsOpen: false,
+    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: '', flash: null, cal: null, calDate: null, dash: null, edit: false };
+  var TOP_TABS = ['home', 'config', 'audit'], LEAGUE_TABS = ['overview', 'cal', 'teams', 'subs', 'setup'];
+  var LEGACY = { home: 'home', audit: 'audit', setup: 'config', seasons: 'config', captains: 'config', rules: 'setup', teams: 'teams', cal: 'cal', subs: 'subs', players: 'players' };
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
   function saveScope() { try { localStorage.setItem('ldhml-admin-scope', JSON.stringify({ section: S.section, league: S.league })); } catch (e) { /* ignore */ } }
 
@@ -238,6 +252,11 @@
   var nameOf = function (s) { return s && s.name ? (s.name[lang] || s.name.fr) : ''; };
   var curSeason = function () { return S.seasons.filter(function (x) { return x.id === S.seasonId; })[0]; };
   var leagueHome = function (l) { return site() + l.sectionPath + '/' + l.path + '/'; };
+  /* Links inside the admin (the context first): the LDHML level, a section, a league (and one of its tabs). */
+  var secOf = function (key) { return ((S.data && S.data.sections) || []).filter(function (x) { return x.key === key; })[0]; };
+  var hrefTop = function (tab) { return '#/' + (tab && tab !== 'home' ? tab : ''); };
+  var hrefS = function (key) { var x = secOf(key); return x ? '#/' + x.path : '#/'; };
+  var hrefL = function (slug, tab) { var l = leagueOf(slug); return l ? '#/' + l.sectionPath + '/' + l.path + (tab && tab !== 'overview' ? '/' + tab : '') : '#/'; };
   /* A league switched off for the chosen season (season_leagues.enabled = 0) is hidden from the working tabs; Configuration shows it. */
   var leagueOff = function (slug) { return S.rules.some(function (r) { return r.league === slug && r.enabled === 0; }); };
   var sectionLeagues = function () { return S.data ? S.data.leagues.filter(function (l) { return l.section === S.section && !leagueOff(l.slug); }) : []; };
@@ -273,12 +292,14 @@
       (tm.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(leagueHome(l) + '#team-' + tm.nbhpa_team_id) + '">' + esc(tm.name) + '</a>' : '<b>' + esc(tm.name) + '</b>') + '</span>';
   }
 
-  /* ---------- the scope bar: season, section, league ---------- */
+  /* ---------- the context: LDHML > section > league ---------- */
   function fixScope() {
-    var secs = (S.data && S.data.sections) || [];
-    if (!secs.some(function (s) { return s.key === S.section; })) S.section = secs.length ? secs[0].key : null;
-    var lgs = sectionLeagues();
-    if (!lgs.some(function (l) { return l.slug === S.league; })) S.league = lgs.length ? lgs[0].slug : null;
+    var secs = (S.data && S.data.sections) || [], all = S.data ? S.data.leagues : [];
+    if (S.level === 'league' && leagueOf(S.league)) S.section = leagueOf(S.league).section;
+    if (!secs.some(function (x) { return x.key === S.section; })) S.section = secs.length ? secs[0].key : null;
+    var inSec = all.filter(function (l) { return l.section === S.section; }), on = inSec.filter(function (l) { return !leagueOff(l.slug); });
+    if (!inSec.some(function (l) { return l.slug === S.league; })) S.league = (on[0] || inSec[0] || {}).slug || null;
+    if (!inSec.some(function (l) { return l.slug === S.plLeague; })) S.plLeague = (on[0] || inSec[0] || {}).slug || null;
   }
   function seasonSelect() {
     if (!S.seasons.length) return '<p class="note">' + t('noSeason') + '</p>';
@@ -291,15 +312,25 @@
     return '<span class="ad-edtog">' + (S.edit ? '<span class="ad-edbadge">' + t('editMode') + '</span><button type="button" class="ad-btn ad-btn-sm" data-act="edit-toggle" aria-pressed="true">' + t('editOff') + '</button>'
       : '<button type="button" class="ad-btn ad-btn-sm ad-ghost" data-act="edit-toggle" aria-pressed="false">' + t('editOn') + '</button>') + '</span>';
   };
-  function scopeBar(level, extra) {
-    var secs = (S.data && S.data.sections) || [];
-    var sec = '<div class="seg" role="group" aria-label="' + esc(t('section')) + '">' + secs.map(function (s) {
-      return '<button type="button" data-sec="' + esc(s.key) + '" aria-pressed="' + (S.section === s.key) + '">' + esc(nameOf(s)) + '</button>';
+  /* A page's own tools (the edit toggle), under its title. The context and the season are in the context bar. */
+  function scopeBar(level, extra) { return extra ? '<div class="ad-toolbar">' + extra + '</div>' : ''; }
+  /* The context bar (top of every page): where we are (LDHML > section > league), a switcher to any other place
+   * (in a league, the switcher keeps the same tab), and the season. */
+  function contextBar() {
+    if (!S.data) return '';
+    var sec = secOf(S.section), l = S.level === 'league' && leagueOf(S.league);
+    var keepTab = l && S.tab !== 'overview' && !S.sub ? S.tab : '';
+    var pop = '<div class="ad-ctx-pop"><a class="ad-ctx-all" href="#/"' + (S.level === 'ldhml' ? ' aria-current="page"' : '') + '>' + esc(t('ctxAll')) + '</a>' + (S.data.sections || []).map(function (x) {
+      return '<div class="ad-ctx-sec"><a class="ad-ctx-sname" href="' + hrefS(x.key) + '"' + (S.level === 'section' && S.section === x.key ? ' aria-current="page"' : '') + '>' + esc(nameOf(x)) + ' <span class="note">· ' + esc(t('tabPlayers')) + '</span></a><div class="ad-ctx-lgs">' +
+        S.data.leagues.filter(function (y) { return y.section === x.key; }).map(function (y) {
+          return '<a class="ad-ctx-lg' + (leagueOff(y.slug) ? ' ad-lgoff' : '') + '" href="' + hrefL(y.slug, keepTab) + '"' + (l && l.slug === y.slug ? ' aria-current="page"' : '') + ' title="' + esc(y.name) + '">' + leagueOnly(y, false) +
+            (S.pending[y.slug] ? '<span class="ad-cnt">' + S.pending[y.slug] + '</span>' : '') + '</a>';
+        }).join('') + '</div></div>';
     }).join('') + '</div>';
-    var lgs = level === 'league' ? '<div class="ad-lgpick" role="group" aria-label="' + esc(t('league')) + '">' + sectionLeagues().map(function (l) {
-      return '<button type="button" class="ad-lgbtn" data-lg="' + esc(l.slug) + '" aria-pressed="' + (S.league === l.slug) + '" title="' + esc(l.name) + '">' + leagueOnly(l, false) + (S.pending[l.slug] ? '<span class="ad-cnt" title="' + esc(t('sf_pending')) + '">' + S.pending[l.slug] + '</span>' : '') + '</button>';
-    }).join('') + '</div>' : '';
-    return '<div class="ad-scope">' + seasonSelect() + sec + lgs + (extra || '') + '</div>';
+    var here = l ? leagueOnly(l, false) : S.level === 'section' && sec ? '<b>' + esc(nameOf(sec)) + '</b>' : '<b>' + esc(t('ctxAll')) + '</b>';
+    var crumbs = S.level === 'ldhml' ? '' : '<a class="ad-crumb" href="#/">LDHML</a><span class="ad-sep">›</span>' + (l && sec ? '<a class="ad-crumb" href="' + hrefS(sec.key) + '">' + esc(nameOf(sec)) + '</a><span class="ad-sep">›</span>' : '');
+    return '<div class="ad-ctxbar"><nav class="ad-crumbs" aria-label="' + esc(t('ctxLabel')) + '">' + crumbs + '<details class="ad-ctx" id="ad-ctx"><summary>' + here + '<span class="ad-caret" aria-hidden="true">▾</span></summary>' + pop + '</details></nav>' +
+      '<div class="ad-ctx-r">' + seasonSelect() + '</div></div>';
   }
 
   /* ---------- views ---------- */
@@ -331,7 +362,7 @@
       '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></div></li>';
   }
   function accountsPanel() {
-    return '<details class="ad-add" id="ad-accounts"' + (S.accountsOpen ? ' open' : '') + '><summary>' + esc(t('accounts', { n: S.captains.length })) + '</summary>' +
+    return '<details class="ad-add" id="ad-accounts" open><summary>' + esc(t('accounts', { n: S.captains.length })) + '</summary>' +
       '<p class="ad-ed"><button type="button" class="ad-btn ad-btn-sm" data-act="new-cap">' + t('newCaptain') + '</button></p>' +
       (S.captains.length ? '<ul class="ad-caps">' + S.captains.map(captainAccount).join('') + '</ul>' : '<p class="note">' + t('noCaptains') + '</p>') + '</details>';
   }
@@ -374,7 +405,7 @@
     var head = '<h1 class="ph">' + t('tabPlayers') + '</h1><p class="lede">' + t('playersLede') + '</p>' + scopeBar('section', editToggle());
     if (!curSeason()) return head;
     var q = S.pq.trim().toLowerCase(), lgs = sectionLeagues(), f = S.pf;
-    var inLg = function (p) { return p.rosters.some(function (r) { return r.league === S.league; }); };
+    var inLg = function (p) { return p.rosters.some(function (r) { return r.league === S.plLeague; }); };
     var isSub = function (p) { return !(p.signups || []).length; };   // no sign-up: a replacement player
     var num = function (v) { return v === '' || v == null || isNaN(Number(String(v).replace(',', '.'))) ? null : Number(String(v).replace(',', '.')); };
     var smin = num(f.smin), smax = num(f.smax);
@@ -399,10 +430,10 @@
       if (x == null) return 1; if (y == null) return -1;   // empty values last, either way
       return (x < y ? -d : x > y ? d : 0) || a.name.localeCompare(b.name, 'fr');
     });
-    var lgName = (leagueOf(S.league) || {}).short || '';
+    var lgName = (leagueOf(S.plLeague) || {}).short || '';
     var seg = function (attr, cur, opts) { return '<div class="seg" role="group">' + opts.map(function (o) { return '<button type="button" ' + attr + '="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>'; };
     var filters = seg('data-plf', S.plf, [['', t('plAll')], ['in', t('plIn')], ['free', t('plFree')], ['sub', t('plSubs')]]) + (S.plf && S.plf !== 'sub' && lgs.length > 1 ? '<div class="ad-lgpick">' + lgs.map(function (l) {
-      return '<button type="button" class="ad-lgbtn" data-lg="' + esc(l.slug) + '" aria-pressed="' + (S.league === l.slug) + '" title="' + esc(l.name) + '">' + leagueOnly(l, false) + '</button>';
+      return '<button type="button" class="ad-lgbtn" data-plg="' + esc(l.slug) + '" aria-pressed="' + (S.plLeague === l.slug) + '" title="' + esc(l.name) + '">' + leagueOnly(l, false) + '</button>';
     }).join('') + '</div>' : (S.plf && S.plf !== 'sub' ? '<span class="note">' + esc(lgName) + '</span>' : ''));
     var rl = f.pos === 'g' ? ['colG', 'colGFull'] : f.pos === 's' ? ['colS', 'colSFull'] : ['colPos', 'colPosFull'];
     var more = seg('data-pfpos', f.pos, [['', t('fAllPos')], ['s', t('fSkaters')], ['g', t('fGoalies')]]) + seg('data-pfsex', f.sex, [['', t('fAll')], ['m', t('sexM')], ['f', t('sexF')]]) +
@@ -493,10 +524,9 @@
     var teams = S.teams.filter(function (x) { return x.league === l.slug; });
     var onRoster = {}; teams.forEach(function (x) { x.roster.forEach(function (r) { onRoster[r.person_id] = 1; }); });
     var free = S.players.filter(function (p) { return !onRoster[p.id]; });
-    return head + '<p class="note">' + t('setupLink') + ' <a class="lnk" href="#setup">' + t('tabSetup') + '</a></p>' + (l.section === 'draft' ? signupPanel(l) : '') +
+    return head + '<p class="note">' + t('setupLink') + ' <a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + '</a> · <a class="lnk" href="#/config">' + t('accountsLink') + '</a></p>' + (l.section === 'draft' ? signupPanel(l) : '') +
       '<datalist id="ad-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
-      (teams.length ? '<div class="ad-teams">' + teams.map(function (tm) { return teamCard(tm, l, rule); }).join('') + '</div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
-      accountsPanel();
+      (teams.length ? '<div class="ad-teams">' + teams.map(function (tm) { return teamCard(tm, l, rule); }).join('') + '</div>' : '<p class="note">' + t('noTeamsLeague') + '</p>');
   }
 
   /* ---------- Configuration: what is set once a season ----------
@@ -528,23 +558,37 @@
       '<p class="ad-btns ad-ar"><button type="button" class="ad-btn ad-btn-sm" data-team-new="' + esc(l.slug) + '">' + t('newTeam') + '</button>' +
       (canImport ? '<button type="button" class="ad-btn ad-btn-sm" data-import-league="' + esc(l.slug) + '">' + t('importLeague') + '</button>' : '') + '</p></article>';
   }
-  function viewSetup() {
+  function viewConfig() {
     var s = curSeason();
     var seasonRows = S.seasons.map(function (x) { return '<tr><td><b>' + esc(x.name) + '</b></td><td data-label="' + esc(t('key')) + '">' + esc(x.key) + '</td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td><td data-label="' + esc(t('created')) + '">' + esc(fmt(x.created_at)) + '</td><td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
-    var html = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('setupLede') + '</p>' +
+    var html = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>' + scopeBar('', editToggle()) +
       '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
       (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th>' + t('key') + '</th><th class="num">' + t('nbhpaId') + '</th><th>' + t('status') + '</th><th>' + t('created') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
-    if (!s || !S.data) return html;
-    return html + '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('leaguesOfSeason') + '</h2>' + seasonSelect() + '</div><p class="note">' + t('leaguesHint') + '</p>' + (S.data.sections || []).map(function (sec) {
-      return '<h3 class="ad-sec-sub">' + esc(nameOf(sec)) + '</h3><div class="ad-lgsets">' +
-        S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) { return leagueSetup(l, s); }).join('') + '</div>';
+    var accounts = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('tabCaptains') + '</h2></div>' + accountsPanel() + '</section>';
+    if (!s || !S.data) return html + accounts;
+    /* the leagues of the season: on or off (a league off is hidden from the daily work); its rules and teams are in its settings */
+    var lgs = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('leaguesOfSeason') + '</h2></div><p class="note">' + t('leaguesHint2') + '</p>' + (S.data.sections || []).map(function (sec) {
+      return '<h3 class="ad-sec-sub">' + esc(nameOf(sec)) + '</h3><ul class="ad-lgrows">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
+        var off = leagueOff(l.slug), n = S.teams.filter(function (x) { return x.league === l.slug; }).length;
+        return '<li class="ad-lgrow' + (off ? ' ad-lgoff' : '') + '"><a href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) + '</a><span class="note">' + esc(t('nTeamsLg', { n: n })) + '</span>' +
+          '<a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + ' →</a>' +
+          '<label class="ad-switch ad-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOn') + '</label></li>';
+      }).join('') + '</ul>';
     }).join('') + '</section>';
+    return html + lgs + accounts;
+  }
+  /* A league's settings for the chosen season: active or not, its rules, its teams (with the NBHPA link). */
+  function viewLgSetup() {
+    var s = curSeason(), l = leagueOf(S.league);
+    var head = '<h1 class="ph">' + t('tabLgSetup') + '</h1><p class="lede">' + t('lgSetupLede') + '</p>';
+    if (!s || !l || !S.data) return head;
+    return head + '<div class="ad-lgsets ad-lgsets-1">' + leagueSetup(l, s) + '</div>';
   }
   /* ---------- Replacements: the league's queue and history; admins can also build a request for a captain ---------- */
   var builderCtx = function () {
     return { lang: lang, data: S.data, api: api,
-      onSaved: function (res) { S.flash = { kind: 'ok', text: res.status === 'approved' ? t('approved') : t('subSaved') }; S.sub = null; location.hash = '#' + S.subFrom; },
-      onCancel: function () { S.sub = null; location.hash = '#' + S.subFrom; } };
+      onSaved: function (res) { S.flash = { kind: 'ok', text: res.status === 'approved' ? t('approved') : t('subSaved') }; S.sub = null; location.hash = S.subFrom || hrefL(S.league, 'subs'); },
+      onCancel: function () { S.sub = null; location.hash = S.subFrom || hrefL(S.league, 'subs'); } };
   };
   function subActions(q) {
     if (q.status === 'pending') return '<div class="bd-acts ad-ar" data-decide-box="' + q.id + '"><input class="ctl" name="dnote" maxlength="1000" placeholder="' + esc(t('decisionNote')) + '" aria-label="' + esc(t('decisionNote')) + '">' +
@@ -557,9 +601,9 @@
   function viewSubBuild() {
     var tm = S.sub.teamId && S.teams.filter(function (x) { return x.id === S.sub.teamId; })[0];
     var l = leagueOf(tm ? tm.league : S.league);
-    S.sub.league = S.league;
+    S.sub.league = tm ? tm.league : S.league;
     if (S.sub.pick) { S.sub.teams = leagueTeams(); if (!S.sub.teamId && S.sub.teams.length === 1) S.sub.teamId = S.sub.teams[0].id; }
-    return '<p class="ad-back"><a class="lnk" href="#' + S.subFrom + '">' + t(S.subFrom === 'teams' ? 'backTeams' : S.subFrom === 'cal' ? 'backCal' : 'backSubs') + '</a></p>' +
+    return '<p class="ad-back"><a class="lnk" href="' + esc(S.subFrom || hrefL(S.league, 'subs')) + '">' + t(S.subFrom.slice(-6) === '/teams' || S.subFrom === '#teams' ? 'backTeams' : S.subFrom.slice(-4) === '/cal' || S.subFrom === '#cal' ? 'backCal' : 'backSubs') + '</a></p>' +
       '<h1 class="ph">' + t('newSub') + '</h1>' + (l ? '<p>' + leagueOnly(l) + '</p>' : '') + '<div class="bd-page" id="ad-builder"></div>';
   }
   var leagueTeams = function () { return S.teams.filter(function (x) { return x.league === S.league; }).map(function (x) { return { id: x.id, name: x.name, abb: x.abb }; }); };
@@ -571,9 +615,9 @@
     var live = S.seasons.filter(function (x) { return x.status === 'active'; })[0];
     var warn = !S.seasons.length ? '' : !live ? '<p class="ad-msg ad-err" role="alert">' + esc(t('noLive')) + '</p>'
       : S.data && live.nbhpa_season_id !== S.data.seasonId ? '<p class="ad-msg ad-err" role="alert">' + esc(t('liveMismatch', { p: S.data.seasonName, pn: S.data.seasonId, t: live.name, tn: live.nbhpa_season_id || '—' })) + '</p>' : '';
-    var head = '<h1 class="ph">' + t('homeTitle') + '</h1>' + warn + '<div class="ad-scope">' + seasonSelect() + '</div>';
+    var head = '<h1 class="ph">' + t('homeTitle') + '</h1>' + warn;
     var s = curSeason(), d = S.dash;
-    if (!s || !d || !S.data) return head + '<p class="ad-foot-link"><a class="lnk" href="#audit">' + t('auditLink') + '</a></p>';
+    if (!s || !d || !S.data) return head + '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
     var ctx = builderCtx(), today = torontoToday(), open = function (q) { return q.status === 'pending' || q.status === 'approved'; };
     var tile = function (cls, label, value, sub, href) { return '<' + (href ? 'a href="' + href + '"' : 'div') + ' class="ad-kpi ' + cls + '"><span class="ad-kl">' + esc(label) + '</span><span class="ad-kv">' + value + '</span>' + (sub ? '<span class="ad-ks">' + sub + '</span>' : '') + '</' + (href ? 'a' : 'div') + '>'; };
     var pending = S.subs.filter(function (q) { return q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
@@ -588,17 +632,23 @@
     var nextV = first ? esc(window.LDBuilder.day(ctx, first.date)) : '—';
     var nextS = first ? firstDay.map(function (n) { return leagueOnly(n.l, false); }).join(' ') + ' · ' + esc(t('kOnFile', { n: firstDay.reduce(function (a, n) { return a + n.v + n.p; }, 0) })) : esc(t('noNight'));
     var miss = d.missing.reduce(function (a, m) { return { s: a.s + (m.no_salary || 0), b: a.b + (m.no_birth || 0), n: a.n + (m.no_nid || 0) }; }, { s: 0, b: 0, n: 0 });
-    var kpis = '<div class="ad-kpis">' + tile('ad-k-val' + (pending.length ? ' ad-k-hot' : ''), t('kToValidate'), String(pending.length), pendSub, '#subs') +
-      tile('ad-k-night', t('kNextNight'), nextV, nextS, first ? '#cal' : '') +
-      tile('ad-k-cap', t('kNoCaptain'), String(d.noCaptain.length), esc(t('kOfTeams', { n: d.teams })), '#teams') +
-      tile('ad-k-miss', t('kMissing'), String(miss.s), esc(miss.s || miss.b || miss.n ? t('kMissSub', { b: miss.b, d: miss.n }) : t('kAllComplete')), '#players') + '</div>';
+    var kpis = '<div class="ad-kpis">' + tile('ad-k-val' + (pending.length ? ' ad-k-hot' : ''), t('kToValidate'), String(pending.length), pendSub, '') +
+      tile('ad-k-night', t('kNextNight'), nextV, nextS, first ? hrefL(first.l.slug, 'cal') : '') +
+      tile('ad-k-cap', t('kNoCaptain'), String(d.noCaptain.length), esc(t('kOfTeams', { n: d.teams })), d.noCaptain.length ? hrefL(d.noCaptain[0].league, 'teams') : '') +
+      tile('ad-k-miss', t('kMissing'), String(miss.s), esc(miss.s || miss.b || miss.n ? t('kMissSub', { b: miss.b, d: miss.n }) : t('kAllComplete')), hrefS(((S.data.sections || [])[0] || {}).key)) + '</div>';
     var val = '<section class="ad-panel"><h2 class="ad-ph">' + t('pToValidate') + '</h2>' +
-      (pending.length ? '<div class="bd-reqs">' + pending.slice(0, 6).map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
-      '<p><a class="lnk" href="#subs">' + t('seeAllSubs') + '</a></p></section>';
-    var nightsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pNights') + '</h2>' + (nights.length ? '<ul class="ad-nights">' + nights.map(function (n) {
-      return '<li><button type="button" class="ad-night" data-home-cal="' + esc(n.l.slug) + ':' + n.date + '">' + leagueOnly(n.l, false) + '<b>' + esc(window.LDBuilder.day(ctx, n.date)) + '</b>' +
-        '<span class="note">' + esc(t('nightGames', { n: n.games })) + (n.v + n.p ? ' · ' + esc(t('nightSubs', { v: n.v, p: n.p })) : '') + '</span></button></li>';
-    }).join('') + '</ul>' : '<p class="note">' + t('noNight') + '</p>') + '</section>';
+      (pending.length ? '<div class="bd-reqs">' + pending.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
+      '</section>';
+    // the leagues, by section: each card opens the league (next night, to validate, teams without a captain)
+    var leaguesP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pLeagues') + '</h2>' + (S.data.sections || []).map(function (sec) {
+      return '<h3 class="ad-h3"><a class="lnk" href="' + hrefS(sec.key) + '">' + esc(nameOf(sec)) + '</a></h3><ul class="ad-lgcards">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
+        var n = nights.filter(function (x) { return x.l.slug === l.slug; })[0], off = leagueOff(l.slug);
+        var nc = d.noCaptain.filter(function (x) { return x.league === l.slug; }).length, pend = S.pending[l.slug] || 0;
+        return '<li><a class="ad-lgcard' + (off ? ' ad-lgoff' : '') + '" href="' + hrefL(l.slug) + '">' + leagueOnly(l, false) +
+          '<span class="ad-lgc-l">' + (off ? esc(t('lgInactive')) : n ? '<b>' + esc(window.LDBuilder.day(ctx, n.date)) + '</b> · ' + esc(t('nightGames', { n: n.games })) : esc(t('noNight'))) + '</span>' +
+          '<span class="ad-lgc-k">' + (pend ? '<b>' + pend + '</b> ' + esc(t('kToValidate').toLowerCase()) : '') + (nc ? (pend ? ' · ' : '') + esc(t('lgNoCap', { n: nc })) : '') + '</span></a></li>';
+      }).join('') + '</ul>';
+    }).join('') + '</section>';
     var todo = [], noCap = d.noCaptain.filter(function (x) { return !leagueOff(x.league); });
     if (noCap.length) {
       var capByLg = {}; noCap.forEach(function (x) { (capByLg[x.league] = capByLg[x.league] || []).push(x); });
@@ -608,19 +658,50 @@
       }).join('') + '</div></li>');
     }
     var noRules = S.data.leagues.filter(function (l) { return !leagueOff(l.slug) && d.rulesLeagues.indexOf(l.slug) < 0; });
-    if (noRules.length) todo.push('<li><b>' + esc(t('todoRules')) + '</b> <a class="lgbs ad-todo-a" href="#setup">' + noRules.map(function (l) { return leagueOnly(l, false); }).join('') + '</a></li>');
+    if (noRules.length) todo.push('<li><b>' + esc(t('todoRules')) + '</b> <a class="lgbs ad-todo-a" href="' + hrefL(noRules[0].slug, 'setup') + '">' + noRules.map(function (l) { return leagueOnly(l, false); }).join('') + '</a></li>');
     d.missing.forEach(function (m) {
       if (!m.no_salary && !m.no_birth && !m.no_nid) return;
       var sec = (S.data.sections || []).filter(function (x) { return x.key === m.section; })[0];
       var link = function (kind, text) { return '<button type="button" class="lnk ad-linkbtn" data-home-miss="' + esc(m.section) + ':' + kind + '">' + esc(text) + '</button>'; };
       todo.push('<li><b>' + esc(nameOf(sec) || m.section) + ' :</b> ' + link('sal', m.no_salary + ' ' + t('fNoSal').toLowerCase()) + ' · ' + link('birth', m.no_birth + ' ' + t('fNoBirth').toLowerCase()) + ' · ' + link('nid', m.no_nid + ' ' + t('fNoNid').toLowerCase()) + '</li>');
     });
-    if (!d.games) todo.push('<li><b>' + esc(t('todoNoGames')) + '</b> <a class="lnk" href="#cal">' + esc(t('tabCal')) + '</a></li>');
+    if (!d.games) todo.push('<li><b>' + esc(t('todoNoGames')) + '</b> <a class="lnk" href="' + hrefL(S.league, 'cal') + '">' + esc(t('tabCal')) + '</a></li>');
     if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push('<li><b>' + esc(t('todoNbhpa', { a: d.nbhpa.add, u: d.nbhpa.update })) + '</b> <button type="button" class="ad-btn ad-btn-sm ad-ar" data-games-import>' + esc(t('importGames')) + '</button></li>');
     if (d.captainsNeverIn) todo.push('<li><button type="button" class="lnk ad-linkbtn" data-home-accounts>' + esc(t('todoNever', { n: d.captainsNeverIn })) + '</button></li>');
     var todoP = '<section class="ad-panel"><h2 class="ad-ph">' + t('pTodo') + '</h2>' + (todo.length ? '<ul class="ad-todo">' + todo.join('') + '</ul>' : '<p class="note">' + t('todoNone') + '</p>') + '</section>';
-    return head + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + nightsP + todoP + '</div></div>' +
-      '<p class="ad-foot-link"><a class="lnk" href="#audit">' + t('auditLink') + '</a></p>';
+    return head + kpis + '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + leaguesP + todoP + '</div></div>' +
+      '<p class="ad-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
+  }
+  /* ---------- A league: its overview (what needs doing in this league now) ----------
+   * Four key numbers (to validate, next night, teams and captains, rules), the replacements to validate, the teams. */
+  function viewOverview() {
+    var s = curSeason(), l = leagueOf(S.league);
+    if (!s || !l) return '';
+    var ctx = builderCtx(), d = S.dash || {}, rule = S.rules.filter(function (r) { return r.league === l.slug; })[0] || {};
+    var tile = function (cls, label, value, sub, href) { return '<' + (href ? 'a href="' + href + '"' : 'div') + ' class="ad-kpi ' + cls + '"><span class="ad-kl">' + esc(label) + '</span><span class="ad-kv">' + value + '</span>' + (sub ? '<span class="ad-ks">' + sub + '</span>' : '') + '</' + (href ? 'a' : 'div') + '>'; };
+    var pending = S.subs.filter(function (q) { return q.league === l.slug && q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
+    var night = (d.nights || []).filter(function (n) { return n.league === l.slug; })[0];
+    var teams = S.teams.filter(function (x) { return x.league === l.slug; });
+    var capsOf = function (tm) { return S.captains.filter(function (c) { return c.access.some(function (a) { return a.season_id === S.seasonId && a.team_ref === tm.id; }); }); };
+    var noCap = teams.filter(function (tm) { return !capsOf(tm).length; }).length;
+    var ages = [rule.min_age_m, rule.min_age_f, rule.min_age_g].some(function (v) { return v != null; }) ? t('ovAges', { m: rule.min_age_m == null ? '—' : rule.min_age_m, f: rule.min_age_f == null ? '—' : rule.min_age_f, g: rule.min_age_g == null ? '—' : rule.min_age_g }) : '';
+    var kpis = '<div class="ad-kpis">' + tile('ad-k-val' + (pending.length ? ' ad-k-hot' : ''), t('kToValidate'), String(pending.length), '', hrefL(l.slug, 'subs')) +
+      tile('ad-k-night', t('kNextNight'), night ? esc(window.LDBuilder.day(ctx, night.date)) : '—', esc(night ? t('nightGames', { n: night.games }) : t('noNight')), hrefL(l.slug, 'cal')) +
+      tile('ad-k-cap', t('tabTeams'), String(teams.length), esc(noCap ? t('lgNoCap', { n: noCap }) : t('ovAllCaps')), hrefL(l.slug, 'teams')) +
+      tile('ad-k-miss', t('salaryCap'), esc(rule.salary_cap != null ? money(rule.salary_cap) : '—'), esc(ages || (rule.salary_cap == null ? t('ovNoRules') : '')), hrefL(l.slug, 'setup')) + '</div>';
+    var val = '<section class="ad-panel"><h2 class="ad-ph">' + t('pToValidate') + '</h2>' +
+      (pending.length ? '<div class="bd-reqs">' + pending.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q)); }).join('') + '</div>' : '<p class="note">' + t('noPending') + '</p>') +
+      '<p><a class="lnk" href="' + hrefL(l.slug, 'subs') + '">' + t('seeAllSubs') + '</a></p></section>';
+    var rows = teams.map(function (tm) {
+      var total = 0; tm.roster.forEach(function (r) { var v = r.pos === 'g' ? r.salary_g : r.salary_s; if (v != null) total += v; });
+      var over = rule.salary_cap != null && total > rule.salary_cap, cs = capsOf(tm);
+      return '<tr><td class="ad-c-name">' + teamHead(tm) + '</td><td data-label="' + esc(t('teamCaptains')) + '">' + (cs.length ? cs.map(function (c) { return esc(c.name); }).join(', ') : '<span class="note">' + t('noCaptainTeam') + '</span>') + '</td>' +
+        '<td class="num" data-label="' + esc(t('playersShort')) + '">' + tm.roster.length + '</td><td class="num' + (over ? ' ad-over' : '') + '" data-label="' + esc(t('payrollShort')) + '">' + esc(money(total) + (rule.salary_cap != null ? ' / ' + money(rule.salary_cap) : '')) + '</td></tr>';
+    }).join('');
+    var teamsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabTeams') + '</h2>' + (rows ? '<div class="tbl-wrap"><table class="tbl ad-tbl ad-ovteams"><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
+      '<p><a class="lnk" href="' + hrefL(l.slug, 'teams') + '">' + t('ovSeeTeams') + '</a></p></section>';
+    return '<h1 class="ph">' + esc(l.name) + '</h1>' + (leagueOff(l.slug) ? '<p class="note ad-offnote">' + t('leagueOffNote') + '</p>' : '') + kpis +
+      '<div class="ad-grid2"><div class="ad-col">' + val + '</div><div class="ad-col">' + teamsP + '</div></div>';
   }
   /* ---------- Calendar: the game nights of the league, each game with both teams' actual lineups ---------- */
   function viewCal() {
@@ -674,8 +755,8 @@
       '<label>' + t('email') + '<input class="ctl" type="email" name="email" required value="' + esc(cap.email) + '"></label>' +
       '<label>' + t('player') + '<input class="ctl" name="person" list="ad-people" autocomplete="off" value="' + esc(cap.person_id ? personName(cap.person_id) + ' · ' + cap.person_id : '') + '"></label>' +
       '<p class="note">' + t('editEmailNote') + '</p>' + capPeople() + footer() + '</form>' };
-    if (m.kind === 'access' && l) {
-      var teams = S.teams.filter(function (x) { return x.league === l.slug; });
+    if (m.kind === 'access') {
+      var teams = S.teams, mt = m.team && teams.filter(function (x) { return x.id === m.team; })[0];
       /* From a team: pick an existing captain, or create a new one (created, then given the access, in one step). */
       var capField = m.id ? '<input type="hidden" name="captain" value="' + m.id + '"><p><b>' + esc((cap || {}).name || '') + '</b></p>'
         : '<label>' + t('captainField') + '<select class="ctl" name="captain"><option value="">' + t('chooseCaptain') + '</option>' + S.captains.filter(function (c) { return !c.disabled_at; }).map(function (c) {
@@ -683,10 +764,13 @@
           '<fieldset class="ad-or"><legend>' + t('orNewCaptain') + '</legend>' +
           '<label>' + t('name') + '<input class="ctl" name="name" maxlength="80"></label><label>' + t('email') + '<input class="ctl" type="email" name="email"></label>' +
           '<label>' + t('player') + '<input class="ctl" name="person" list="ad-people" autocomplete="off"></label>' + capPeople() + '</fieldset>';
-      var teamField = m.team ? '<input type="hidden" name="team" value="' + m.team + '"><p>' + teamHead(teams.filter(function (x) { return x.id === m.team; })[0] || { abb: '?', name: '?', league: l.slug }) + '</p>'
-        : '<label>' + t('team') + '<select class="ctl" name="team" required><option value="">' + t('chooseTeam') + '</option>' + teams.map(function (x) {
-          return '<option value="' + x.id + '">' + esc(x.name) + ' (' + esc(x.abb) + ')</option>'; }).join('') + '</select></label>';
-      return { title: t('accessTitle', { l: l.name }), body: '<form id="f-access" class="ad-form ad-col">' + teamField + capField + footer(t('grant')) + '</form>' };
+      var teamField = mt ? '<input type="hidden" name="team" value="' + mt.id + '"><p>' + teamHead(mt) + '</p>'
+        : '<label>' + t('team') + '<select class="ctl" name="team" required><option value="">' + t('chooseTeam') + '</option>' + S.data.leagues.filter(function (x) { return !leagueOff(x.slug); }).map(function (x) {
+          var ts = teams.filter(function (y) { return y.league === x.slug; });
+          return ts.length ? '<optgroup label="' + esc(x.name) + '">' + ts.map(function (y) { return '<option value="' + y.id + '"' + (x.slug === S.league && S.level === 'league' ? '' : '') + '>' + esc(y.name) + ' (' + esc(y.abb) + ')</option>'; }).join('') + '</optgroup>' : '';
+        }).join('') + '</select></label>';
+      var tl = mt && leagueOf(mt.league);
+      return { title: tl ? t('accessTitle', { l: tl.name }) : t('giveAccess'), body: '<form id="f-access" class="ad-form ad-col">' + teamField + capField + footer(t('grant')) + '</form>' };
     }
     if (m.kind === 'list-add') {
       var inList = {}; S.players.forEach(function (p) { inList[p.id] = 1; });
@@ -756,33 +840,41 @@
     more: '<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>'
   };
   var tabIcon = function (k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; };
-  var TAB_LABEL = { home: 'tabHome', teams: 'tabTeams', cal: 'tabCal', subs: 'tabSubs', players: 'tabPlayers', setup: 'tabSetup', audit: 'tabAudit' };
-  function renderTabbar(pend) {
+  TAB_ICONS.overview = '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>';
+  TAB_ICONS.config = TAB_ICONS.setup;
+  TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
+  /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
+  function levelTabs() {
+    var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
+    if (S.level === 'league') return [mk('overview', 'tabOverview', hrefL(S.league)), mk('cal', 'tabCal', hrefL(S.league, 'cal')), mk('teams', 'tabTeams', hrefL(S.league, 'teams')),
+      mk('subs', 'tabSubs', hrefL(S.league, 'subs'), 'subs', S.pending[S.league]), mk('setup', 'tabLgSetup', hrefL(S.league, 'setup'), 'lgsetup')];
+    if (S.level === 'section') return [mk('players', 'tabPlayers', hrefS(S.section))];
+    var pend = Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0);
+    return [mk('home', 'tabHome', hrefTop('home'), 'home', pend), mk('config', 'tabSetup', hrefTop('config'), 'config'), mk('audit', 'tabAudit', hrefTop('audit'), 'audit')];
+  }
+  function renderTabbar(tabs) {
     var bar = $('#tabbar'), more = $('#more');
     if (!bar) return;
-    document.documentElement.classList.toggle('ad-has-tabbar', !!S.me);
-    if (!S.me) { bar.innerHTML = ''; more.innerHTML = ''; more.hidden = true; return; }
-    var inMore = S.tab === 'setup' || S.tab === 'audit';
-    bar.innerHTML = ['home', 'teams', 'cal', 'subs', 'players'].map(function (k) {
-      return '<a href="#' + k + '"' + (S.tab === k ? ' aria-current="page"' : '') + '>' + tabIcon(k) + '<span>' + t(TAB_LABEL[k]) + '</span>' +
-        (k === 'subs' && pend ? '<b class="ad-tbcnt">' + pend + '</b>' : '') + '</a>';
-    }).join('') + '<button type="button" data-act="more" aria-expanded="' + !more.hidden + '" aria-controls="more"' + (inMore ? ' aria-current="page"' : '') + '>' + tabIcon('more') + '<span>' + t('tabMore') + '</span></button>';
-    more.innerHTML = ['setup', 'audit'].map(function (k) { return '<a href="#' + k + '"' + (S.tab === k ? ' aria-current="page"' : '') + '>' + tabIcon(k) + '<span>' + t(TAB_LABEL[k]) + '</span></a>'; }).join('');
+    var on = !!S.me && tabs.length > 1;
+    document.documentElement.classList.toggle('ad-has-tabbar', on);
+    if (more) { more.innerHTML = ''; more.hidden = true; }
+    bar.innerHTML = on ? tabs.map(function (x) {
+      return '<a href="' + x.href + '"' + (S.tab === x.k ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ad-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
+    }).join('') : '';
   }
   function render() {
     document.documentElement.lang = lang;
-    var pend = Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0);
-    var tabs = [['home', t('tabHome')], ['teams', t('tabTeams')], ['cal', t('tabCal')], ['subs', t('tabSubs') + (pend ? ' (' + pend + ')' : '')], ['players', t('tabPlayers')], ['setup', t('tabSetup')]];
-    renderTabbar(pend);
-    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/admin/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
-      (S.me ? '<nav class="nav" aria-label="Admin">' + tabs.map(function (x) { return '<a href="#' + x[0] + '"' + (S.tab === x[0] ? ' aria-current="page"' : '') + '>' + x[1] + '</a>'; }).join('') + '</nav>' : '') +
+    var tabs = S.me ? levelTabs() : [];
+    renderTabbar(tabs);
+    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
+      (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (S.tab === x.k ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, cal: viewCal, subs: viewSubs, players: viewPlayers, teams: viewTeams, setup: viewSetup, audit: viewAudit };
+    var views = { home: viewHome, config: viewConfig, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
-    $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : (views[S.tab] || viewHome)());
+    $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
-    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && (S.tab === 'teams' || S.tab === 'players' || S.tab === 'cal')));
+    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal', 'config'].indexOf(S.tab) >= 0));
     $('#main').classList.toggle('ad-archived', archived);
     if (archived && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ad-msg ad-arch" role="status">' + esc(t('archivedBanner')) + '</p>');
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
@@ -808,9 +900,9 @@
       if (S.seasonId) more.push(api('/rules?season=' + S.seasonId).then(function (r) { S.rules = r.data.rules || []; }));
       if (S.seasonId) more.push(api('/replacements/pending?season=' + S.seasonId).then(function (r) { S.pending = r.data.counts || {}; }));
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
-      if (S.seasonId && S.tab === 'home') more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
-      if (S.seasonId && (S.tab === 'subs' || S.tab === 'home')) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
-      if (S.seasonId && ['teams', 'setup', 'subs', 'cal'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
+      if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
+      if (S.seasonId && ['subs', 'home', 'overview'].indexOf(S.tab) >= 0) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
+      if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
       var suLg = S.tab === 'teams' && S.league && leagueOf(S.league);
       if (S.seasonId && suLg && suLg.section === 'draft') more.push(api('/league-players?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league)).then(function (r) { S.signups = r.ok ? Object.assign({ league: S.league }, r.data) : null; }));
@@ -926,10 +1018,11 @@
     }
   });
   document.addEventListener('click', function (e) { var mo = $('#more'); if (mo && !mo.hidden && !(e.target.closest && e.target.closest('#more,[data-act="more"]'))) { mo.hidden = true; var mb = document.querySelector('[data-act="more"]'); if (mb) mb.setAttribute('aria-expanded', 'false'); } }, true);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } if (e.key === 'Escape' && $('#ad-ctx')) $('#ad-ctx').open = false; });
+  document.addEventListener('click', function (e) { var c = $('#ad-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ad-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-sec],[data-lg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
+      '[data-plg],[data-plf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -940,16 +1033,15 @@
     if (act === 'close-modal') { S.modal = null; S.msg = null; render(); return; }
     if (act === 'edit-toggle') { S.edit = !S.edit; S.msg = null; render(); return; }
     /* home: each item opens the place to act, in the right scope */
-    var goScope = function (slug, hash) { var l = leagueOf(slug); if (l) { S.section = l.section; S.league = slug; saveScope(); } location.hash = hash; };
-    if (b.hasAttribute('data-home-cal')) { var hc = b.getAttribute('data-home-cal').split(':'); S.calDate = hc[1]; goScope(hc[0], '#cal'); return; }
-    if (b.hasAttribute('data-home-teams')) { goScope(b.getAttribute('data-home-teams'), '#teams'); return; }
-    if (b.hasAttribute('data-home-miss')) { var hm = b.getAttribute('data-home-miss').split(':'); S.section = hm[0]; S.league = null; fixScope(); saveScope(); S.plf = ''; S.pf.miss = hm[1]; location.hash = '#players'; return; }
-    if (b.hasAttribute('data-home-accounts')) { S.accountsOpen = true; location.hash = '#teams'; return; }
+    var goScope = function (slug, tab) { location.hash = hrefL(slug, tab); };
+    if (b.hasAttribute('data-home-cal')) { var hc = b.getAttribute('data-home-cal').split(':'); S.calDate = hc[1]; goScope(hc[0], 'cal'); return; }
+    if (b.hasAttribute('data-home-teams')) { goScope(b.getAttribute('data-home-teams'), 'teams'); return; }
+    if (b.hasAttribute('data-home-miss')) { var hm = b.getAttribute('data-home-miss').split(':'); S.plf = ''; S.pf.miss = hm[1]; location.hash = hrefS(hm[0]); return; }
+    if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config'; return; }
     /* scope */
-    if (b.hasAttribute('data-sec')) { S.section = b.getAttribute('data-sec'); S.league = null; fixScope(); saveScope(); S.msg = null; refresh(); return; }
-    if (b.hasAttribute('data-lg')) { S.league = b.getAttribute('data-lg'); saveScope(); S.msg = null; if (S.tab === 'cal') { S.calDate = null; refresh(); } else if (S.tab === 'teams') refresh(); else render(); return; }
+    if (b.hasAttribute('data-plg')) { S.plLeague = b.getAttribute('data-plg'); render(); return; }
     if (b.hasAttribute('data-cal-date')) { S.calDate = b.getAttribute('data-cal-date'); refresh(); return; }
-    if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = 'cal'; location.hash = '#subs/new/' + sg[0] + '/' + sg[1]; return; }
+    if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + sg[0] + '/' + sg[1]; return; }
     if (b.hasAttribute('data-plf')) { S.plf = b.getAttribute('data-plf'); render(); return; }
     if (b.hasAttribute('data-sf')) { S.sf = b.getAttribute('data-sf'); render(); return; }
     if (b.hasAttribute('data-psort')) { var pk = b.getAttribute('data-psort'); S.ps = pk === 'grp' ? { k: 'grp', d: 1 } : S.ps.k === pk ? { k: pk, d: -S.ps.d } : { k: pk, d: pk === 's' || pk === 'g' ? -1 : 1 }; render(); return; }
@@ -974,8 +1066,8 @@
     if (b.hasAttribute('data-game-del')) { if (window.confirm(t('confirmDeleteGame'))) api('/games/' + b.getAttribute('data-game-del') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-edit-season')) { openModal({ kind: 'season-edit', id: num('data-edit-season') }); return; }
     /* replacements: the builder in a modal (from a team card: that team; from the tab: a team of the league to choose) */
-    if (b.hasAttribute('data-sub-team')) { S.subFrom = 'teams'; location.hash = '#subs/new/' + b.getAttribute('data-sub-team'); return; }
-    if (act === 'sub-new') { S.subFrom = 'subs'; location.hash = '#subs/new'; return; }
+    if (b.hasAttribute('data-sub-team')) { S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + b.getAttribute('data-sub-team'); return; }
+    if (act === 'sub-new') { S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new'; return; }
     if (b.hasAttribute('data-decide')) {
       var dec = b.getAttribute('data-decide'), box = b.closest('[data-decide-box]'), dn = box ? box.querySelector('[name=dnote]').value.trim() : '';
       if (dec === 'approve' && b.getAttribute('data-result') === 'fail' && !window.confirm(t('confirmApproveFail'))) return;
@@ -995,15 +1087,29 @@
     if (b.hasAttribute('data-roster-remove')) { if (window.confirm(t('confirmRemoveRoster', { n: nm }))) api('/rosters/' + b.getAttribute('data-roster-remove') + '/remove', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-del-team')) { if (window.confirm(t('confirmDeleteTeam', { n: nm }))) api('/teams/' + b.getAttribute('data-del-team') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
   });
-  /* Routes: #<tab>, and #subs/new[/<team id>[/<game id>]] for the builder page (a game from the calendar starts at step 2). */
+  /* Routes (the context first): #/ (home), #/config, #/audit; #/<section> (its players); #/<section>/<league>[/<tab>];
+   * #/<section>/<league>/subs/new[/<team id>[/<game id>]] for the builder page (a game from the calendar starts at step 2).
+   * Old links (#teams, #cal, #subs/new/…, #players, #setup…) still work, in the remembered section or league. */
   function route() {
-    var parts = location.hash.replace('#', '').split('/'), h = OLD_TABS[parts[0]] || parts[0];
-    var before = S.tab;
-    S.tab = TABS.indexOf(h) >= 0 ? h : 'home';
-    if (S.tab !== before) S.edit = false;   // edit mode never follows to another tab
-    if (S.tab === 'subs' && parts[1] === 'new') {
-      var team = Number(parts[2]) || null, key = parts.slice(2).join('/');
-      if (!S.sub || S.sub.key !== key) { S.sub = window.LDBuilder.state({ area: 'admin', teamId: team, slot: parts[3] || '' }); S.sub.key = key; }
+    var raw = location.hash.replace('#', ''); if (raw.charAt(0) === '/') raw = raw.slice(1);
+    var parts = raw ? raw.split('/') : [], p0 = parts[0], before = S.level + ':' + S.tab, sub = null;
+    var sec = S.data && p0 ? (S.data.sections || []).filter(function (x) { return x.path === p0 || x.key === p0; })[0] : null;
+    if (!p0) { S.level = 'ldhml'; S.tab = 'home'; }
+    else if (TOP_TABS.indexOf(p0) >= 0) { S.level = 'ldhml'; S.tab = p0; }
+    else if (sec) {
+      S.section = sec.key;
+      var lg = parts[1] && S.data.leagues.filter(function (l) { return l.section === sec.key && (l.path === parts[1] || l.slug === parts[1]); })[0];
+      if (!lg) { S.level = 'section'; S.tab = 'players'; }
+      else { S.level = 'league'; S.league = lg.slug; S.tab = LEAGUE_TABS.indexOf(parts[2]) >= 0 ? parts[2] : 'overview'; if (S.tab === 'subs' && parts[3] === 'new') sub = parts.slice(4); }
+    } else if (LEGACY[p0]) {   // an old link: the same page, in the remembered context
+      S.tab = LEGACY[p0]; S.level = TOP_TABS.indexOf(S.tab) >= 0 ? 'ldhml' : S.tab === 'players' ? 'section' : 'league';
+      if (S.tab === 'subs' && parts[1] === 'new') sub = parts.slice(2);
+    } else { S.level = 'ldhml'; S.tab = 'home'; }
+    if (S.level + ':' + S.tab !== before) S.edit = false;   // edit mode never follows to another page
+    if (S.level === 'league') saveScope();
+    if (sub) {
+      var team = Number(sub[0]) || null, key = sub.join('/');
+      if (!S.sub || S.sub.key !== key) { S.sub = window.LDBuilder.state({ area: 'admin', teamId: team, slot: sub[1] || '' }); S.sub.key = key; }
       S.sub.pick = !team;
     } else S.sub = null;
   }
@@ -1018,7 +1124,7 @@
   route();
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me')]).then(function (rs) {
     S.data = rs[0];
-    fixScope();
+    route(); fixScope();
     if (rs[1].ok) { S.me = rs[1].data.admin; return refresh(); }
     render();
   });

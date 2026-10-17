@@ -266,3 +266,45 @@ a.ad-kpi:hover { border-color: var(--ball); }
 .ad-team .ad-grant { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }
 .ad-team .ad-grant .ctl { max-width: none; }
 @media (max-width: 600px) { .ad-tbl td.num[data-label] { text-align: left; } }
+/* Context bar: LDHML > section > league, a switcher to any place, the season */
+.ad-ctxbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.ad-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.ad-crumb { color: var(--muted); font-weight: 600; text-decoration: none; }
+.ad-crumb:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.ad-sep { color: var(--muted); }
+.ad-ctx { position: relative; }
+.ad-ctx > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.ad-ctx > summary::-webkit-details-marker { display: none; }
+.ad-ctx[open] > summary { border-color: var(--ball); }
+.ad-caret { color: var(--muted); font-size: 12px; }
+.ad-ctx-pop { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; width: max-content; min-width: 260px; max-width: min(92vw, 440px); display: grid; gap: 10px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+.ad-ctx-all, .ad-ctx-sname { color: var(--ink); font-weight: 600; text-decoration: none; }
+.ad-ctx-all:hover, .ad-ctx-sname:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ad-ctx-sec { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.ad-ctx-lgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.ad-ctx-lg { position: relative; text-decoration: none; border-radius: 6px; }
+.ad-ctx-lg[aria-current="page"] { outline: 2px solid var(--ball); outline-offset: 2px; }
+.ad-ctx-all[aria-current="page"], .ad-ctx-sname[aria-current="page"] { color: var(--ball); }
+.ad-ctx-lg.ad-lgoff { opacity: .5; }
+.ad-ctx-lg .ad-cnt { position: absolute; top: -7px; right: -7px; }
+.ad-ctx-r { display: flex; align-items: center; gap: 8px; }
+.ad-toolbar { display: flex; justify-content: flex-end; margin: 0 0 12px; }
+/* Home: one card per league, by section */
+.ad-lgcards { list-style: none; display: grid; gap: 6px; margin: 0 0 14px; padding: 0; }
+.ad-lgcard { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "b l" "b k"; align-items: center; gap: 2px 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.ad-lgcard > :first-child { grid-area: b; }
+.ad-lgc-l { grid-area: l; min-width: 0; }
+.ad-lgc-k { grid-area: k; min-width: 0; color: var(--muted); font-size: 13px; }
+.ad-lgc-k:empty { display: none; }
+.ad-lgcard:hover { border-color: var(--ball); }
+.ad-lgcard.ad-lgoff { opacity: .55; }
+/* Configuration: the leagues of the season */
+.ad-lgrows { list-style: none; display: grid; gap: 6px; margin: 0 0 14px; padding: 0; }
+.ad-lgrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.ad-lgrow > a:first-child { text-decoration: none; }
+.ad-lgrow .ad-switch { margin-left: auto; }
+.ad-lgrow.ad-lgoff > a:first-child { opacity: .55; }
+.ad-lgsets-1 { grid-template-columns: minmax(0, 1fr); }
+.ad-ovteams td.ad-over { color: var(--bad); font-weight: 600; }
+@media (max-width: 600px) { .ad-ctx-pop { position: fixed; left: 16px; right: 16px; top: 120px; width: auto; max-width: none; } }
+.ad-ctx:not([open]) > .ad-ctx-pop { display: none; }
