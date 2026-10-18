@@ -28,7 +28,7 @@
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
       e_not_open: 'Ce remplacement n’est plus ouvert.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
       foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi déclarer le remplacement pour vous.'
@@ -51,7 +51,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…',
+      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
       e_not_open: 'This replacement is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
       foot: 'LDHML tools. Need help? Write to your league’s admins: they can also declare the replacement for you.'
@@ -206,6 +206,14 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   function viewAsk() {
     return '<p class="ta-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('askTitle') + '</h1><div class="bd-page" id="cp-builder"></div>';
   }
+  /* The online demo: a slim bar fixed at the bottom, always visible (before and after sign-in). */
+  function demoBar(on) {
+    var bar = document.getElementById('ta-demobar');
+    document.documentElement.classList.toggle('ta-demo', !!on);
+    if (!on) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
+    bar.textContent = t('demoBanner');
+  }
   function render() {
     document.documentElement.lang = lang;
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b><small>' + esc(S.me ? S.me.name : '') + '</small></span></a>' +
@@ -213,7 +221,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
     $('#main').setAttribute('data-ready', S.booting ? '' : '1');   // shared/guard.js: the page started
-    $('#main').innerHTML = (S.me && S.me.demo ? '<p class="ta-msg ta-demo" role="status">' + esc(t('demoBanner')) + '</p>' : '') + msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
+    demoBar(S.demoMode || (S.me && S.me.demo));
+    $('#main').innerHTML = msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
     if (asking) window.LDBuilder.mount($('#cp-builder'), S.sub, ctx());
     $('#foot').innerHTML = '<p>' + t('foot') + '</p>';
     document.title = 'LDHML | ' + t('title');

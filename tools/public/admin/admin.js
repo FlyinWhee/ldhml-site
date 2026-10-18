@@ -155,7 +155,7 @@
       personNotFound: 'Cette personne n’existe plus.', personWho: 'Identité', personCaptain: 'Compte de capitaine', personSeason: '{s} cette saison', personNotListed: 'Pas sur la liste de la section cette saison.',
       personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -233,7 +233,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       personNotFound: 'This person no longer exists.', personWho: 'Identity', personCaptain: 'Captain account', personSeason: '{s} this season', personNotListed: 'Not on the section list this season.',
       personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
+      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -1065,6 +1065,14 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       return '<a href="' + x.href + '"' + (navTab() === x.k ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ta-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
     }).join('') : '';
   }
+  /* The online demo: a slim bar fixed at the bottom, always visible (before and after sign-in). */
+  function demoBar(on) {
+    var bar = document.getElementById('ta-demobar');
+    document.documentElement.classList.toggle('ta-demo', !!on);
+    if (!on) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
+    bar.textContent = t('demoBanner');
+  }
   function render() {
     document.documentElement.lang = lang;
     var tabs = S.me ? levelTabs() : [];
@@ -1080,7 +1088,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
     $('#main').classList.toggle('ta-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal'].indexOf(S.tab) >= 0));
     $('#main').classList.toggle('ta-archived', archived);
-    if (S.me && S.me.demo && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ta-msg ta-demo" role="status">' + esc(t('demoBanner')) + '</p>');
+    demoBar(S.demoMode || (S.me && S.me.demo));
     if (archived && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ta-msg ta-arch" role="status">' + esc(t('archivedBanner')) + '</p>');
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
     document.documentElement.classList.toggle('ta-modal-open', !!(S.me && S.modal));

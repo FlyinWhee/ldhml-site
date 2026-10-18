@@ -401,4 +401,12 @@ tr.ta-cur td:first-child b { color: var(--ball); }
 .ta-ql { min-width: 0; }
 .ta-qrow .ta-qst { padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 @media (max-width: 600px) { .ta-qrow { grid-template-columns: minmax(0, 1fr) auto; } .ta-ql { grid-column: 1 / -1; grid-row: 2; } }
-.ta-msg.ta-demo { border-color: var(--ball); background: color-mix(in srgb, var(--ball) 14%, transparent); font-weight: 600; }
+/* The online demo: one slim bar fixed at the bottom (above the phone tab bar), always visible */
+.ta-demobar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; height: 22px; padding: 0 12px; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 12px/22px var(--f-text); letter-spacing: .02em; color: var(--on-ball); background: var(--ball); }
+html.ta-demo body { padding-bottom: 22px; }
+html.ta-demo .bd-nav { bottom: 22px; }
+@media (max-width: 899px) {
+  html.ta-demo.ta-has-tabbar .ta-demobar { bottom: calc(57px + env(safe-area-inset-bottom, 0px)); }
+  html.ta-demo.ta-has-tabbar .bd-nav { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+}
