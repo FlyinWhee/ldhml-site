@@ -158,7 +158,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
       backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
-      pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
+      account: 'Compte', pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
       leaguesHint2: 'Une ligue inactive est cachée du travail courant. Ses règles et ses équipes se règlent dans ses Réglages.',
@@ -238,7 +238,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
       backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
-      pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
+      account: 'Account', pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
       leaguesHint2: 'A league that is off is hidden from the daily work. Its rules and teams are set in its Settings.',
@@ -1104,14 +1104,24 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
     bar.textContent = t('demoBanner');
   }
+  /* The account menu (top bar): who is signed in, the language, sign out. Rarely used: one small button, not three. */
+  var ACCT_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.8-3.8 3.6-5.8 7.2-5.8s6.4 2 7.2 5.8"/></svg>';
+  function acctMenu(who) {
+    return '<details class="ta-acct" id="ta-acct"><summary class="ta-acct-btn" aria-label="' + esc(t('account')) + '" title="' + esc(t('account')) + '">' + ACCT_ICON + '</summary><div class="ta-acct-pop">' +
+      (who ? '<p class="ta-acct-who">' + esc(who) + '</p>' : '') +
+      '<button type="button" class="ta-acct-i" data-act="lang">' + esc(t('lang')) + '</button>' +
+      (S.me ? '<button type="button" class="ta-acct-i" data-act="logout">' + esc(t('signOut')) + '</button>' : '') + '</div></details>';
+  }
+  document.addEventListener('click', function (e) { var m = document.getElementById('ta-acct'); if (m && m.open && !(e.target.closest && e.target.closest('#ta-acct'))) m.open = false; }, true);
+  document.addEventListener('keydown', function (e) { var m = document.getElementById('ta-acct'); if (e.key === 'Escape' && m) m.open = false; });
   function render() {
     document.documentElement.lang = lang;
     var tabs = S.me ? levelTabs() : [];
     renderTabbar(tabs);
-    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
+    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b></span></a>' +
       (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (navTab() === x.k ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ta-tools">' + (S.me && pendAll() ? '<a class="ta-pill" href="#/valider" title="' + esc(t('tabValider')) + '"><b>' + pendAll() + '</b> <span class="ta-long">' + esc(t('pillValider')) + '</span><span class="ta-short">✓</span></a>' : '') +
-      '<button type="button" class="lgbtn" data-act="lang"><span class="ta-long">' + t('lang') + '</span><span class="ta-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
+      acctMenu(S.me ? S.me.email : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */

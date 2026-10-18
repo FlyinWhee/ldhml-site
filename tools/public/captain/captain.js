@@ -28,7 +28,7 @@
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer', account: 'Compte',
       shareTitle: 'Lien pour l’administration', shareLede: 'Envoyez-le dans le groupe des capitaines : un admin l’ouvre et valide le remplacement en un clic.',
       shareGo: 'Partager', shareCopy: 'Copier', shareCopied: 'Lien copié.', shareShort: 'Partager le lien', shareText: 'Remplacement à valider · {t}',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
@@ -53,7 +53,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close',
+      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close', account: 'Account',
       shareTitle: 'Link for the admins', shareLede: 'Send it to the captains’ group: an admin opens it and validates the replacement in one click.',
       shareGo: 'Share', shareCopy: 'Copy', shareCopied: 'Link copied.', shareShort: 'Share the link', shareText: 'Replacement to validate · {t}',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
@@ -238,10 +238,20 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
     bar.textContent = t('demoBanner');
   }
+  /* The account menu (top bar): who is signed in, the language, sign out. Rarely used: one small button, not three. */
+  var ACCT_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.8-3.8 3.6-5.8 7.2-5.8s6.4 2 7.2 5.8"/></svg>';
+  function acctMenu(who) {
+    return '<details class="ta-acct" id="ta-acct"><summary class="ta-acct-btn" aria-label="' + esc(t('account')) + '" title="' + esc(t('account')) + '">' + ACCT_ICON + '</summary><div class="ta-acct-pop">' +
+      (who ? '<p class="ta-acct-who">' + esc(who) + '</p>' : '') +
+      '<button type="button" class="ta-acct-i" data-act="lang">' + esc(t('lang')) + '</button>' +
+      (S.me ? '<button type="button" class="ta-acct-i" data-act="logout">' + esc(t('signOut')) + '</button>' : '') + '</div></details>';
+  }
+  document.addEventListener('click', function (e) { var m = document.getElementById('ta-acct'); if (m && m.open && !(e.target.closest && e.target.closest('#ta-acct'))) m.open = false; }, true);
+  document.addEventListener('keydown', function (e) { var m = document.getElementById('ta-acct'); if (e.key === 'Escape' && m) m.open = false; });
   function render() {
     document.documentElement.lang = lang;
-    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b><small>' + esc(S.me ? S.me.name : '') + '</small></span></a>' +
-      '<div class="ta-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ta-long">' + t('lang') + '</span><span class="ta-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
+    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b></span></a>' +
+      '<div class="ta-tools">' + acctMenu(S.me ? S.me.name : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
     $('#main').setAttribute('data-ready', S.booting ? '' : '1');   // shared/guard.js: the page started

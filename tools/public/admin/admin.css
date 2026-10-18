@@ -417,3 +417,14 @@ html.ta-demo .bd-nav { bottom: 22px; }
 .ta-vday { display: flex; align-items: center; gap: 10px; margin: 18px 0 8px; }
 .ta-vlabel { padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; font: 600 12px/1.5 var(--f-text); text-transform: none; letter-spacing: 0; color: var(--muted); }
 .ta-vlabel.ta-vsoon { border-color: var(--ball); color: var(--ball); }
+/* The account menu (top bar): one small round button; the menu holds who is signed in, the language, sign out */
+.ta-tools { display: flex; align-items: center; gap: 8px; flex: none; }
+.ta-acct { position: relative; }
+.ta-acct > summary { list-style: none; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); cursor: pointer; }
+.ta-acct > summary::-webkit-details-marker { display: none; }
+.ta-acct > summary:hover, .ta-acct[open] > summary { color: var(--ink); border-color: var(--ball); }
+.ta-acct-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; display: grid; min-width: 200px; max-width: min(80vw, 320px); padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+.ta-acct:not([open]) > .ta-acct-pop { display: none; }
+.ta-acct-who { margin: 4px 10px 6px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.ta-acct-i { padding: 9px 10px; border: 0; border-radius: 6px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ta-acct-i:hover, .ta-acct-i:focus-visible { background: color-mix(in srgb, var(--ball) 14%, transparent); }
