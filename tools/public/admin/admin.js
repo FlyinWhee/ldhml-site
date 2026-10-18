@@ -927,10 +927,10 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var rows = teams.map(function (tm) {
       var total = 0; tm.roster.forEach(function (r) { var v = r.pos === 'g' ? r.salary_g : r.salary_s; if (v != null) total += v; });
       var over = rule.salary_cap != null && total > rule.salary_cap, cs = capsOf(tm);
-      return '<tr><td class="ta-c-name">' + teamHead(tm) + '</td><td data-label="' + esc(t('teamCaptains')) + '">' + (cs.length ? cs.map(function (c) { return esc(c.name); }).join(', ') : '<span class="note">' + t('noCaptainTeam') + '</span>') + '</td>' +
-        '<td class="num" data-label="' + esc(t('playersShort')) + '">' + tm.roster.length + '</td><td class="num' + (over ? ' ta-over' : '') + '" data-label="' + esc(t('payrollShort')) + '">' + esc(money(total) + (rule.salary_cap != null ? ' / ' + money(rule.salary_cap) : '')) + '</td></tr>';
+      return '<tr><td class="ta-c-name">' + teamHead(tm) + '<span class="ta-ov-cap">' + (cs.length ? cs.map(function (c) { return '<a class="lnk" href="' + hrefCap(c.id) + '">' + esc(c.name) + '</a>'; }).join(', ') : esc(t('noCaptainTeam'))) + '</span></td>' +
+        '<td class="num" title="' + esc(t('playersShort')) + '">' + tm.roster.length + '</td><td class="num' + (over ? ' ta-over' : '') + '" title="' + esc(t('payrollShort')) + '">' + esc(money(total) + (rule.salary_cap != null ? ' / ' + money(rule.salary_cap) : '')) + '</td></tr>';
     }).join('');
-    var teamsP = '<section class="ta-panel"><h2 class="ta-ph">' + t('tabTeams') + '</h2>' + (rows ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-ovteams"><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
+    var teamsP = '<section class="ta-panel"><h2 class="ta-ph">' + t('tabTeams') + '</h2>' + (rows ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-ovteams"><thead><tr><th>' + t('team') + '</th><th class="num">' + t('playersShort') + '</th><th class="num">' + t('payrollShort') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
       '<p><a class="lnk" href="' + hrefL(l.slug, 'teams') + '">' + t('ovSeeTeams') + '</a></p></section>';
     return '<h1 class="ph">' + esc(l.name) + '</h1>' + (leagueOff(l.slug) ? '<p class="note ta-offnote">' + t('leagueOffNote') + '</p>' : '') + kpis +
       '<div class="ta-grid2"><div class="ta-col">' + val + '</div><div class="ta-col">' + teamsP + '</div></div>';
