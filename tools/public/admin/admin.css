@@ -394,3 +394,10 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-tgame { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
 .ad-tgame-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
 .ad-tgame .ld-team { margin-top: 8px; }
+/* Team page: past replacements, one line each */
+.ad-qrows { list-style: none; display: grid; gap: 4px; margin: 0; padding: 0; }
+.ad-qrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 4px 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.ad-qd { color: var(--muted); white-space: nowrap; }
+.ad-ql { min-width: 0; }
+.ad-qrow .ad-qst { padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) { .ad-qrow { grid-template-columns: minmax(0, 1fr) auto; } .ad-ql { grid-column: 1 / -1; grid-row: 2; } }

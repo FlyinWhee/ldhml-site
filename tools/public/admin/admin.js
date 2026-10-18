@@ -151,7 +151,7 @@
       superNote: 'défini sur le serveur', meNote: 'vous', newAdminNote: 'La personne se connecte avec un code envoyé à ce courriel.', adminEmailNote: 'le courriel ne change pas (supprimez et recréez au besoin).',
       adminAdded: 'Administrateur ajouté.', confirmDisableAdmin: 'Désactiver cet administrateur ? Ses sessions seront fermées.', confirmDeleteAdmin: 'Supprimer l’administrateur {n} ? Le journal garde ses actions.',
       e_admin: 'Nom et courriel valides requis.', e_admin_exists: 'Ce courriel est déjà un administrateur.', e_super_admin: 'Un super admin se change dans SUPER_ADMINS, sur le serveur.', e_self: 'Vous ne pouvez pas faire ça à votre propre compte.', e_super_only: 'Réservé aux super admins.',
-      publicStats: 'Statistiques publiques', teamNotFound: 'Cette équipe n’existe pas dans cette saison.', pastGames: 'Matchs joués ({n})', backPlayers: '← Joueurs de la section',
+      qs_pending: 'À valider', qs_approved: 'Validé', qs_refused: 'Refusé', noUpcomingSubs: 'Aucun remplacement pour les prochains matchs.', pastSubs: 'Matchs passés ({n})', publicStats: 'Statistiques publiques', teamNotFound: 'Cette équipe n’existe pas dans cette saison.', pastGames: 'Matchs joués ({n})', backPlayers: '← Joueurs de la section',
       personNotFound: 'Cette personne n’existe plus.', personWho: 'Identité', personCaptain: 'Compte de capitaine', personSeason: '{s} cette saison', personNotListed: 'Pas sur la liste de la section cette saison.',
       personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
@@ -227,7 +227,7 @@
       superNote: 'set on the server', meNote: 'you', newAdminNote: 'The person signs in with a code sent to this email.', adminEmailNote: 'the email does not change (delete and create again if needed).',
       adminAdded: 'Admin added.', confirmDisableAdmin: 'Disable this admin? Their sessions will be closed.', confirmDeleteAdmin: 'Delete the admin {n}? The log keeps their actions.',
       e_admin: 'A valid name and email are required.', e_admin_exists: 'This email is already an admin.', e_super_admin: 'A super admin is changed in SUPER_ADMINS, on the server.', e_self: 'You cannot do that to your own account.', e_super_only: 'Super admins only.',
-      publicStats: 'Public stats', teamNotFound: 'This team does not exist in this season.', pastGames: 'Games played ({n})', backPlayers: '← Section players',
+      qs_pending: 'To validate', qs_approved: 'Validated', qs_refused: 'Refused', noUpcomingSubs: 'No replacement for the upcoming games.', pastSubs: 'Past games ({n})', publicStats: 'Public stats', teamNotFound: 'This team does not exist in this season.', pastGames: 'Games played ({n})', backPlayers: '← Section players',
       personNotFound: 'This person no longer exists.', personWho: 'Identity', personCaptain: 'Captain account', personSeason: '{s} this season', personNotListed: 'Not on the section list this season.',
       personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
@@ -581,9 +581,18 @@
     var up = sched.filter(function (x) { return x.game.date >= today; }), past = sched.filter(function (x) { return x.game.date < today; }).reverse();
     var schedP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabCal') + '</h2>' + (up.length ? '<ul class="ad-tgames">' + up.map(gameRow).join('') + '</ul>' : '<p class="note">' + t('noNight') + '</p>') +
       (past.length ? '<details class="ad-fold"><summary>' + esc(t('pastGames', { n: past.length })) + '</summary><ul class="ad-tgames">' + past.map(gameRow).join('') + '</ul></details>' : '') + '</section>';
+    /* replacements: full cards for today's and upcoming games (and any still to validate); past ones on one line each */
     var reqs = S.subs.filter(function (q) { return q.team && q.team.id === tm.id; });
+    var live = reqs.filter(function (q) { return q.game_date >= today || q.status === 'pending'; }), done = reqs.filter(function (q) { return live.indexOf(q) < 0; });
+    var sec = l.section, nameOf2 = function (id, name) { return id ? '<a class="lnk" href="' + hrefP(id, sec) + '">' + esc(name || '?') + '</a>' : esc(name || '?'); };
+    var slim = function (q) {
+      return '<li class="ad-qrow"><span class="ad-qd">' + esc(window.LDBuilder.day(ctx, q.game_date)) + (q.game_time ? ' · ' + esc(q.game_time) : '') + '</span>' +
+        '<span class="ad-ql">' + q.lines.map(function (x) { return nameOf2(x.absent_id, x.absent_name) + ' → ' + nameOf2(x.sub_id, x.sub_name); }).join(' · ') + '</span>' +
+        '<span class="ad-qst ad-qst-' + q.status + '">' + esc(t('qs_' + q.status)) + '</span></li>';
+    };
     var subsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabSubs') + (reqs.length ? ' <span class="ad-hcnt">' + reqs.length + '</span>' : '') + '</h2>' +
-      (reqs.length ? '<div class="bd-reqs">' + reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { team: false }); }).join('') + '</div>' : '<p class="note">' + t('noSubs') + '</p>') + '</section>';
+      (live.length ? '<div class="bd-reqs">' + live.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { team: false }); }).join('') + '</div>' : reqs.length ? '<p class="note">' + t('noUpcomingSubs') + '</p>' : '<p class="note">' + t('noSubs') + '</p>') +
+      (done.length ? '<h3 class="ad-h3">' + esc(t('pastSubs', { n: done.length })) + '</h3><ul class="ad-qrows">' + done.map(slim).join('') + '</ul>' : '') + '</section>';
     return head + '<datalist id="ad-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
       '<div class="ad-grid2"><div class="ad-col">' + teamCard(tm, l, rule) + '</div><div class="ad-col">' + schedP + subsP + '</div></div>';
   }
@@ -710,7 +719,7 @@
     var reqs = '<section class="ad-panel"><h2 class="ad-ph">' + t('capRequests') + (x.requests.length ? ' <span class="ad-hcnt">' + x.requests.length + '</span>' : '') + '</h2>' + (x.requests.length ? '<ul class="ad-capreqs">' + x.requests.map(function (q) {
       var ql = leagueOf(q.league) || { slug: q.league, short: q.league, name: q.league, theme: 'default' };
       return '<li><a href="' + hrefL(q.league, 'subs') + '">' + window.LDLook.leagueBadge({ slug: ql.slug, short: ql.short, name: ql.name, logo: ql.logo }, { theme: ql.theme, teams: [{ abb: q.abb, name: q.team_name }] }) + '<span>' + esc(window.LDBuilder.day(ctx, q.game_date)) + (q.game_time ? ' · ' + esc(q.game_time) : '') + '</span>' +
-        '<span class="note">' + esc(t('capLines', { n: q.lines })) + '</span><span class="ad-qst ad-qst-' + q.status + '">' + esc(t('sf_' + q.status)) + '</span></a></li>';
+        '<span class="note">' + esc(t('capLines', { n: q.lines })) + '</span><span class="ad-qst ad-qst-' + q.status + '">' + esc(t('qs_' + q.status)) + '</span></a></li>';
     }).join('') + '</ul>' : '<p class="note">' + t('capNoRequests') + '</p>') + '</section>';
     var log = '<section class="ad-panel"><h2 class="ad-ph">' + t('audit') + '</h2>' + (x.log.length ? '<ul class="ad-caplog">' + x.log.map(function (a) {
       return '<li><span class="note">' + esc(fmt(a.at)) + '</span> <code>' + esc(a.action) + '</code> <span class="note">' + esc(a.actor_name || a.actor_kind) + '</span></li>';
@@ -747,7 +756,7 @@
       var ql = leagueOf(q.league) || { slug: q.league, short: q.league, name: q.league, theme: 'default' }, absent = q.absent_id === p.id;
       return '<li><a href="' + hrefL(q.league, 'subs') + '">' + window.LDLook.leagueBadge({ slug: ql.slug, short: ql.short, name: ql.name, logo: ql.logo }, { theme: ql.theme, teams: [{ abb: q.abb, name: q.team_name }] }) +
         '<span>' + esc(window.LDBuilder.day(builderCtx(), q.game_date)) + '</span><span class="note">' + esc(absent ? t('personWasAbsent', { n: q.sub_name || '?' }) : t('personReplaced', { n: q.absent_name || '?' })) + '</span>' +
-        '<span class="ad-qst ad-qst-' + q.status + '">' + esc(t('sf_' + q.status)) + '</span></a></li>';
+        '<span class="ad-qst ad-qst-' + q.status + '">' + esc(t('qs_' + q.status)) + '</span></a></li>';
     };
     var lines = x.lines.filter(function (q) { return inSec(q.league); });
     var subsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabSubs') + (lines.length ? ' <span class="ad-hcnt">' + lines.length + '</span>' : '') + '</h2>' +
