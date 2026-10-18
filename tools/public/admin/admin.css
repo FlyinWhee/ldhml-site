@@ -383,3 +383,5 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-qst-approved { border-color: var(--ok, #3fb67a) !important; color: var(--ok, #3fb67a); }
 .ad-qst-refused { border-color: var(--bad) !important; color: var(--bad); }
 .ad-super { color: var(--ball); border-color: var(--ball); }
+.ad-cfg-top > .sec { margin-top: 0; }
+.ad-cfg-top { margin-top: 28px; }

@@ -385,7 +385,7 @@
       '<td class="ad-cap-mail" data-label="' + esc(t('email')) + '" title="' + esc(c.email) + '">' + esc(c.email) + '</td>' +
       '<td data-label="' + esc(t('colTeamsSeason')) + '"><div class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">—</span>') + '</div></td>' +
       '<td class="ad-c-sm" data-label="' + esc(t('colLogin')) + '">' + (c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
-      '<td class="ad-acts ad-ed">' + (c.disabled_at ? '' : '<button type="button" class="lnk ad-linkbtn" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
+      '<td class="ad-acts">' + (c.disabled_at ? '' : '<button type="button" class="lnk ad-linkbtn" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
       '<button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="lnk ad-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
       '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></td></tr>';
@@ -400,10 +400,10 @@
     var seg = '<div class="seg" role="group">' + [['', 'cf_all'], ['noaccess', 'cf_noaccess'], ['never', 'cf_never'], ['off', 'cf_off']].map(function (x) {
       return '<button type="button" data-cf="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + esc(t(x[1])) + ' (' + n(x[0]) + ')</button>';
     }).join('') + '</div>';
-    return '<section class="sec" id="ad-accounts"><div class="sec-h ad-sec-h"><h2>' + t('tabCaptains') + '</h2><button type="button" class="ad-btn ad-btn-sm ad-ed" data-act="new-cap">+ ' + t('newCaptain') + '</button></div>' +
+    return '<section class="sec" id="ad-accounts"><div class="sec-h ad-sec-h"><h2>' + t('tabCaptains') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="new-cap">+ ' + t('newCaptain') + '</button></div>' +
       '<p class="note">' + t('capsHint') + '</p>' +
       '<div class="controls"><input id="ad-cq" class="ctl" type="search" data-cq placeholder="' + esc(t('capSearch')) + '" value="' + esc(S.cq || '') + '" aria-label="' + esc(t('capSearch')) + '">' + seg + '<span class="count">' + esc(t('nCaptains', { n: list.length })) + '</span></div>' +
-      (list.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colTeamsSeason') + '</th><th>' + t('colLogin') + '</th><th class="ad-ed"></th></tr></thead><tbody>' +
+      (list.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colTeamsSeason') + '</th><th>' + t('colLogin') + '</th><th></th></tr></thead><tbody>' +
         list.map(captainRow).join('') + '</tbody></table></div>' : '<p class="empty">' + t(S.captains.length ? 'noCapsMatch' : 'noCaptains') + '</p>') + '</section>';
   }
 
@@ -604,7 +604,7 @@
       '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ad-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
     var seasons = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
       (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('name') + '</th><th class="num">' + t('nbhpaShort') + '</th><th>' + t('status') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
-    var head = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>' + scopeBar('', editToggle());
+    var head = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>';
     if (!s || !S.data) return head + seasons + accountsPanel();
     /* the leagues of the season: on or off (a league off is hidden from the daily work); its rules and teams are in its settings */
     var lgs = '<section class="sec"><div class="sec-h ad-sec-h"><h2>' + t('leaguesOfSeason') + '</h2></div><p class="note">' + t('leaguesHint2') + '</p>' + (S.data.sections || []).map(function (sec) {
@@ -627,10 +627,10 @@
         '<button type="button" class="ad-del" data-adm-del="' + a.id + '" data-name="' + esc(a.name) + '">' + t('del') + '</button>';
       return '<tr' + (a.disabled_at ? ' class="ad-off"' : '') + '><td class="ad-c-name"><b>' + esc(a.name) + '</b>' + tag + '</td><td class="ad-cap-mail" data-label="' + esc(t('email')) + '">' + esc(a.email) + '</td>' +
         '<td class="ad-c-sm" data-label="' + esc(t('colLogin')) + '">' + (a.last_login_at ? esc(fmt(a.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
-        '<td class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-adm-edit="' + a.id + '">' + t('edit') + '</button>' + acts + '</td></tr>';
+        '<td class="ad-acts"><button type="button" class="lnk ad-linkbtn" data-adm-edit="' + a.id + '">' + t('edit') + '</button>' + acts + '</td></tr>';
     }).join('');
-    return '<section class="sec" id="ad-admins"><div class="sec-h ad-sec-h"><h2>' + t('adminsH') + '</h2><button type="button" class="ad-btn ad-btn-sm ad-ed" data-act="admin-new">+ ' + t('newAdmin') + '</button></div>' +
-      '<p class="note">' + t('adminsHint') + '</p><div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colLogin') + '</th><th class="ad-ed"></th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+    return '<section class="sec" id="ad-admins"><div class="sec-h ad-sec-h"><h2>' + t('adminsH') + '</h2><button type="button" class="ad-btn ad-btn-sm" data-act="admin-new">+ ' + t('newAdmin') + '</button></div>' +
+      '<p class="note">' + t('adminsHint') + '</p><div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colLogin') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
   }
   /* ---------- One captain (from Configuration or a team card): everything about them ----------
    * The account and its actions; the access of every season (with the history); their player profile in the tools
@@ -982,7 +982,7 @@
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
-    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal', 'config'].indexOf(S.tab) >= 0));
+    $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal'].indexOf(S.tab) >= 0));
     $('#main').classList.toggle('ad-archived', archived);
     if (archived && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ad-msg ad-arch" role="status">' + esc(t('archivedBanner')) + '</p>');
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
