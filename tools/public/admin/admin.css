@@ -401,3 +401,4 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-ql { min-width: 0; }
 .ad-qrow .ad-qst { padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 @media (max-width: 600px) { .ad-qrow { grid-template-columns: minmax(0, 1fr) auto; } .ad-ql { grid-column: 1 / -1; grid-row: 2; } }
+.ad-msg.ad-demo { border-color: var(--ball); background: color-mix(in srgb, var(--ball) 14%, transparent); font-weight: 600; }

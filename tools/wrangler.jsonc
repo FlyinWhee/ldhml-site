@@ -24,5 +24,23 @@
     "EMAIL_MODE": "console",
     "EMAIL_FROM": ""
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // The online demo (read only; docs/tools.md): its own Worker and its own demo database. Deploy: npx wrangler deploy -c tools/wrangler.jsonc --env demo
+  // Secrets of the demo: CODE_PEPPER and DEMO_KEY (npx wrangler secret put <NAME> -c tools/wrangler.jsonc --env demo).
+  "env": {
+    "demo": {
+      "name": "ldhml-tools-demo",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "ldhml-tools-demo",
+          // Replace with the id printed by "npx wrangler d1 create ldhml-tools-demo".
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations"
+        }
+      ],
+      // DEMO=1: every write refused; the demo key signs in (src/demo.js). The demo admin is a super admin (a fake address).
+      "vars": { "DEMO": "1", "EMAIL_MODE": "console", "EMAIL_FROM": "", "SUPER_ADMINS": "demo@demo.invalid" }
+    }
+  }
 }

@@ -27,6 +27,8 @@
       noTeams: 'Aucune équipe pour le moment. Un administrateur de la ligue doit vous donner l’accès à votre équipe.',
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
+demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
+      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
       e_not_open: 'Ce remplacement n’est plus ouvert.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
       foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi déclarer le remplacement pour vous.'
@@ -48,6 +50,8 @@
       noTeams: 'No team yet. A league admin must give you access to your team.',
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
+demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
+      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
       e_not_open: 'This replacement is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
       foot: 'LDHML tools. Need help? Write to your league’s admins: they can also declare the replacement for you.'
@@ -93,6 +97,12 @@
 
   /* ---------- views ---------- */
   function viewLogin() {
+    // the online demo (no email yet): the demo key, then a captain picked from the list
+    if (S.demoMode) return '<h1 class="ph">' + t('demoTitle') + '</h1><p class="lede">' + t('demoLede') + '</p>' + (!S.demoCaps
+      ? '<form id="f-demo" class="ad-form ad-login"><label>' + t('demoKey') + '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>'
+      : '<form id="f-demo-pick" class="ad-form ad-login"><label>' + t('demoPick') + '<select class="ctl" name="captain" required>' + S.demoCaps.map(function (c) {
+          return '<option value="' + c.id + '">' + esc(c.name + ' · ' + c.teams.map(function (x) { var l = S.data && S.data.leagues.filter(function (y) { return y.slug === x.league; })[0]; return (l ? l.short : x.league) + ' ' + x.abb; }).join(', ')) + '</option>';
+        }).join('') + '</select></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>');
     var form = S.step === 'email'
       ? '<form id="f-email" class="ad-form ad-login"><label>' + t('emailLabel') + '<input class="ctl" type="email" name="email" autocomplete="email" required value="' + esc(S.email) + '"></label><button class="ad-btn" type="submit">' + t('sendCode') + '</button></form>'
       : '<p class="lede">' + esc(t('codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ad-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
@@ -201,7 +211,7 @@
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
-    $('#main').innerHTML = msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
+    $('#main').innerHTML = (S.me && S.me.demo ? '<p class="ad-msg ad-demo" role="status">' + esc(t('demoBanner')) + '</p>' : '') + msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
     if (asking) window.LDBuilder.mount($('#cp-builder'), S.sub, ctx());
     $('#foot').innerHTML = '<p>' + t('foot') + '</p>';
     document.title = 'LDHML | ' + t('title');
@@ -237,10 +247,25 @@
   /* ---------- events ---------- */
   document.addEventListener('submit', function (e) {
     var f = e.target;
-    if (f.id !== 'f-email' && f.id !== 'f-code') return;   // the builder handles its own form
+    if (f.id !== 'f-email' && f.id !== 'f-code' && f.id !== 'f-demo' && f.id !== 'f-demo-pick') return;   // the builder handles its own form
     e.preventDefault();
     var v = function (n) { var el = f.elements[n]; return el ? el.value.trim() : ''; };
     S.msg = null;
+    if (f.id === 'f-demo') {
+      S.demoKey = v('key');
+      api('/demo-accounts?key=' + encodeURIComponent(S.demoKey)).then(function (r) {
+        if (!r.ok) { say('err', errMsg(r)); render(); return; }
+        S.demoCaps = r.data.captains || []; render();
+      });
+      return;
+    }
+    if (f.id === 'f-demo-pick') {
+      api('/demo-login', 'POST', { key: S.demoKey, captain_id: Number(v('captain')) }).then(function (r) {
+        if (!r.ok) { say('err', errMsg(r)); render(); return; }
+        S.me = r.data.captain; S.msg = null; refresh();
+      });
+      return;
+    }
     if (f.id === 'f-email') {
       S.email = v('email');
       api('/login/start', 'POST', { email: S.email }).then(function (r) {
@@ -276,8 +301,9 @@
   });
 
   /* ---------- start ---------- */
-  Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me')]).then(function (rs) {
-    S.data = rs[0];
+  Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
+    fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
+    S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
     if (rs[1].ok) { S.me = rs[1].data.captain; return refresh(); }
     render();
   });

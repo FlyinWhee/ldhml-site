@@ -8,6 +8,7 @@ import { lineupApi } from './lineups.js';
 import { isArchived, archiveOthers } from './seasons.js';
 import { gamesApi, nbhpaPlan } from './games.js';
 import { adminsApi, ensureSuperAdmin, isSuper } from './admins.js';
+import { isDemo, demoAdminLogin } from './demo.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -26,6 +27,13 @@ export async function adminApi(req, env, url) {
   const m = req.method;
 
   // ---- sign-in (no session needed) ----
+  // The online demo (DEMO=1): the demo key opens the demo admin account (no email yet). src/demo.js
+  if (m === 'POST' && path === '/demo-login') {
+    if (!isDemo(env)) return fail(404, 'not_found');
+    const r = await demoAdminLogin(req, env);
+    if (r instanceof Response) return r;
+    return json({ ok: true, admin: { email: r.user.email, name: r.user.name, super: isSuper(env, r.user), demo: true } }, 200, { 'Set-Cookie': sessionCookie('admin', r.token) });
+  }
   if (m === 'POST' && path === '/login/start') {
     const body = await readJson(req), email = body && cleanEmail(body.email);
     if (!email) return fail(400, 'email');
@@ -51,7 +59,7 @@ export async function adminApi(req, env, url) {
     await endSession(env, req, 'admin');
     return json({ ok: true }, 200, { 'Set-Cookie': clearCookie('admin') });
   }
-  if (m === 'GET' && path === '/me') return json({ admin: { email: admin.email, name: admin.name, super: isSuper(env, admin) } });
+  if (m === 'GET' && path === '/me') return json({ admin: { email: admin.email, name: admin.name, super: isSuper(env, admin), demo: isDemo(env) } });
   // ---- the admins (super admins only) ----
   const admins = await adminsApi({ req, env, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail) });
   if (admins) return admins;

@@ -154,6 +154,8 @@
       qs_pending: 'À valider', qs_approved: 'Validé', qs_refused: 'Refusé', noUpcomingSubs: 'Aucun remplacement pour les prochains matchs.', pastSubs: 'Matchs passés ({n})', publicStats: 'Statistiques publiques', teamNotFound: 'Cette équipe n’existe pas dans cette saison.', pastGames: 'Matchs joués ({n})', backPlayers: '← Joueurs de la section',
       personNotFound: 'Cette personne n’existe plus.', personWho: 'Identité', personCaptain: 'Compte de capitaine', personSeason: '{s} cette saison', personNotListed: 'Pas sur la liste de la section cette saison.',
       personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
+demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
+      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -230,6 +232,8 @@
       qs_pending: 'To validate', qs_approved: 'Validated', qs_refused: 'Refused', noUpcomingSubs: 'No replacement for the upcoming games.', pastSubs: 'Past games ({n})', publicStats: 'Public stats', teamNotFound: 'This team does not exist in this season.', pastGames: 'Games played ({n})', backPlayers: '← Section players',
       personNotFound: 'This person no longer exists.', personWho: 'Identity', personCaptain: 'Captain account', personSeason: '{s} this season', personNotListed: 'Not on the section list this season.',
       personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
+demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
+      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -365,6 +369,9 @@
 
   /* ---------- views ---------- */
   function viewLogin() {
+    // the online demo (no email yet): the demo key opens the demo admin account
+    if (S.demoMode) return '<h1 class="ph">' + t('demoTitle') + '</h1><p class="lede">' + t('demoLede') + '</p><form id="f-demo" class="ad-form ad-login"><label>' + t('demoKey') +
+      '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>';
     var form = S.step === 'email'
       ? '<form id="f-email" class="ad-form ad-login"><label>' + t('emailLabel') + '<input class="ctl" type="email" name="email" autocomplete="email" required value="' + esc(S.email) + '"></label><button class="ad-btn" type="submit">' + t('sendCode') + '</button></form>'
       : '<p class="lede">' + esc(t('codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ad-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
@@ -1071,6 +1078,7 @@
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
     $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal'].indexOf(S.tab) >= 0));
     $('#main').classList.toggle('ad-archived', archived);
+    if (S.me && S.me.demo && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ad-msg ad-demo" role="status">' + esc(t('demoBanner')) + '</p>');
     if (archived && !S.modal) $('#main').insertAdjacentHTML('afterbegin', '<p class="ad-msg ad-arch" role="status">' + esc(t('archivedBanner')) + '</p>');
     $('#modal').innerHTML = S.me && S.modal ? modalHtml(msg) : '';
     document.documentElement.classList.toggle('ad-modal-open', !!(S.me && S.modal));
@@ -1130,6 +1138,11 @@
         if (!r.ok) { say('err', errMsg(r)); render(); return; }
         S.step = 'code'; S.devCode = r.data.devCode || ''; render();
         var c = $('#f-code input'); if (c) c.focus();
+      });
+    } else if (f.id === 'f-demo') {
+      api('/demo-login', 'POST', { key: v('key') }).then(function (r) {
+        if (!r.ok) { say('err', errMsg(r)); render(); return; }
+        S.me = r.data.admin; S.msg = null; refresh();
       });
     } else if (f.id === 'f-code') {
       api('/login/verify', 'POST', { email: S.email, code: v('code') }).then(function (r) {
@@ -1337,8 +1350,9 @@
 
   /* ---------- start ---------- */
   route();
-  Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me')]).then(function (rs) {
-    S.data = rs[0];
+  Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
+    fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
+    S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
     route(); fixScope();
     if (rs[1].ok) { S.me = rs[1].data.admin; return refresh(); }
     render();

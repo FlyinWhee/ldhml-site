@@ -12,6 +12,7 @@ src/lineups.js     the actual lineup of a game (roster - absents + replacements 
 src/games.js       our schedule (games table): read helpers, the optional NBHPA import (never over a hand edit), admin edits
 src/guest.js       a replacement player not on the list ("joueur hors-ligue")
 src/admins.js      admin accounts: super admins (SUPER_ADMINS secret), the admin list and its changes (super admins only)
+src/demo.js        the online demo (DEMO=1): every write refused, sign-in with the DEMO_KEY secret; its own Worker and database (env "demo")
 src/auth.js        passwordless sign-in (emailed code), sessions, cookies; admin and captain kinds kept apart
 src/email.js       sends the code: "console" (local only) or "resend"
 src/http.js        JSON responses, origin check, input cleaning

@@ -589,6 +589,47 @@ r = await worker.fetch(new Request(ORIGIN + '/admin/'), env);
 assert.equal(r.status, 200); assert.match(await r.text(), /admin\.js/);
 assert.equal((await call('/api/nothing')).status, 404);
 
+// ---- the online demo (DEMO=1): read only; the demo key opens a demo admin or a captain from a list ----
+{
+  const denv = { ...env, DEMO: '1', DEMO_KEY: 'demo-key-0123456789' };
+  const dcall = async (pp, { method = 'GET', body, cookie: ck } = {}) => {
+    const headers = { 'CF-Connecting-IP': '203.0.113.8' };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (ck) headers.Cookie = ck;
+    if (method !== 'GET') headers.Origin = ORIGIN;
+    const res = await worker.fetch(new Request(ORIGIN + pp, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined }), denv);
+    let data = null; try { data = await res.clone().json(); } catch { /* not json */ }
+    return { status: res.status, data, cookie: res.headers.get('Set-Cookie') };
+  };
+  assert.equal((await dcall('/api/public/season')).data.demo, true, 'the page can tell it is the demo');
+  assert.equal((await call('/api/public/season')).data.demo, false);
+  assert.equal((await dcall('/api/admin/login/start', { method: 'POST', body: { email: 'boss@example.test' } })).data.error, 'demo_readonly', 'no email sign-in in the demo');
+  assert.equal((await dcall('/api/admin/demo-login', { method: 'POST', body: { key: 'wrong-key-0123456' } })).status, 401, 'the demo key is required');
+  r = await dcall('/api/admin/demo-login', { method: 'POST', body: { key: denv.DEMO_KEY } });
+  assert.ok(r.status === 200 && r.data.admin.demo, 'the demo key opens the demo admin');
+  const dck = r.cookie.split(';')[0];
+  assert.equal((await dcall('/api/admin/me', { cookie: dck })).data.admin.demo, true);
+  assert.equal((await dcall('/api/admin/teams?season=' + seasonId, { cookie: dck })).status, 200, 'everything can be read');
+  for (const [pp, b] of [['/api/admin/teams', { season_id: seasonId, league: 'retro', name: 'X', abb: 'X' }], ['/api/admin/captains', { name: 'X', email: 'x@example.test' }], ['/api/admin/games/import', { season_id: seasonId }], ['/api/admin/seasons/' + seasonId + '/delete', {}]])
+    assert.equal((await dcall(pp, { method: 'POST', cookie: dck, body: b })).data.error, 'demo_readonly', 'nothing can be changed: ' + pp);
+  assert.notEqual((await dcall('/api/admin/replacements/check', { method: 'POST', cookie: dck, body: { team_id: teamA, game_id: gameA.id, lines: [] } })).data.error, 'demo_readonly', 'the replacement checks still run (they write nothing)');
+  // a captain from the list
+  assert.equal((await dcall('/api/captain/demo-accounts?key=nope-nope-nope-1')).status, 401);
+  const statuses = (await DB.prepare('SELECT id, status FROM seasons').all()).results;   // the demo lists the captains of the live season
+  await DB.prepare("UPDATE seasons SET status = CASE WHEN id = ? THEN 'active' WHEN status = 'active' THEN 'archived' ELSE status END").bind(seasonId).run();
+  r = await dcall('/api/captain/demo-accounts?key=' + denv.DEMO_KEY);
+  assert.ok(r.data.captains.some((c) => c.id === capRetro && c.teams.length), 'the captains with a team this season');
+  r = await dcall('/api/captain/demo-login', { method: 'POST', body: { key: denv.DEMO_KEY, captain_id: capRetro } });
+  const dcc = r.cookie.split(';')[0];
+  assert.ok((await dcall('/api/captain/me', { cookie: dcc })).data.captain.demo && (await dcall('/api/captain/teams', { cookie: dcc })).status === 200, 'the captain view, read only');
+  assert.equal((await dcall('/api/captain/replacements', { method: 'POST', cookie: dcc, body: { team_id: teamA, game_id: gameA.id, lines: [] } })).data.error, 'demo_readonly');
+  for (const st of statuses) await DB.prepare('UPDATE seasons SET status = ? WHERE id = ?').bind(st.status, st.id).run();
+  assert.equal((await call('/api/admin/demo-login', { method: 'POST', body: { key: denv.DEMO_KEY } })).status, 404, 'outside the demo, no demo sign-in');
+  assert.equal((await call('/api/captain/demo-accounts?key=' + denv.DEMO_KEY)).status, 404);
+  await DB.prepare("DELETE FROM sessions WHERE user_id IN (SELECT id FROM admins WHERE email = 'demo@demo.invalid') AND kind = 'admin'").run();
+  await DB.prepare("DELETE FROM admins WHERE email = 'demo@demo.invalid'").run();
+}
+
 // ---- the admin page in a browser (jsdom), wired to the Worker ----
 await DB.prepare('DELETE FROM login_codes').run();
 const html = await readFile(path.join(root, 'dist-tools/admin/index.html'), 'utf8');

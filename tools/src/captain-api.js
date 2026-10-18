@@ -3,6 +3,7 @@
 // Every change writes an audit row (actor_kind 'captain').
 import { json, fail, readJson, cleanEmail, isLocal, now } from './http.js';
 import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearCookie } from './auth.js';
+import { isDemo, demoCaptainApi } from './demo.js';
 import { sendCode } from './email.js';
 import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
@@ -27,6 +28,14 @@ export async function captainApi(req, env, url) {
   const m = req.method;
 
   // ---- sign-in (no session needed): same rules as the admin sign-in ----
+  // The online demo (DEMO=1): the demo key, then a captain picked from a list (src/demo.js).
+  if (path === '/demo-accounts' || path === '/demo-login') {
+    if (!isDemo(env)) return fail(404, 'not_found');
+    const r = await demoCaptainApi(req, env, url, path);
+    if (!r) return fail(404, 'not_found');
+    if (r instanceof Response) return r;
+    return json({ ok: true, captain: { name: r.user.name, demo: true } }, 200, { 'Set-Cookie': sessionCookie('captain', r.token) });
+  }
   if (m === 'POST' && path === '/login/start') {
     const body = await readJson(req), email = body && cleanEmail(body.email);
     if (!email) return fail(400, 'email');
@@ -49,7 +58,7 @@ export async function captainApi(req, env, url) {
     await endSession(env, req, 'captain');
     return json({ ok: true }, 200, { 'Set-Cookie': clearCookie('captain') });
   }
-  if (m === 'GET' && path === '/me') return json({ captain: { name: cap.name, email: cap.email } });
+  if (m === 'GET' && path === '/me') return json({ captain: { name: cap.name, email: cap.email, demo: isDemo(env) } });
 
   // My teams, each with its roster (salaries of its section's list) and its league rules.
   if (m === 'GET' && path === '/teams') {

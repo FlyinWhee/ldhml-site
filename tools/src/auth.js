@@ -72,6 +72,19 @@ export async function verifyLogin(env, kind, email, code) {
   return { token, user };
 }
 
+/** A new session for an account (the demo sign-in; the code sign-in makes its own). Returns the token. */
+export async function newSession(env, kind, userId) {
+  const k = KINDS[kind], t = now(), token = randomToken();
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(t),
+    env.DB.prepare('INSERT INTO sessions (token_h, kind, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').bind(await hmac(env.CODE_PEPPER, 's:' + token), kind, userId, t, t + k.ttl),
+    env.DB.prepare(`UPDATE ${k.table} SET last_login_at = ? WHERE id = ?`).bind(t, userId)
+  ]);
+  return token;
+}
+/** Two secrets equal? Compared through HMAC, so neither the length nor the content leaks through the timing. */
+export async function sameSecret(env, a, b) { return sameHex(await hmac(env.CODE_PEPPER, 'k:' + a), await hmac(env.CODE_PEPPER, 'k:' + b)); }
+
 const tokenOf = (req, kind) => {
   const m = String(req.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + KINDS[kind].cookie + '=([A-Za-z0-9_-]{20,})'));
   return m ? m[1] : null;
