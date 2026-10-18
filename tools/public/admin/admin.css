@@ -428,3 +428,9 @@ html.ta-demo .bd-nav { bottom: 22px; }
 .ta-acct-who { margin: 4px 10px 6px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 .ta-acct-i { padding: 9px 10px; border: 0; border-radius: 6px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ta-acct-i:hover, .ta-acct-i:focus-visible { background: color-mix(in srgb, var(--ball) 14%, transparent); }
+/* The season: chosen in the account menu; a chip in the context bar only when it is not the live one */
+.ta-acct-season { padding: 4px 10px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.ta-acct-season .ta-inline { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.ta-acct-season .ctl { width: 100%; }
+.ta-seasonchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--warn); border-radius: 999px; background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--ink); font: 600 13px/1.3 var(--f-text); cursor: pointer; }
+.ta-acct-pop { min-width: 250px; }

@@ -676,7 +676,7 @@ assert.ok(d.querySelector('.ta-dive .ta-lcard') && !d.querySelector('.ta-kpis'),
 // the context first: LDHML > section > league (owner, 2026-10-17); links #/, #/<section>, #/<section>/<league>[/<tab>]
 const hL = (l, tab) => '#/' + l.sectionPath + '/' + l.path + (tab ? '/' + tab : '');
 const hS = (key) => '#/' + season.sections.find((x) => x.key === key).path;
-assert.ok(d.querySelector('.ta-ctxbar #ta-ctx') && d.querySelector('.ta-ctxbar #ta-season'), 'every page: the context bar (where you are, a switcher) and the season');
+assert.ok(d.querySelector('.ta-ctxbar #ta-ctx') && d.querySelector('#ta-acct #ta-season') && !d.querySelector('.ta-ctxbar #ta-season') && !d.querySelector('.ta-seasonchip'), 'every page: the context bar (where you are, a switcher); the season in the account menu, a chip only off the live season');
 assert.ok(d.querySelector('.nav a[href="#/config"]') && d.querySelector('.nav a[href="#/audit"]') && d.querySelector('.nav a[href="#/valider"]') && d.querySelectorAll('#tabbar a').length === 4, 'LDHML level: Accueil, À valider, Configuration, Journal (top bar; bottom bar on phones)');
 assert.equal(d.querySelectorAll('.ta-lcard').length, season.leagues.length, 'home: one card per league, by section');
 assert.ok([...d.querySelectorAll('.ta-lcard')].every((c) => c.querySelector('.ta-lc-head') && c.querySelector('.ta-lc-links a')), 'each card: the league, its action items, its pages');

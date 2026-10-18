@@ -158,7 +158,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
       backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
-      account: 'Compte', pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
+      account: 'Compte', seasonNow: 'Saison : {n} · {st}', seasonBack: 'Revenir à la saison en cours ({n})', pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
       leaguesHint2: 'Une ligue inactive est cachée du travail courant. Ses règles et ses équipes se règlent dans ses Réglages.',
@@ -238,7 +238,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
       backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
-      account: 'Account', pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
+      account: 'Account', seasonNow: 'Season: {n} · {st}', seasonBack: 'Back to the live season ({n})', pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
       leaguesHint2: 'A league that is off is hidden from the daily work. Its rules and teams are set in its Settings.',
@@ -354,6 +354,12 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   function scopeBar(level, extra) { return extra ? '<div class="ta-toolbar">' + extra + '</div>' : ''; }
   /* The context bar (top of every page): where we are (LDHML > section > league), a switcher to any other place
    * (in a league, the switcher keeps the same tab), and the season. */
+  /* The season is chosen in the account menu (it rarely changes). When it is not the live one, a chip says so; a tap goes back. */
+  function seasonChip() {
+    var s = curSeason(), live = S.seasons.filter(function (x) { return x.status === 'active'; })[0];
+    if (!s || !live || s.id === live.id) return '';
+    return '<button type="button" class="ta-seasonchip" data-season-live="' + live.id + '" title="' + esc(t('seasonBack', { n: live.name })) + '">' + esc(t('seasonNow', { n: s.name, st: t('st_' + s.status) })) + ' <span aria-hidden="true">✕</span></button>';
+  }
   function contextBar() {
     if (!S.data) return '';
     var sec = secOf(S.section), l = S.level === 'league' && leagueOf(S.league);
@@ -368,7 +374,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var here = l ? leagueOnly(l, false) : S.level === 'section' && sec ? '<b>' + esc(nameOf(sec)) + '</b>' : '<b>' + esc(t('ctxAll')) + '</b>';
     var crumbs = S.level === 'ldhml' ? '' : '<a class="ta-crumb" href="#/">LDHML</a><span class="ta-sep">›</span>' + (l && sec ? '<a class="ta-crumb" href="' + hrefS(sec.key) + '">' + esc(nameOf(sec)) + '</a><span class="ta-sep">›</span>' : '');
     return '<div class="ta-ctxbar"><nav class="ta-crumbs" aria-label="' + esc(t('ctxLabel')) + '">' + crumbs + '<details class="ta-ctx" id="ta-ctx"><summary>' + here + '<span class="ta-caret" aria-hidden="true">▾</span></summary>' + pop + '</details></nav>' +
-      '<div class="ta-ctx-r">' + seasonSelect() + '</div></div>';
+      '<div class="ta-ctx-r">' + seasonChip() + '</div></div>';
   }
 
   /* ---------- views ---------- */
@@ -1108,7 +1114,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var ACCT_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.8-3.8 3.6-5.8 7.2-5.8s6.4 2 7.2 5.8"/></svg>';
   function acctMenu(who) {
     return '<details class="ta-acct" id="ta-acct"><summary class="ta-acct-btn" aria-label="' + esc(t('account')) + '" title="' + esc(t('account')) + '">' + ACCT_ICON + '</summary><div class="ta-acct-pop">' +
-      (who ? '<p class="ta-acct-who">' + esc(who) + '</p>' : '') +
+      (who ? '<p class="ta-acct-who">' + esc(who) + '</p>' : '') + (S.me && S.seasons.length ? '<div class="ta-acct-season">' + seasonSelect() + '</div>' : '') +
       '<button type="button" class="ta-acct-i" data-act="lang">' + esc(t('lang')) + '</button>' +
       (S.me ? '<button type="button" class="ta-acct-i" data-act="logout">' + esc(t('signOut')) + '</button>' : '') + '</div></details>';
   }
@@ -1291,7 +1297,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   document.addEventListener('click', function (e) { var c = $('#ta-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ta-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-plg],[data-plf],[data-cf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del],[data-adm-edit],[data-adm-disable],[data-adm-enable],[data-adm-del]');
+      '[data-plg],[data-plf],[data-cf],[data-season-live],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del],[data-adm-edit],[data-adm-disable],[data-adm-enable],[data-adm-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -1309,6 +1315,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config'; return; }
     /* scope */
     if (b.hasAttribute('data-cf')) { S.cf = b.getAttribute('data-cf'); render(); return; }
+    if (b.hasAttribute('data-season-live')) { S.seasonId = num('data-season-live'); S.msg = null; refresh(); return; }
     if (b.hasAttribute('data-plg')) { S.plLeague = b.getAttribute('data-plg'); render(); return; }
     if (b.hasAttribute('data-cal-date')) { location.hash = hrefL(S.league, 'cal') + '/' + b.getAttribute('data-cal-date'); return; }
     if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + sg[0] + '/' + sg[1]; return; }
