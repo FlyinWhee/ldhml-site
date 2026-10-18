@@ -34,8 +34,8 @@
         {
           "binding": "DB",
           "database_name": "ldhml-tools-demo",
-          // Replace with the id printed by "npx wrangler d1 create ldhml-tools-demo".
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          // Created 2026-10-18 ("npx wrangler d1 create ldhml-tools-demo").
+          "database_id": "fb006bd7-bec3-4c4b-afbc-5821fc62bcce",
           "migrations_dir": "migrations"
         }
       ],
