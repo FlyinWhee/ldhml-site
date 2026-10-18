@@ -8,7 +8,7 @@
     if (shown || !m || m.getAttribute('data-ready')) return;
     shown = true;
     var p = document.createElement('p');
-    p.className = 'ad-msg ad-err';
+    p.className = 'ta-msg ta-err';
     p.setAttribute('role', 'alert');
     p.textContent = 'La page n’a pas pu démarrer (' + why + '). Rechargez-la. Si le problème reste, essayez une fenêtre privée ou un autre navigateur : une extension peut la bloquer. · ' +
       'The page could not start (' + why + '). Reload it. If it persists, try a private window or another browser: an extension may block it.';

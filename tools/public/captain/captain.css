@@ -3,7 +3,7 @@
 .cp-switch button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 3px; padding: 4px 10px 4px 4px; cursor: pointer; font: 500 15px/1.2 var(--f-text); }
 .cp-switch button[aria-pressed="true"] { border-color: var(--ball); outline: 2px solid var(--ball); outline-offset: -1px; }
 .cp-switch button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-@media (max-width: 600px) { .cp-ask .ad-btn { width: 100%; } }
+@media (max-width: 600px) { .cp-ask .ta-btn { width: 100%; } }
 @media (max-width: 520px) { .cp-team .tcell .crest { display: inline-grid; } }
 /* my games: one line each, the next one marked; replacements under a game */
 .cp-games { list-style: none; display: grid; gap: 6px; max-width: 760px; margin: 0 0 6px; }
@@ -18,7 +18,7 @@
 .cp-team .tcell { font: 600 34px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
 .cp-team .tcell .crest { width: 48px; height: 48px; }
 .cp-ask { margin: 0; }
-.cp-ask .ad-btn { min-height: 52px; font-size: 22px; padding: 0 26px; }
+.cp-ask .ta-btn { min-height: 52px; font-size: 22px; padding: 0 26px; }
 .cp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
 .cp-kpi { display: grid; gap: 4px; align-content: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); min-width: 0; }
 .cp-kl { font: 500 13px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -34,27 +34,27 @@
 .cp-panel { border: 1px solid var(--line); border-radius: 4px; background: var(--bg); padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
 .cp-ph { font: 600 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin: 0; }
 .cp-panel .bd-reqs { margin: 0; }
-.cp-panel .ad-add { margin: 4px 0 0; }
-.cp-roster .ad-roster { width: 100%; }
+.cp-panel .ta-add { margin: 4px 0 0; }
+.cp-roster .ta-roster { width: 100%; }
 @media (max-width: 900px) { .cp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cp-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 600px) { .cp-team .tcell { font-size: 26px; } .cp-kv { font-size: 28px; } .cp-ask { width: 100%; } .cp-ask .ad-btn { width: 100%; } }
-.cp-panel .ad-add { padding: 2px 12px; }
-.cp-panel .ad-add > summary { font-size: 15px; padding: 6px 0; letter-spacing: .06em; }
+@media (max-width: 600px) { .cp-team .tcell { font-size: 26px; } .cp-kv { font-size: 28px; } .cp-ask { width: 100%; } .cp-ask .ta-btn { width: 100%; } }
+.cp-panel .ta-add { padding: 2px 12px; }
+.cp-panel .ta-add > summary { font-size: 15px; padding: 6px 0; letter-spacing: .06em; }
 /* the timeline: games with their requests */
 .cp-tl .cp-game .bd-reqs { margin: 4px 0 0; }
 .cp-tl .cp-game .bd-req { background: var(--bg); }
 .cp-tl .bd-req-h .bd-game:empty { margin-right: auto; }
 .cp-sx { color: var(--muted); }
 /* ---------- phones: no box inside a box, a one-line header ---------- */
-.ad-short { display: none; }
+.ta-short { display: none; }
 @media (max-width: 600px) {
   .sec-top { flex-wrap: nowrap; gap: 8px; }
   .sec-top .brand { flex: 1 1 auto; min-width: 0; }
-  .ad-tools { gap: 6px; padding: 6px 0; flex: none; }
-  .ad-tools .lgbtn { padding: 6px 8px; font-size: 13px; }
-  .ad-long { display: none; }
-  .ad-short { display: inline; }
-  .ad-body { padding-block: 10px 28px; }
+  .ta-tools { gap: 6px; padding: 6px 0; flex: none; }
+  .ta-tools .lgbtn { padding: 6px 8px; font-size: 13px; }
+  .ta-long { display: none; }
+  .ta-short { display: inline; }
+  .ta-body { padding-block: 10px 28px; }
   .cp-hero { margin: 4px 0 10px; gap: 10px; }
   .cp-team .tcell .crest { width: 40px; height: 40px; }
   .cp-kpis { gap: 8px; margin-bottom: 12px; }
@@ -67,10 +67,10 @@
   .cp-games { gap: 8px; }
   .cp-tl .cp-game { padding: 6px 8px; }
   .cp-tl .cp-game .bd-req { padding: 8px 10px; }
-  .cp-roster .ad-roster td { padding: 6px 4px; }
+  .cp-roster .ta-roster td { padding: 6px 4px; }
 }
 .cp-panel, .cp-kpi, .cp-game { grid-template-columns: minmax(0, 1fr); min-width: 0; }
-.cp-roster .ad-roster td:first-child a { white-space: normal; overflow-wrap: anywhere; }
+.cp-roster .ta-roster td:first-child a { white-space: normal; overflow-wrap: anywhere; }
 /* two key numbers on every screen */
 .cp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 @media (max-width: 340px) { .cp-kpis { grid-template-columns: minmax(0, 1fr) !important; } }

@@ -375,7 +375,7 @@
       (up.length > GAME_CARDS ? '<optgroup label="' + esc(t(L, 'upcoming')) + '">' + up.slice(GAME_CARDS).map(opt).join('') + '</optgroup>' : '') +
       (past.length ? '<optgroup label="' + esc(t(L, 'past')) + '">' + past.map(opt).join('') + '</optgroup>' : '') +
       '<option value="manual"' + (b.slot === 'manual' ? ' selected' : '') + '>' + esc(t(L, 'manual')) + '</option></select></label>' +
-      (b.slot === 'manual' ? '<span class="ad-pair"><label>' + esc(t(L, 'date')) + '<input class="ctl" type="date" data-b-date data-b-key="date" value="' + esc(b.date) + '"></label>' +
+      (b.slot === 'manual' ? '<span class="ta-pair"><label>' + esc(t(L, 'date')) + '<input class="ctl" type="date" data-b-date data-b-key="date" value="' + esc(b.date) + '"></label>' +
         '<label>' + esc(t(L, 'time')) + '<input class="ctl" type="time" data-b-time data-b-key="time" value="' + esc(b.time) + '"></label></span>' : '');
     return '<h2 class="bd-q">' + esc(t(L, 'q1')) + '</h2>' +
       (cards.length ? '<div class="bd-gcards">' + cards.map(function (g) { return gameCard(b, g); }).join('') + '</div>' : '<p class="note">' + esc(t(L, 'noGames')) + '</p>') +
@@ -408,12 +408,12 @@
     if (line.guest) {
       return '<section class="bd-line bd-set bd-gset">' + head + '<div class="bd-cand bd-fail bd-on"><span class="bd-cn"><b>' + esc(line.guest.name) + '</b></span><span class="bd-cs">—</span>' +
         '<span class="bd-cw">✗ ' + esc(t(L, 'guestNoList')) + ' · ' + guestTag(b.ctx, line.guest) + '</span></div>' +
-        '<button type="button" class="lnk ad-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
+        '<button type="button" class="lnk ta-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
     }
     if (line.sub_id) {
       var c = candOf(b, line.sub_id);
       return '<section class="bd-line bd-set">' + head + (c ? candCard(b, line, { c: c, j: judge(b, c, line) }, true) : '') +
-        '<button type="button" class="lnk ad-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
+        '<button type="button" class="lnk ta-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
     }
     var q = b.q[key] || '', list;
     if (q) {
@@ -422,10 +422,10 @@
     } else {
       var shown = b.more[key] ? g.ok : g.ok.slice(0, SUGGEST);
       list = (shown.length ? '<p class="bd-sub-h">' + esc(t(L, 'suggested')) + '</p><div class="bd-cands">' + shown.map(function (x) { return candCard(b, line, x); }).join('') + '</div>' : '<p class="note">' + esc(t(L, 'noneOk')) + '</p>') +
-        (g.ok.length > shown.length ? '<button type="button" class="lnk ad-linkbtn" data-b-more="' + key + '">' + esc(t(L, 'seeMore', { n: g.ok.length - shown.length })) + '</button>' : '') +
+        (g.ok.length > shown.length ? '<button type="button" class="lnk ta-linkbtn" data-b-more="' + key + '">' + esc(t(L, 'seeMore', { n: g.ok.length - shown.length })) + '</button>' : '') +
         (g.warn.length ? '<details class="bd-other"><summary>' + esc(t(L, 'toCheck', { n: g.warn.length })) + '</summary><div class="bd-cands">' + g.warn.map(function (x) { return candCard(b, line, x); }).join('') + '</div></details>' : '');
     }
-    if (!b.gopen[key]) list += '<p><button type="button" class="lnk ad-linkbtn bd-guestbtn" data-b-guest-open="' + key + '">+ ' + esc(t(L, 'guestBtn')) + '</button></p>';
+    if (!b.gopen[key]) list += '<p><button type="button" class="lnk ta-linkbtn bd-guestbtn" data-b-guest-open="' + key + '">+ ' + esc(t(L, 'guestBtn')) + '</button></p>';
     return '<section class="bd-line">' + head + bud + guestBlock(b, line, p) +
       '<input class="ctl bd-search" type="search" data-b-q="' + key + '" data-b-key="q-' + key + '" value="' + esc(q) + '" placeholder="' + esc(t(L, 'search')) + '" aria-label="' + esc(t(L, 'search')) + '">' + list + '</section>';
   }
@@ -437,14 +437,14 @@
     var g = b.gform[key] || (b.gform[key] = { name: '', sex: p.sex || '', age: '', nid: '' });
     var fld = function (n, label, extra) { return '<label>' + esc(label) + '<input class="ctl" data-b-gf="' + key + ':' + n + '" data-b-key="gf-' + key + '-' + n + '" value="' + esc(g[n]) + '"' + (extra || '') + '></label>'; };
     return '<fieldset class="bd-guest"><legend>' + esc(t(L, 'guestLegend')) + '</legend>' +
-      (b.gerr[key] ? '<p class="ad-msg ad-err" role="alert">' + esc(t(L, 'guestErr')) + '</p>' : '') +
+      (b.gerr[key] ? '<p class="ta-msg ta-err" role="alert">' + esc(t(L, 'guestErr')) + '</p>' : '') +
       fld('name', t(L, 'guestName'), ' maxlength="80" autocomplete="off"') +
       '<div class="bd-gsex"><span class="bd-gl">' + esc(t(L, 'guestSex')) + '</span><div class="seg" role="group">' + ['m', 'f'].map(function (k) {
         return '<button type="button" data-b-gsex="' + key + ':' + k + '" aria-pressed="' + (g.sex === k) + '">' + esc(t(L, k === 'f' ? 'sexF' : 'sexM')) + '</button>'; }).join('') + '</div></div>' +
-      '<div class="ad-pair">' + fld('age', t(L, 'guestAge'), ' inputmode="numeric" maxlength="3"') + fld('nid', t(L, 'guestNid'), ' inputmode="numeric" maxlength="12"') + '</div>' +
+      '<div class="ta-pair">' + fld('age', t(L, 'guestAge'), ' inputmode="numeric" maxlength="3"') + fld('nid', t(L, 'guestNid'), ' inputmode="numeric" maxlength="12"') + '</div>' +
       '<p class="note">' + esc(t(L, 'guestHint', { a: p.name })) + '</p>' +
-      '<p class="ad-btns"><button type="button" class="ad-btn ad-btn-sm" data-b-guest-save="' + key + '">' + esc(t(L, 'guestUse')) + '</button>' +
-      '<button type="button" class="lnk ad-linkbtn" data-b-guest-close="' + key + '">' + esc(t(L, 'cancel')) + '</button></p></fieldset>';
+      '<p class="ta-btns"><button type="button" class="ta-btn ta-btn-sm" data-b-guest-save="' + key + '">' + esc(t(L, 'guestUse')) + '</button>' +
+      '<button type="button" class="lnk ta-linkbtn" data-b-guest-close="' + key + '">' + esc(t(L, 'cancel')) + '</button></p></fieldset>';
   }
   function step3(b) {
     var L = b.ctx.lang, n = complete(b).length;
@@ -475,19 +475,19 @@
       '<label class="bd-notel">' + esc(t(L, 'note')) + '<textarea class="ctl" rows="2" maxlength="1000" data-b-note data-b-key="note">' + esc(b.note) + '</textarea></label>' +
       (noteReq ? '<p class="note bd-fail">' + esc(t(L, 'noteReq')) + '</p>' : '') +
       (b.area === 'admin' ? '<label class="bd-check"><input type="checkbox" data-b-approve' + (b.approve ? ' checked' : '') + '> ' + esc(t(L, 'approveNow')) + '</label>' : '') +
-      '<div class="bd-nav"><button type="button" class="lnk ad-linkbtn" data-b-step="3">← ' + esc(t(L, 'prev')) + '</button>' +
-      '<button class="ad-btn" type="submit"' + (!c || b.saving ? ' disabled' : '') + '>' + esc(t(L, b.area === 'admin' ? 'save' : 'send')) + '</button></div>';
+      '<div class="bd-nav"><button type="button" class="lnk ta-linkbtn" data-b-step="3">← ' + esc(t(L, 'prev')) + '</button>' +
+      '<button class="ta-btn" type="submit"' + (!c || b.saving ? ' disabled' : '') + '>' + esc(t(L, b.area === 'admin' ? 'save' : 'send')) + '</button></div>';
   }
   var countBy = function (cs) { var n = { ok: 0, warn: 0, fail: 0 }; cs.forEach(function (c) { n[c.s]++; }); return n; };
   /* Back / next buttons of a step. next = the step to go to (0: not yet). */
   function nav(b, prev, next, label) {
     var L = b.ctx.lang;
-    return '<div class="bd-nav">' + (prev ? '<button type="button" class="lnk ad-linkbtn" data-b-step="' + prev + '">← ' + esc(t(L, 'prev')) + '</button>' : '<span></span>') +
-      '<button type="button" class="ad-btn" data-b-step="' + (next || b.step + 1) + '"' + (next ? '' : ' disabled') + '>' + esc(label || t(L, 'next')) + '</button></div>';
+    return '<div class="bd-nav">' + (prev ? '<button type="button" class="lnk ta-linkbtn" data-b-step="' + prev + '">← ' + esc(t(L, 'prev')) + '</button>' : '<span></span>') +
+      '<button type="button" class="ta-btn" data-b-step="' + (next || b.step + 1) + '"' + (next ? '' : ' disabled') + '>' + esc(label || t(L, 'next')) + '</button></div>';
   }
   function html(b) {
     var L = b.ctx.lang, d = b.d, h = '';
-    if (b.msg) h += '<p class="ad-msg ad-err" role="alert">' + esc(b.msg) + '</p>';
+    if (b.msg) h += '<p class="ta-msg ta-err" role="alert">' + esc(b.msg) + '</p>';
     if (b.teams && b.teams.length > 1 && !b.teamId) {
       return h + '<h2 class="bd-q">' + esc(t(L, 'q0')) + '</h2><div class="bd-tiles">' + b.teams.map(function (x) {
         return '<button type="button" class="bd-tile" data-b-team="' + x.id + '"><span>' + (b.league ? window.LDLook.crest({ abb: x.abb }, b.league, 'sm') : '') + '<b>' + esc(x.name) + '</b><small>' + esc(x.abb) + '</small></span></button>';
@@ -496,9 +496,9 @@
     if (!b.teamId) return h;
     if (!d) return h + (b.loading ? '<p class="note">' + esc(t(L, 'loading')) + '</p>' : '');
     h += '<div class="bd-top"><p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league) +
-      (b.teams && b.teams.length > 1 ? ' <button type="button" class="lnk ad-linkbtn" data-b-team="">' + esc(t(L, 'changeTeam')) + '</button>' : '') + '</p>' +
-      '<span class="bd-topacts"><button type="button" class="lnk ad-linkbtn" data-b-rules data-b-key="rules">' + esc(t(L, 'rulesLink')) + '</button>' +
-      '<button type="button" class="lnk ad-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></span></div>' + stepper(b);
+      (b.teams && b.teams.length > 1 ? ' <button type="button" class="lnk ta-linkbtn" data-b-team="">' + esc(t(L, 'changeTeam')) + '</button>' : '') + '</p>' +
+      '<span class="bd-topacts"><button type="button" class="lnk ta-linkbtn" data-b-rules data-b-key="rules">' + esc(t(L, 'rulesLink')) + '</button>' +
+      '<button type="button" class="lnk ta-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></span></div>' + stepper(b);
     h += '<div class="bd-body">' + (b.step === 1 ? step1(b) : b.step === 2 ? step2(b) : b.step === 3 ? step3(b) : step4(b)) + '</div>';
     if (b.rulesOpen) h += rulesModal(b);
     return h;
@@ -510,18 +510,18 @@
     if (r.salary_cap != null) items.push(t(L, 'rl_cap', { c: money(r.salary_cap) }));
     if (r.min_age_m != null || r.min_age_f != null || r.min_age_g != null) items.push(t(L, 'rl_age', { m: dash(r.min_age_m), f: dash(r.min_age_f), g: dash(r.min_age_g), when: t(L, r.age_on === 'year' ? 'rl_ageYear' : 'rl_ageGame') }));
     items.push(t(L, 'rl_send'));
-    return '<div class="ad-modal-back" data-b-rules-close></div><div class="ad-modal bd-rmodal" role="dialog" aria-modal="true" aria-labelledby="bd-rt">' +
-      '<div class="ad-modal-h"><h2 id="bd-rt">' + esc(t(L, 'rulesTitle', { l: l.short || b.d.team.league })) + '</h2><button type="button" class="ad-x" data-b-rules-close data-b-key="rules-x" aria-label="' + esc(t(L, 'close')) + '">×</button></div>' +
+    return '<div class="ta-modal-back" data-b-rules-close></div><div class="ta-modal bd-rmodal" role="dialog" aria-modal="true" aria-labelledby="bd-rt">' +
+      '<div class="ta-modal-h"><h2 id="bd-rt">' + esc(t(L, 'rulesTitle', { l: l.short || b.d.team.league })) + '</h2><button type="button" class="ta-x" data-b-rules-close data-b-key="rules-x" aria-label="' + esc(t(L, 'close')) + '">×</button></div>' +
       '<ul class="bd-rlist">' + items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
       (r.notes ? '<p class="bd-note">' + esc(r.notes) + '</p>' : '') +
-      '<div class="ad-modal-f"><button type="button" class="ad-btn" data-b-rules-close>' + esc(t(L, 'close')) + '</button></div></div>';
+      '<div class="ta-modal-f"><button type="button" class="ta-btn" data-b-rules-close>' + esc(t(L, 'close')) + '</button></div></div>';
   }
   function draw(b) {
     var el = b.el;
     if (!el || !el.isConnected) return;
     var a = document.activeElement, key = a && el.contains(a) ? a.getAttribute('data-b-key') : null, pos = null;
     try { pos = key && a.selectionStart; } catch (e) { pos = null; }
-    el.innerHTML = '<form class="ad-form ad-col bd" data-b-form novalidate>' + html(b) + '</form>';
+    el.innerHTML = '<form class="ta-form ta-col bd" data-b-form novalidate>' + html(b) + '</form>';
     if (key) { var n = el.querySelector('[data-b-key="' + key + '"]'); if (n) { n.focus(); try { if (pos != null) n.setSelectionRange(pos, pos); } catch (e) { /* not a text field */ } } }
   }
   function go(b, n) {

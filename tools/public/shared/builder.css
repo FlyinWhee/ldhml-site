@@ -1,7 +1,7 @@
 /* Replacement builder (a guided page) and request cards (shared/builder.js), in the captain and admin areas.
    On top of assets/site.css and admin/admin.css. */
 .bd-page { max-width: 820px; }
-.bd.ad-form { display: grid; gap: 14px; margin: 4px 0 0; align-items: start; align-content: start; }
+.bd.ta-form { display: grid; gap: 14px; margin: 4px 0 0; align-items: start; align-content: start; }
 .bd-tiles, .bd-cands, .bd-gcards { align-content: start; }
 .bd-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bd-team { margin: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -70,8 +70,8 @@
 .bd-notel textarea { min-height: 3.2em; resize: vertical; }
 /* back / next */
 .bd-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: sticky; bottom: 0; padding: 10px 0 12px; background: var(--bg); border-top: 1px solid var(--line); }
-.bd-nav .ad-btn:disabled { opacity: .45; cursor: default; }
-.ad-back { margin: 0 0 4px; }
+.bd-nav .ta-btn:disabled { opacity: .45; cursor: default; }
+.ta-back { margin: 0 0 4px; }
 .bd-checks { list-style: none; display: grid; gap: 6px; margin: 4px 0; }
 .bd-cl { border-top: 1px solid var(--line); padding-top: 6px; }
 .bd-cl:first-child { border-top: 0; padding-top: 0; }
@@ -116,7 +116,7 @@
   .bd-sl small { display: none; }
   .bd-sl b { font-size: 13px; }
   .bd-q { font-size: 26px; }
-  .bd-nav .ad-btn { flex: 1; }
+  .bd-nav .ta-btn { flex: 1; }
 }
 /* league rules: a link at the top, the text in a small window */
 .bd-topacts { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: flex-end; }

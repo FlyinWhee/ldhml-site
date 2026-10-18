@@ -630,6 +630,10 @@ assert.equal((await call('/api/nothing')).status, 404);
   await DB.prepare("DELETE FROM admins WHERE email = 'demo@demo.invalid'").run();
 }
 
+// ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
+for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'admin/index.html', 'captain/index.html', 'index.html'])
+  assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');
+
 // ---- the admin page in a browser (jsdom), wired to the Worker ----
 await DB.prepare('DELETE FROM login_codes').run();
 const html = await readFile(path.join(root, 'dist-tools/admin/index.html'), 'utf8');
@@ -657,46 +661,46 @@ const submit = async (sel) => { d.querySelector(sel).dispatchEvent(new w.Event('
 await wait(100);
 assert.ok(d.querySelector('#f-email'), 'page starts at the sign-in');
 d.querySelector('#f-email [name=email]').value = 'boss@example.test'; await submit('#f-email');
-const devHint = d.querySelector('.ad-dev').textContent.match(/\d{6}/)[0];
+const devHint = d.querySelector('.ta-dev').textContent.match(/\d{6}/)[0];
 d.querySelector('#f-code [name=code]').value = devHint; await submit('#f-code');
 assert.ok(/Boss|boss@example\.test/.test(d.getElementById('top').textContent), 'signed in');
-assert.ok(d.querySelector('.ad-dive .ad-lcard') && !d.querySelector('.ad-kpis'), 'home first: the league cards (no key-number tiles)');
+assert.ok(d.querySelector('.ta-dive .ta-lcard') && !d.querySelector('.ta-kpis'), 'home first: the league cards (no key-number tiles)');
 // the context first: LDHML > section > league (owner, 2026-10-17); links #/, #/<section>, #/<section>/<league>[/<tab>]
 const hL = (l, tab) => '#/' + l.sectionPath + '/' + l.path + (tab ? '/' + tab : '');
 const hS = (key) => '#/' + season.sections.find((x) => x.key === key).path;
-assert.ok(d.querySelector('.ad-ctxbar #ad-ctx') && d.querySelector('.ad-ctxbar #ad-season'), 'every page: the context bar (where you are, a switcher) and the season');
+assert.ok(d.querySelector('.ta-ctxbar #ta-ctx') && d.querySelector('.ta-ctxbar #ta-season'), 'every page: the context bar (where you are, a switcher) and the season');
 assert.ok(d.querySelector('.nav a[href="#/config"]') && d.querySelector('.nav a[href="#/audit"]') && d.querySelectorAll('#tabbar a').length === 3, 'LDHML level: Accueil, Configuration, Journal (top bar; bottom bar on phones)');
-assert.equal(d.querySelectorAll('.ad-lcard').length, season.leagues.length, 'home: one card per league, by section');
-assert.ok([...d.querySelectorAll('.ad-lcard')].every((c) => c.querySelector('.ad-lc-head') && c.querySelector('.ad-lc-links a')), 'each card: the league, its action items, its pages');
-assert.equal(d.querySelectorAll('.ad-ctx-pop .ad-ctx-lg').length, season.leagues.length, 'the switcher lists every league');
+assert.equal(d.querySelectorAll('.ta-lcard').length, season.leagues.length, 'home: one card per league, by section');
+assert.ok([...d.querySelectorAll('.ta-lcard')].every((c) => c.querySelector('.ta-lc-head') && c.querySelector('.ta-lc-links a')), 'each card: the league, its action items, its pages');
+assert.equal(d.querySelectorAll('.ta-ctx-pop .ta-ctx-lg').length, season.leagues.length, 'the switcher lists every league');
 w.location.hash = hL(lg); await wait(250);
-assert.ok(d.querySelector('.nav a[aria-current="page"]').getAttribute('href') === hL(lg) && d.querySelectorAll('.ad-kpis .ad-kpi').length === 4 && d.querySelector('.ad-ovteams'), 'a league opens on its overview (key numbers, to validate, teams)');
+assert.ok(d.querySelector('.nav a[aria-current="page"]').getAttribute('href') === hL(lg) && d.querySelectorAll('.ta-kpis .ta-kpi').length === 4 && d.querySelector('.ta-ovteams'), 'a league opens on its overview (key numbers, to validate, teams)');
 assert.equal(d.querySelectorAll('#tabbar a').length, 5, 'league level: five tabs (Aperçu, Calendrier, Équipes, Remplacements, Réglages)');
-assert.ok(d.querySelector('.ad-crumbs a[href="' + hS(lg.section) + '"]'), 'the section is one step up');
+assert.ok(d.querySelector('.ta-crumbs a[href="' + hS(lg.section) + '"]'), 'the section is one step up');
 w.location.hash = hL(lg, 'teams'); await wait(200);
-assert.ok(!d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-team .ad-ed'), 'Équipes opens in read mode: the controls that change things are hidden');
-assert.ok(d.querySelector('.ad-team [data-sub-team]:not(.ad-ed)'), '"Remplacement…" stays (daily work, not editing)');
-assert.ok(d.querySelectorAll('#ad-su .ad-su-k').length === 4 && d.querySelector('#ad-su [data-addsignup].ad-ed'), 'a draft league: the sign-ups (men, women, goalies, no team); sign up in edit mode');
+assert.ok(!d.getElementById('main').classList.contains('ta-editing') && d.querySelector('.ta-team .ta-ed'), 'Équipes opens in read mode: the controls that change things are hidden');
+assert.ok(d.querySelector('.ta-team [data-sub-team]:not(.ta-ed)'), '"Remplacement…" stays (daily work, not editing)');
+assert.ok(d.querySelectorAll('#ta-su .ta-su-k').length === 4 && d.querySelector('#ta-su [data-addsignup].ta-ed'), 'a draft league: the sign-ups (men, women, goalies, no team); sign up in edit mode');
 d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
-assert.ok(d.getElementById('main').classList.contains('ad-editing') && d.querySelector('.ad-edbadge'), 'Modifier: edit mode, clearly marked');
+assert.ok(d.getElementById('main').classList.contains('ta-editing') && d.querySelector('.ta-edbadge'), 'Modifier: edit mode, clearly marked');
 // Teams tab (default): scoped to a league; each team card has its captains and roster; every add and edit in a modal
-assert.ok(d.querySelector('.ad-ctx-lg[aria-current="page"][href="' + hL(lg, 'teams') + '"]'), 'the switcher keeps the tab: another league opens on its Teams');
+assert.ok(d.querySelector('.ta-ctx-lg[aria-current="page"][href="' + hL(lg, 'teams') + '"]'), 'the switcher keeps the tab: another league opens on its Teams');
 assert.ok(!d.querySelector('.nav a[href="#captains"]'), 'no separate Captains tab');
 const ateams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, lg.slug).first('n');
-assert.equal(d.querySelectorAll('.ad-team').length, ateams, 'one card per team of the league');
+assert.equal(d.querySelectorAll('.ta-team').length, ateams, 'one card per team of the league');
 w.location.hash = '#/config'; await wait(200);
 d.querySelector('[data-act="new-cap"]').click(); await wait(20);
-assert.ok(d.querySelector('#modal .ad-modal #f-cap') && d.documentElement.classList.contains('ad-modal-open'), 'New captain opens a modal');
+assert.ok(d.querySelector('#modal .ta-modal #f-cap') && d.documentElement.classList.contains('ta-modal-open'), 'New captain opens a modal');
 d.querySelector('#f-cap [name=name]').value = 'Nouvelle Capitaine'; d.querySelector('#f-cap [name=email]').value = 'cap2@example.test';
 await submit('#f-cap');
-assert.ok(!d.querySelector('#modal .ad-modal') && !d.documentElement.classList.contains('ad-modal-open'), 'the modal closes after saving');
-const nocap = () => [...d.querySelectorAll('#ad-accounts .ad-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+assert.ok(!d.querySelector('#modal .ta-modal') && !d.documentElement.classList.contains('ta-modal-open'), 'the modal closes after saving');
+const nocap = () => [...d.querySelectorAll('#ta-accounts .ta-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 assert.ok(nocap(), 'a new captain is in the captain accounts panel');
 { // the captain page: everything about one captain (account, access with history, player profile, requests, log)
   const capLink = nocap().querySelector('a[href^="#/config/captain/"]');
   assert.ok(capLink, 'the name opens the captain page');
   w.location.hash = capLink.getAttribute('href'); await wait(250);
-  assert.ok(d.querySelector('.ad-dl') && d.querySelector('[data-access-cap]') && d.querySelector('.nav a[href="#/config"][aria-current="page"]') && /Nouvelle Capitaine/.test(d.querySelector('h1').textContent), 'captain page: account, actions; Configuration stays lit');
+  assert.ok(d.querySelector('.ta-dl') && d.querySelector('[data-access-cap]') && d.querySelector('.nav a[href="#/config"][aria-current="page"]') && /Nouvelle Capitaine/.test(d.querySelector('h1').textContent), 'captain page: account, actions; Configuration stays lit');
   w.location.hash = '#/config'; await wait(200);
 }
 nocap().querySelector('[data-access-cap]').click(); await wait(20);
@@ -706,41 +710,41 @@ assert.ok(af && af.elements.team.options.length === allTeams + 1 && af.querySele
 af.elements.team.value = String(teamRef);
 await submit('#f-access');
 w.location.hash = hL(lg, 'teams'); await wait(200);
-const card = () => d.querySelector('.ad-team[data-team="' + teamRef + '"]');
+const card = () => d.querySelector('.ta-team[data-team="' + teamRef + '"]');
 assert.ok(card() && card().textContent.includes('Nouvelle Capitaine') && card().querySelector('a[href="' + hL(lg, 'teams') + '/' + teamRef + '"]'), 'the captain is listed under the team (the team opens its admin page)');
 card().querySelector('[data-access-team]').click(); await wait(20);
 assert.ok(d.querySelector('#f-access select[name=captain]') && d.querySelector('#f-access input[name=team]').value === String(teamRef), 'team-side access modal: team fixed, captain to choose');
 await submit('#f-access');
-assert.ok(d.querySelector('#modal .ad-msg.ad-err'), 'no captain picked and no new one: an error in the modal');
+assert.ok(d.querySelector('#modal .ta-msg.ta-err'), 'no captain picked and no new one: an error in the modal');
 d.querySelector('#f-access [name=name]').value = 'Capitaine Express'; d.querySelector('#f-access [name=email]').value = 'express@example.test';
 await submit('#f-access');
-assert.ok(card().textContent.includes('Capitaine Express') && !d.querySelector('#modal .ad-modal'), 'a new captain created from the team gets the access in the same step');
+assert.ok(card().textContent.includes('Capitaine Express') && !d.querySelector('#modal .ta-modal'), 'a new captain created from the team gets the access in the same step');
 card().querySelector('[data-access-team]').click(); await wait(20);
 d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-assert.ok(!d.querySelector('#modal .ad-modal'), 'Escape closes the modal');
-const line = () => [...d.querySelectorAll('#ad-accounts .ad-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
+assert.ok(!d.querySelector('#modal .ta-modal'), 'Escape closes the modal');
+const line = () => [...d.querySelectorAll('#ta-accounts .ta-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 w.location.hash = '#/config'; await wait(200);
 line().querySelector('[data-edit-cap]').click(); await wait(20);
 const ef = d.querySelector('#modal [data-edit]');
 assert.ok(ef && ef.elements.name.value === 'Nouvelle Capitaine', 'Edit opens a modal with the current values');
 ef.elements.name.value = 'Nouvelle Capitaine Corrigée';
 ef.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
-assert.ok(line().textContent.includes('Corrigée') && !d.querySelector('#modal .ad-modal'), 'saved, modal closed');
+assert.ok(line().textContent.includes('Corrigée') && !d.querySelector('#modal .ta-modal'), 'saved, modal closed');
 line().querySelector('[data-edit-cap]').click(); await wait(20);
 const ef2 = d.querySelector('#modal [data-edit]'); ef2.elements.email.value = 'other-cap@example.test';
 ef2.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(80);
-assert.ok(d.querySelector('#modal .ad-msg.ad-err'), 'an error (email taken) shows in the modal, which stays open');
+assert.ok(d.querySelector('#modal .ta-msg.ta-err'), 'an error (email taken) shows in the modal, which stays open');
 d.querySelector('#modal [data-act="close-modal"]').click(); await wait(20);
 const lg2 = season.leagues.filter((l) => l.section === lg.section)[1];
 line().querySelector('[data-delete-cap]').click(); await wait(80);
 assert.ok(!line(), 'Delete removes the captain');
 w.location.hash = hL(lg2, 'teams'); await wait(200);
-assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, lg2.slug).first('n'), 'another league: its own teams');
+assert.equal(d.querySelectorAll('.ta-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, lg2.slug).first('n'), 'another league: its own teams');
 w.location.hash = hL(lg, 'teams'); await wait(200);
 await DB.prepare('UPDATE people SET birth_year = 1970, birth_month = 1 WHERE birth_year IS NULL AND id <> ?').bind(sub5).run();   // eligible suggestions to pick from
 // Replacements in the admin page: from a team card, the guided builder on its own page; then the queue and a decision
-const cardA = () => d.querySelector('.ad-team[data-team="' + teamA + '"]');
-const q = (sel) => d.querySelector('#ad-builder ' + sel);
+const cardA = () => d.querySelector('.ta-team[data-team="' + teamA + '"]');
+const q = (sel) => d.querySelector('#ta-builder ' + sel);
 const pickGame = async (doc, root, ev, id) => {
   const card = doc.querySelector(root + ' [data-b-game="' + id + '"]');
   if (card) card.click(); else { const sel = doc.querySelector(root + ' [data-b-slot]'); sel.value = id; sel.dispatchEvent(new ev('change', { bubbles: true })); }
@@ -748,7 +752,7 @@ const pickGame = async (doc, root, ev, id) => {
 };
 cardA().querySelector('[data-sub-team]').click(); await wait(250);
 assert.equal(w.location.hash, hL(lg, 'subs') + '/new/' + teamA, 'the builder is a page of its own (in the league)');
-assert.ok(!d.querySelector('#modal .ad-modal') && q('.bd-steps') && q('.bd-sp.bd-now [data-b-step="1"]'), 'a guided page: four steps, the first one open');
+assert.ok(!d.querySelector('#modal .ta-modal') && q('.bd-steps') && q('.bd-sp.bd-now [data-b-step="1"]'), 'a guided page: four steps, the first one open');
 assert.ok(q('.bd-gcard') || q('[data-b-slot]'), 'step 1: the next games as cards (others in a fold)');
 assert.ok(!q('.bd-rlist') && q('[data-b-rules]'), 'the league rules: a link, not a block of text');
 q('[data-b-rules]').click(); await wait(30);
@@ -756,7 +760,7 @@ assert.ok(q('.bd-rmodal .bd-rlist li') && /même sexe/.test(q('.bd-rlist').textC
 q('[data-b-rules-close]').click(); await wait(30);
 assert.ok(!q('.bd-rmodal'), 'closed');
 assert.ok(q('[data-b-step="3"]').disabled, 'later steps wait');
-await pickGame(d, '#ad-builder', w.Event, gameA2.ref);
+await pickGame(d, '#ta-builder', w.Event, gameA2.ref);
 assert.ok(q('.bd-sp.bd-now [data-b-step="2"]'), 'a game chosen: on to step 2');
 q('[data-b-absent="' + absentA + '"]').click(); await wait(80);
 assert.ok(q('[data-b-absent="' + absentA + '"]').classList.contains('bd-on'), 'tap a player: absent');
@@ -770,7 +774,7 @@ assert.ok(/hors-ligue/.test(q('.bd-line').textContent), 'no match: points to "Jo
 q('[data-b-guest-open="' + absentA + '"]').click(); await wait(30);
 assert.ok(q('.bd-guest [data-b-gsex="' + absentA + ':m"][aria-pressed="true"]'), 'guest form: the sex of the absent player to start with');
 q('[data-b-guest-save="' + absentA + '"]').click(); await wait(30);
-assert.ok(q('.bd-guest .ad-msg.ad-err'), 'a name is required');
+assert.ok(q('.bd-guest .ta-msg.ta-err'), 'a name is required');
 const gname = q('[data-b-gf="' + absentA + ':name"]'); gname.value = 'Invité Page'; gname.dispatchEvent(new w.Event('input', { bubbles: true }));
 q('[data-b-guest-save="' + absentA + '"]').click(); await wait(150);
 assert.ok(q('.bd-line.bd-gset') && /Invité Page/.test(q('.bd-gset').textContent) && q('.bd-gset .bd-gtag'), 'the guest is the replacement, marked off the list');
@@ -785,17 +789,17 @@ const nb = q('[data-b-note]'); nb.value = 'Pour le capitaine'; nb.dispatchEvent(
 q('[data-b-approve]').checked = false; q('[data-b-approve]').dispatchEvent(new w.Event('change', { bubbles: true }));
 q('[data-b-form]').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
 assert.equal(w.location.hash, hL(lg, 'teams'), 'saved: back where the admin came from');
-assert.ok(d.querySelector('#main .ad-msg.ad-ok'), 'with a message');
+assert.ok(d.querySelector('#main .ta-msg.ta-ok'), 'with a message');
 assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="' + hL(lg, 'subs') + '"]').textContent), 'the Replacements tab counts the pending request');
-assert.ok(d.querySelector('.ad-ctx-lg[href^="' + hL(lg) + '"] .ad-cnt'), 'the switcher shows the league\'s pending count');
+assert.ok(d.querySelector('.ta-ctx-lg[href^="' + hL(lg) + '"] .ta-cnt'), 'the switcher shows the league\'s pending count');
 w.location.hash = '#/'; await wait(250);
-assert.equal(d.querySelector('.ad-lcard a.ad-lc-val[href="' + hL(lg, 'subs') + '"] b').textContent, '1', 'home: the league card says 1 to validate, one click to the league queue');
-assert.ok(d.querySelector('.ad-panel .bd-req.bd-st-pending [data-decide="approve"]') && d.querySelector('.ad-panel .bd-req .lgb'), 'with its actions and its league');
+assert.equal(d.querySelector('.ta-lcard a.ta-lc-val[href="' + hL(lg, 'subs') + '"] b').textContent, '1', 'home: the league card says 1 to validate, one click to the league queue');
+assert.ok(d.querySelector('.ta-panel .bd-req.bd-st-pending [data-decide="approve"]') && d.querySelector('.ta-panel .bd-req .lgb'), 'with its actions and its league');
 const missBtn = d.querySelector('[data-home-miss]');
 if (missBtn) { const kind = missBtn.getAttribute('data-home-miss').split(':')[1]; missBtn.click(); await wait(250);
   assert.ok(w.location.hash === hS(missBtn.getAttribute('data-home-miss').split(':')[0]) && d.querySelector('[data-pfmiss="' + kind + '"][aria-pressed="true"]'), 'a to-do item opens the section players with its filter');
   d.querySelector('[data-pfmiss=""]').click(); await wait(20); }
-assert.ok(!d.getElementById('main').classList.contains('ad-editing'), 'edit mode never follows to another tab');
+assert.ok(!d.getElementById('main').classList.contains('ta-editing'), 'edit mode never follows to another tab');
 w.location.hash = hL(lg, 'subs'); await wait(200);
 const pendingCards = d.querySelectorAll('.bd-req.bd-st-pending');
 assert.equal(pendingCards.length, 1, 'Replacements tab: the pending queue of the league');
@@ -814,7 +818,7 @@ const calA = [...d.querySelectorAll('.ld-team')].find((x) => x.querySelector('[d
 assert.equal(d.querySelectorAll('.ld-game').length * 2, d.querySelectorAll('.ld-team').length, 'each game: both teams');
 assert.ok(!d.querySelector('.ld-list li:not(.ld-sub)') && d.querySelector('.ld-none'), 'only the replacements, not the whole roster ("Aucun remplacement" otherwise)');
 assert.ok(calA && calA.querySelector('.ld-sub.ld-approved') && calA.querySelector('.ld-abs s'), 'the actual lineup: the replacement in (approved), the absent player struck through');
-assert.ok(!d.getElementById('main').classList.contains('ad-editing') && d.querySelector('[data-game-edit="' + gameA2.ref + '"]') && d.querySelector('[data-game-new]') && d.querySelector('[data-games-import]'), 'Calendrier: the schedule tools are there, hidden until Modifier');
+assert.ok(!d.getElementById('main').classList.contains('ta-editing') && d.querySelector('[data-game-edit="' + gameA2.ref + '"]') && d.querySelector('[data-game-new]') && d.querySelector('[data-games-import]'), 'Calendrier: the schedule tools are there, hidden until Modifier');
 d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
 d.querySelector('[data-game-edit="' + gameA2.ref + '"]').click(); await wait(30);
 {
@@ -825,23 +829,23 @@ d.querySelector('[data-game-edit="' + gameA2.ref + '"]').click(); await wait(30)
 d.querySelector('[data-act="edit-toggle"]').click(); await wait(30);
 d.querySelector('[data-sub-game^="' + teamA + ':"]').click(); await wait(250);
 assert.ok(w.location.hash === hL(lg, 'subs') + '/new/' + teamA + '/' + gameA2.ref && q('.bd-sp.bd-now [data-b-step="2"]'), 'Remplacement… from the calendar: the builder with the game chosen (step 2)');
-assert.ok(/Calendrier/.test(d.querySelector('.ad-back').textContent), 'back to the calendar');
+assert.ok(/Calendrier/.test(d.querySelector('.ta-back').textContent), 'back to the calendar');
 
 w.location.hash = hL(lg, 'teams'); await wait(150);
 // players: the section list (the section level), with a league filter
 w.location.hash = hS(lg.section); await wait(200);
-assert.ok(!d.querySelector('#tabbar a') && d.querySelector('.ad-crumbs a[href="#/"]'), 'section level: its player list; up to LDHML in the context bar');
+assert.ok(!d.querySelector('#tabbar a') && d.querySelector('.ta-crumbs a[href="#/"]'), 'section level: its player list; up to LDHML in the context bar');
 const draftList = await DB.prepare("SELECT COUNT(*) AS n FROM section_players WHERE section = 'draft' AND season_id = ?").bind(seasonId).first('n');
-const rowsN = () => d.querySelectorAll('.ad-tbl tbody tr').length;
+const rowsN = () => d.querySelectorAll('.ta-tbl tbody tr').length;
 assert.equal(rowsN(), draftList, 'Players tab lists the Draft section list');
-const pq = d.getElementById('ad-pq'); pq.value = 'normandin'; pq.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
-assert.ok(rowsN() >= 1 && [...d.querySelectorAll('.ad-tbl tbody tr')].every((tr) => /normandin/i.test(tr.textContent)), 'name filter');
-assert.ok(d.querySelector('.ad-tbl .lgb .abbs a'), 'rosters shown as league badges with team chips');
-const th = [...d.querySelectorAll('.ad-players thead .ad-sort')].map((x) => x.textContent.replace(/[▲▼ ]/g, ''));
-assert.ok(th.includes('NBHPA') && d.querySelector('.ad-sort[data-psort="nid"]').title.includes('2027'), 'an NBHPA no. column (required from 2027)');
-assert.ok(th.includes('J$') && th.includes('G$') && d.querySelector('.ad-sort[data-psort="s"]').title.includes('millions'), 'short salary headers (J$, G$), full label on hover');
-assert.ok([...d.querySelectorAll('.ad-players tbody tr')].every((tr) => /^(\d+(\.\d+)?M|—)$/.test(tr.children[4].textContent)), 'salaries in millions, one column per position');
-const pq2 = d.getElementById('ad-pq'); pq2.value = ''; pq2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
+const pq = d.getElementById('ta-pq'); pq.value = 'normandin'; pq.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
+assert.ok(rowsN() >= 1 && [...d.querySelectorAll('.ta-tbl tbody tr')].every((tr) => /normandin/i.test(tr.textContent)), 'name filter');
+assert.ok(d.querySelector('.ta-tbl .lgb .abbs a'), 'rosters shown as league badges with team chips');
+const th = [...d.querySelectorAll('.ta-players thead .ta-sort')].map((x) => x.textContent.replace(/[▲▼ ]/g, ''));
+assert.ok(th.includes('NBHPA') && d.querySelector('.ta-sort[data-psort="nid"]').title.includes('2027'), 'an NBHPA no. column (required from 2027)');
+assert.ok(th.includes('J$') && th.includes('G$') && d.querySelector('.ta-sort[data-psort="s"]').title.includes('millions'), 'short salary headers (J$, G$), full label on hover');
+assert.ok([...d.querySelectorAll('.ta-players tbody tr')].every((tr) => /^(\d+(\.\d+)?M|—)$/.test(tr.children[4].textContent)), 'salaries in millions, one column per position');
+const pq2 = d.getElementById('ta-pq'); pq2.value = ''; pq2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(30);
 const inLg = await DB.prepare('SELECT COUNT(DISTINCT person_id) AS n FROM rosters WHERE season_id = ? AND league = ? AND removed_at IS NULL').bind(seasonId, lg.slug).first('n');
 d.querySelector('[data-plf="in"]').click(); await wait(20);
 assert.equal(rowsN(), inLg, 'filter: on a team in this league');
@@ -851,10 +855,10 @@ assert.equal(rowsN(), draftList - inLg, 'filter: without a team in this league')
   const subsN = await DB.prepare(`SELECT COUNT(*) AS n FROM section_players sp WHERE sp.season_id = ? AND sp.section = 'draft'
     AND NOT EXISTS (SELECT 1 FROM league_players u WHERE u.season_id = sp.season_id AND u.person_id = sp.person_id AND u.league IN ('retro', 'draft'))`).bind(seasonId).first('n');
   d.querySelector('[data-plf="sub"]').click(); await wait(20);
-  assert.ok(subsN > 0 && rowsN() === subsN && d.querySelector('.ad-players .ad-chip-sub'), 'filter: replacement players (on the list, signed up nowhere)');
+  assert.ok(subsN > 0 && rowsN() === subsN && d.querySelector('.ta-players .ta-chip-sub'), 'filter: replacement players (on the list, signed up nowhere)');
 }
 d.querySelector('[data-plf=""]').click(); await wait(20);
-const salS = () => [...d.querySelectorAll('.ad-players tbody tr')].map((tr) => tr.children[4].textContent === '—' ? null : parseFloat(tr.children[4].textContent));
+const salS = () => [...d.querySelectorAll('.ta-players tbody tr')].map((tr) => tr.children[4].textContent === '—' ? null : parseFloat(tr.children[4].textContent));
 d.querySelector('[data-psort="s"]').click(); await wait(20);
 const desc = salS().filter((v) => v != null);
 assert.ok(desc.length > 1 && desc.every((v, i) => !i || v <= desc[i - 1]) && salS()[0] === Math.max(...desc), 'sort by J$: highest first');
@@ -862,19 +866,19 @@ d.querySelector('[data-psort="s"]').click(); await wait(20);
 assert.equal(salS()[0], Math.min(...desc), 'click again: lowest first');
 d.querySelector('[data-psort="name"]').click(); await wait(20);
 d.querySelector('[data-pfsex="f"]').click(); await wait(20);
-assert.ok(rowsN() > 0 && [...d.querySelectorAll('.ad-players tbody tr')].every((tr) => tr.children[2].textContent === 'F'), 'filter: women');
+assert.ok(rowsN() > 0 && [...d.querySelectorAll('.ta-players tbody tr')].every((tr) => tr.children[2].textContent === 'F'), 'filter: women');
 d.querySelector('[data-pfsex=""]').click(); await wait(20);
 d.querySelector('[data-pfpos="s"]').click(); await wait(20);
-const smin = d.getElementById('ad-smin'); smin.value = '3'; smin.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
-assert.ok(rowsN() > 0 && salS().every((v) => v >= 3) && d.activeElement && d.activeElement.id === 'ad-smin', 'filter: J$ from 3 (the field keeps the focus)');
-const smin2 = d.getElementById('ad-smin'); smin2.value = ''; smin2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
-const salG = () => [...d.querySelectorAll('.ad-players tbody tr')].map((tr) => tr.children[5].textContent === '—' ? null : parseFloat(tr.children[5].textContent));
+const smin = d.getElementById('ta-smin'); smin.value = '3'; smin.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
+assert.ok(rowsN() > 0 && salS().every((v) => v >= 3) && d.activeElement && d.activeElement.id === 'ta-smin', 'filter: J$ from 3 (the field keeps the focus)');
+const smin2 = d.getElementById('ta-smin'); smin2.value = ''; smin2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
+const salG = () => [...d.querySelectorAll('.ta-players tbody tr')].map((tr) => tr.children[5].textContent === '—' ? null : parseFloat(tr.children[5].textContent));
 const allN = rowsN();
 d.querySelector('[data-pfpos="g"]').click(); await wait(20);
-assert.ok(rowsN() > 0 && rowsN() < allN && d.querySelector('.ad-range').textContent.includes('G$'), 'filter: goalies; the salary range switches to G$');
-const gmin = d.getElementById('ad-smin'); gmin.value = '3'; gmin.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
+assert.ok(rowsN() > 0 && rowsN() < allN && d.querySelector('.ta-range').textContent.includes('G$'), 'filter: goalies; the salary range switches to G$');
+const gmin = d.getElementById('ta-smin'); gmin.value = '3'; gmin.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
 assert.ok(salG().every((v) => v >= 3), 'the range filters on G$ for goalies');
-const gmin2 = d.getElementById('ad-smin'); gmin2.value = ''; gmin2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
+const gmin2 = d.getElementById('ta-smin'); gmin2.value = ''; gmin2.dispatchEvent(new w.Event('input', { bubbles: true })); await wait(20);
 d.querySelector('[data-pfpos=""]').click(); await wait(20);
 d.querySelector('[data-edit-person-btn]').click(); await wait(20);
 assert.ok(d.querySelector('#modal [data-edit-person] [name=birth_year]'), 'person edit in a modal (birth month and year)');
@@ -888,29 +892,29 @@ assert.equal(rowsN(), await DB.prepare("SELECT COUNT(*) AS n FROM section_player
 // teams: the chosen league only
 const firstTeamsLg = season.leagues.filter((l) => l.section === 'teams')[0].slug;
 w.location.hash = hL(season.leagues.find((l) => l.slug === firstTeamsLg), 'teams'); await wait(200);
-assert.ok(d.querySelector('.ad-crumbs a[href="' + hS('teams') + '"]'), 'a league of Équipes: Équipes one step up');
-assert.equal(d.querySelectorAll('.ad-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, firstTeamsLg).first('n'), 'one card per team of the league');
-assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
-{ const rows = [...d.querySelectorAll('.ad-team')].flatMap((c) => [[...c.querySelectorAll('.ad-roster tr')]]);
+assert.ok(d.querySelector('.ta-crumbs a[href="' + hS('teams') + '"]'), 'a league of Équipes: Équipes one step up');
+assert.equal(d.querySelectorAll('.ta-team').length, await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ? AND league = ?').bind(seasonId, firstTeamsLg).first('n'), 'one card per team of the league');
+assert.ok([...d.querySelectorAll('.ta-payroll')].every((p) => /\d/.test(p.textContent)), 'each team shows its payroll');
+{ const rows = [...d.querySelectorAll('.ta-team')].flatMap((c) => [[...c.querySelectorAll('.ta-roster tr')]]);
   const ok = rows.every((rs) => { const k = rs.map((tr) => [tr.children[2].textContent === 'Gardien' ? 2 : tr.children[1].textContent === 'F' ? 1 : 0, parseFloat(tr.children[3].textContent) || 0]); return k.every((x, i) => !i || x[0] > k[i - 1][0] || (x[0] === k[i - 1][0] && x[1] <= k[i - 1][1])); });
-  assert.ok(ok && d.querySelector('.ad-roster .ad-sx'), 'team cards: the sex shown; men, women, goalies, salary high to low'); }
-assert.ok([...d.querySelectorAll('.ad-roster a.lnk')].every((x) => x.getAttribute('href').indexOf(hS('teams') + '/players/') === 0), 'team card: a name opens the admin player page (in the section)');
+  assert.ok(ok && d.querySelector('.ta-roster .ta-sx'), 'team cards: the sex shown; men, women, goalies, salary high to low'); }
+assert.ok([...d.querySelectorAll('.ta-roster a.lnk')].every((x) => x.getAttribute('href').indexOf(hS('teams') + '/players/') === 0), 'team card: a name opens the admin player page (in the section)');
 { // entity pages: a player (from a roster) and a team; the stats site is only a secondary link there
-  const pa = d.querySelector('.ad-roster a.lnk'), pname = pa.textContent;
+  const pa = d.querySelector('.ta-roster a.lnk'), pname = pa.textContent;
   w.location.hash = pa.getAttribute('href'); await wait(300);
-  assert.ok(d.querySelector('h1').textContent === pname && d.querySelector('.ad-dl') && d.querySelector('.ad-back a[href="' + hS('teams') + '"]'), 'a player page: who, this season in the section, replacements, history');
+  assert.ok(d.querySelector('h1').textContent === pname && d.querySelector('.ta-dl') && d.querySelector('.ta-back a[href="' + hS('teams') + '"]'), 'a player page: who, this season in the section, replacements, history');
   const tl0 = season.leagues.find((l) => l.slug === firstTeamsLg), tid = await DB.prepare('SELECT id FROM teams WHERE season_id = ? AND league = ? LIMIT 1').bind(seasonId, firstTeamsLg).first('id');
   w.location.hash = hL(tl0, 'teams') + '/' + tid; await wait(300);
-  assert.ok(d.querySelector('.ad-team[data-team="' + tid + '"]') && d.querySelector('.ad-back a[href="' + hL(tl0, 'teams') + '"]') && d.querySelector('.nav a[href="' + hL(tl0, 'teams') + '"][aria-current="page"]'), 'a team page: its card, schedule and replacements; Teams stays lit');
-  assert.ok(!d.querySelector('#main a[href*="#team-"]:not(.ad-ext)'), 'no plain link to the stats site; only the "Statistiques publiques" link');
+  assert.ok(d.querySelector('.ta-team[data-team="' + tid + '"]') && d.querySelector('.ta-back a[href="' + hL(tl0, 'teams') + '"]') && d.querySelector('.nav a[href="' + hL(tl0, 'teams') + '"][aria-current="page"]'), 'a team page: its card, schedule and replacements; Teams stays lit');
+  assert.ok(!d.querySelector('#main a[href*="#team-"]:not(.ta-ext)'), 'no plain link to the stats site; only the "Statistiques publiques" link');
   w.location.hash = hL(tl0, 'teams'); await wait(200);
 }
 assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'), 'team setup is not on the daily Teams tab');
 // Configuration: seasons, then one card per league with its rules and team setup
 w.location.hash = '#/config'; await wait(200);
-assert.equal(d.querySelectorAll('.ad-lgrow [data-league-on]').length, season.leagues.length, 'Configuration: each league of the season, on or off');
+assert.equal(d.querySelectorAll('.ta-lgrow [data-league-on]').length, season.leagues.length, 'Configuration: each league of the season, on or off');
 assert.ok(!d.querySelector('[data-rules]'), 'rules are in each league\'s settings, not here');
-assert.ok(d.querySelector('#ad-admins [data-act="admin-new"]') && /Super admin/.test(d.getElementById('ad-admins').textContent), 'a super admin sees the admins (and who is super)');
+assert.ok(d.querySelector('#ta-admins [data-act="admin-new"]') && /Super admin/.test(d.getElementById('ta-admins').textContent), 'a super admin sees the admins (and who is super)');
 w.location.hash = hL(lg, 'setup'); await wait(200);
 assert.ok(d.querySelectorAll('[data-league-setup]').length === 1 && d.querySelectorAll('[data-rules]').length === 1, 'a league\'s settings: its own setup and rules only');
 const setupRetro = d.querySelector('[data-league-setup="retro"]');
@@ -970,7 +974,7 @@ let cw = await openCaptainPage(), cd = cw.document;
 const csubmit = async (sel) => { cd.querySelector(sel).dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(100); };
 assert.ok(cd.querySelector('#f-email'), 'captain page starts at the sign-in');
 cd.querySelector('#f-email [name=email]').value = 'cap-retro@example.test'; await csubmit('#f-email');
-cd.querySelector('#f-code [name=code]').value = cd.querySelector('.ad-dev').textContent.match(/\d{6}/)[0]; await csubmit('#f-code');
+cd.querySelector('#f-code [name=code]').value = cd.querySelector('.ta-dev').textContent.match(/\d{6}/)[0]; await csubmit('#f-code');
 await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
@@ -978,11 +982,11 @@ assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there'
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
-assert.ok(cd.querySelector('.cp-roster .ad-roster tr'), 'the roster with salaries');
+assert.ok(cd.querySelector('.cp-roster .ta-roster tr'), 'the roster with salaries');
 assert.ok([...cd.querySelectorAll('.cp-roster a.lnk')].some((x) => x.href.includes('/draft/retro/#player-L')), 'a roster name opens the player page in the league (not the section)');
 const ordered = (rows, sx, pos, sal) => { const k = rows.map((tr) => [tr.children[pos].textContent === 'Gardien' ? 2 : tr.children[sx].textContent === 'F' ? 1 : 0, parseFloat(tr.children[sal].textContent) || 0]);
   return k.every((x, i) => !i || x[0] > k[i - 1][0] || (x[0] === k[i - 1][0] && x[1] <= k[i - 1][1])); };
-const capRows = [...cd.querySelectorAll('.cp-roster .ad-roster tr')];
+const capRows = [...cd.querySelectorAll('.cp-roster .ta-roster tr')];
 assert.ok(capRows.every((tr) => /^(H|F|—)$/.test(tr.children[1].textContent)) && ordered(capRows, 1, 2, 3), 'captain roster: the sex shown; men, women, goalies, salary high to low');
 const totalGamesA = retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA)).length;
 const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
@@ -1015,10 +1019,10 @@ c2card.click(); await wait(200);
 cq('.bd-nav [data-b-step="4"]').click(); await wait(150);
 assert.ok(cq('.bd-verdict .bd-res.bd-fail') && cq('.bd-issues .bd-fail') && !cq('[data-b-approve]'), 'step 4: the failing check in words; no approve box for a captain');
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(150);
-assert.ok(cq('.ad-msg.ad-err'), 'failing without a note: refused, the builder stays');
+assert.ok(cq('.ta-msg.ta-err'), 'failing without a note: refused, the builder stays');
 const cnote = cq('[data-b-note]'); cnote.value = 'Seule disponible ce soir'; cnote.dispatchEvent(new cw.Event('input', { bubbles: true }));
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
-assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ad-msg.ad-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
+assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ta-msg.ta-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
 assert.ok(!cd.querySelector('.bd-req .bd-req-h .tcell'), 'compact cards on the team page (no team repeated)');
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE created_kind = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue');
 // a second team: now the switcher shows

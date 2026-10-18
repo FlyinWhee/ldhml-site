@@ -100,15 +100,15 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (S.booting) return '<p class="note">' + t('loading') + '</p>';   // the first answers are on their way
     // the online demo (no email yet): the demo key, then a captain picked from the list
     if (S.demoMode) return '<h1 class="ph">' + t('demoTitle') + '</h1><p class="lede">' + t('demoLede') + '</p>' + (!S.demoCaps
-      ? '<form id="f-demo" class="ad-form ad-login"><label>' + t('demoKey') + '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>'
-      : '<form id="f-demo-pick" class="ad-form ad-login"><label>' + t('demoPick') + '<select class="ctl" name="captain" required>' + S.demoCaps.map(function (c) {
+      ? '<form id="f-demo" class="ta-form ta-login"><label>' + t('demoKey') + '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ta-btn" type="submit">' + t('demoEnter') + '</button></form>'
+      : '<form id="f-demo-pick" class="ta-form ta-login"><label>' + t('demoPick') + '<select class="ctl" name="captain" required>' + S.demoCaps.map(function (c) {
           return '<option value="' + c.id + '">' + esc(c.name + ' · ' + c.teams.map(function (x) { var l = S.data && S.data.leagues.filter(function (y) { return y.slug === x.league; })[0]; return (l ? l.short : x.league) + ' ' + x.abb; }).join(', ')) + '</option>';
-        }).join('') + '</select></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>');
+        }).join('') + '</select></label><button class="ta-btn" type="submit">' + t('demoEnter') + '</button></form>');
     var form = S.step === 'email'
-      ? '<form id="f-email" class="ad-form ad-login"><label>' + t('emailLabel') + '<input class="ctl" type="email" name="email" autocomplete="email" required value="' + esc(S.email) + '"></label><button class="ad-btn" type="submit">' + t('sendCode') + '</button></form>'
-      : '<p class="lede">' + esc(t('codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ad-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
-        '<form id="f-code" class="ad-form ad-login"><label>' + t('codeLabel') + '<input class="ctl" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button class="ad-btn" type="submit">' + t('verify') + '</button></form>' +
-        '<p class="note"><button type="button" class="lnk ad-linkbtn" data-act="other-email">' + t('otherEmail') + '</button></p>';
+      ? '<form id="f-email" class="ta-form ta-login"><label>' + t('emailLabel') + '<input class="ctl" type="email" name="email" autocomplete="email" required value="' + esc(S.email) + '"></label><button class="ta-btn" type="submit">' + t('sendCode') + '</button></form>'
+      : '<p class="lede">' + esc(t('codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ta-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
+        '<form id="f-code" class="ta-form ta-login"><label>' + t('codeLabel') + '<input class="ctl" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button class="ta-btn" type="submit">' + t('verify') + '</button></form>' +
+        '<p class="note"><button type="button" class="lnk ta-linkbtn" data-act="other-email">' + t('otherEmail') + '</button></p>';
     return '<h1 class="ph">' + t('signIn') + '</h1>' + form;
   }
   function switcher() {
@@ -127,7 +127,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!tm) return '<h1 class="ph">' + t('title') + '</h1><p class="lede">' + t('noTeams') + '</p>';
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
-      '<p class="cp-ask"><button type="button" class="ad-btn" data-act="ask">' + t('ask') + '</button></p></div>';
+      '<p class="cp-ask"><button type="button" class="ta-btn" data-act="ask">' + t('ask') + '</button></p></div>';
     return switcher() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
   /* The two key numbers (owner: the others were noise): the next game, with what is declared for it, and the payroll. */
@@ -173,8 +173,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     rows.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
     var up = rows.filter(function (r) { return r.date >= S.today; }), past = rows.filter(function (r) { return r.date < S.today && r.reqs.length; }).reverse();
     var actions = function (q) {
-      if ((q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today) return '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button></div>';
-      if (q.status === 'refused') return '<div class="bd-acts"><button type="button" class="lnk ad-linkbtn" data-hide="' + q.id + '">' + t('hideReq') + '</button></div>';
+      if ((q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today) return '<div class="bd-acts"><button type="button" class="lnk ta-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button></div>';
+      if (q.status === 'refused') return '<div class="bd-acts"><button type="button" class="lnk ta-linkbtn" data-hide="' + q.id + '">' + t('hideReq') + '</button></div>';
       return '';
     };
     var row = function (r, i) {
@@ -182,7 +182,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       var n = { approved: 0, pending: 0, refused: 0 }; r.reqs.forEach(function (q) { n[q.status] = (n[q.status] || 0) + 1; });
       var chips = ['approved', 'pending', 'refused'].filter(function (k) { return n[k]; }).map(function (k) { return '<span class="cp-st cp-st-' + k + '">' + esc(t('gSt_' + k, { n: n[k] })) + '</span>'; }).join('');
       var sum = changed ? '<p class="note cp-gsum">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</p>' : '';
-      var ask = upcoming && r.x ? '<button type="button" class="ad-btn ad-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '';
+      var ask = upcoming && r.x ? '<button type="button" class="ta-btn ta-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '';
       var line = '<span class="cp-gt"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</span><span class="cp-gchips">' + chips + '</span>' + ask;
       if (!r.reqs.length) return '<li class="cp-game' + (next ? ' cp-nextg' : '') + '"><div class="cp-gl">' + line + '</div></li>';
       /* folded, the game still shows each replacement on one line: absent → replacement, with a status dot */
@@ -193,27 +193,27 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     };
     return '<section class="cp-panel cp-tl"><h2 class="cp-ph">' + t('myGames') + '</h2>' +
       (up.length ? '<ul class="cp-games">' + up.map(row).join('') + '</ul>' : '<p class="note">' + t('noGames') + '</p>') +
-      (past.length ? '<details class="ad-add"><summary>' + esc(t('pastReqs', { n: past.length })) + '</summary><ul class="cp-games">' + past.map(function (r) { return row(r, -1); }).join('') + '</ul></details>' : '') + '</section>';
+      (past.length ? '<details class="ta-add"><summary>' + esc(t('pastReqs', { n: past.length })) + '</summary><ul class="cp-games">' + past.map(function (r) { return row(r, -1); }).join('') + '</ul></details>' : '') + '</section>';
   }
   function rosterPanel(tm) {
     var rows = window.LDBuilder.rosterOrder(tm.roster, function (r) { return r.salary; }).map(function (r) {
       return '<tr><td>' + person(tm, r) + '</td><td class="cp-sx">' + esc(r.sex === 'f' ? t('sxF') : r.sex === 'm' ? t('sxM') : '—') + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.salary)) + '</td></tr>'; }).join('');
     return '<section class="cp-panel cp-roster"><h2 class="cp-ph">' + t('roster') + '</h2>' +
-      (rows ? '<table class="tbl ad-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
+      (rows ? '<table class="tbl ta-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       (tm.rules && tm.rules.notes ? '<p class="note">' + esc(tm.rules.notes) + '</p>' : '') + '</section>';
   }
   /* The builder page (#remplacement[/<game id>]): the team, then the guided steps (a game chosen beforehand starts at step 2). */
   function viewAsk() {
-    return '<p class="ad-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('askTitle') + '</h1><div class="bd-page" id="cp-builder"></div>';
+    return '<p class="ta-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('askTitle') + '</h1><div class="bd-page" id="cp-builder"></div>';
   }
   function render() {
     document.documentElement.lang = lang;
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b><small>' + esc(S.me ? S.me.name : '') + '</small></span></a>' +
-      '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
-    var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
+      '<div class="ta-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ta-long">' + t('lang') + '</span><span class="ta-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
+    var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
     $('#main').setAttribute('data-ready', S.booting ? '' : '1');   // shared/guard.js: the page started
-    $('#main').innerHTML = (S.me && S.me.demo ? '<p class="ad-msg ad-demo" role="status">' + esc(t('demoBanner')) + '</p>' : '') + msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
+    $('#main').innerHTML = (S.me && S.me.demo ? '<p class="ta-msg ta-demo" role="status">' + esc(t('demoBanner')) + '</p>' : '') + msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
     if (asking) window.LDBuilder.mount($('#cp-builder'), S.sub, ctx());
     $('#foot').innerHTML = '<p>' + t('foot') + '</p>';
     document.title = 'LDHML | ' + t('title');
