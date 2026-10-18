@@ -17,7 +17,7 @@
       signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
-      kOver: 'au-dessus du plafond de {v}', vsT: 'contre', atT: 'à',
+      kOver: 'au-dessus du plafond de {v}', vsT: 'vs',
       st_pending: 'À valider', st_approved: 'Validé', st_refused: 'Refusé', langShort: 'EN', askGame: 'Remplacement…', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
       sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
@@ -38,7 +38,7 @@
       signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', askTitle: 'Declare a replacement', back: '← My team',
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
-      kOver: 'over the cap by {v}', vsT: 'vs', atT: 'at',
+      kOver: 'over the cap by {v}', vsT: 'vs',
       st_pending: 'To validate', st_approved: 'Validated', st_refused: 'Refused', langShort: 'FR', askGame: 'Replacement…', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
       sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
@@ -128,7 +128,7 @@
       var opp = { abb: next.opp.abb, logo: next.opp.logo || dOpp.logo };   // the opponent: our team (its logo, else the stats data's)
       nextV = esc(window.LDBuilder.day(ctx(), next.game.date)) + (next.game.time ? ' <small>' + esc(next.game.time) + '</small>' : '');
       var lu = next.lineup;
-      nextS = esc(t(next.home ? 'vsT' : 'atT')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, tm.league, 'sm') + '<b title="' + esc(next.opp.name) + '">' + esc(next.opp.abb) + '</b> · ' +
+      nextS = esc(t('vsT')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, tm.league, 'sm') + '<b title="' + esc(next.opp.name) + '">' + esc(next.opp.abb) + '</b> · ' +
         esc(lu.subs.length ? t('gSubs', { n: lu.subs.length }) : t('kRegular'));
       var nextPend = reqs.filter(function (q) { return q.status === 'pending' && (q.game_ref ? q.game_ref === next.game.id : q.game_date === next.game.date); }).length;
       if (nextPend) nextS += ' · ' + esc(t('gPend', { n: nextPend }));

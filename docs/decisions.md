@@ -98,3 +98,6 @@ The first version had places per team, a waiting list and statuses. Dropped the 
 
 ## The admin: context first, not function first (2026-10-17, branch admin-context)
 The first admin had function tabs (Équipes, Calendrier, Remplacements, Joueurs, Configuration) with the context as a filter (a scope bar: season, section, league). The owner found it flattened: admins think "I work on Retro", then "what is there to do". The admin now follows the public site: LDHML > section > league, each level with its own tabs, and a context bar with a switcher. What a section shares (the player list, salaries) lives at the section; what a league owns (schedule, teams, replacements, rules) lives in the league; seasons, leagues on or off and captain accounts live at the LDHML level. One flattened view stays on purpose: the home queue of replacements to validate. Built on its own branch so it can be rolled back; the owner said the scope bar may not be the last word ("try it, tweak after").
+
+## Games read "vs", never "at" or home/away (2026-10-18)
+Every LDHML game is played at the same place (owner), so home and away mean nothing to the players. Game lines in the tools always read "<date> · <time> · vs <team>". The schedule still stores away and home (NBHPA sends them; the order may matter for score sheets).

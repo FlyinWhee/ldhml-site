@@ -21,7 +21,7 @@
   var STR = {
     fr: {
       team: 'Équipe', chooseTeam: 'Choisir l’équipe…', game: 'Match', chooseGame: 'Choisir le match…', upcoming: 'À venir', past: 'Passés',
-      manual: 'Autre date (match absent du calendrier)', date: 'Date', time: 'Heure', vs: 'contre', at: 'à',
+      manual: 'Autre date (match absent du calendrier)', date: 'Date', time: 'Heure', vs: 'vs',
       step1: '1. Le match', step2: '2. Qui est absent, et qui le remplace', step3: '3. Vérifications', loading: 'Chargement…',
       pickGameFirst: 'Choisissez d’abord le match : la liste des remplaçants en dépend (âge, horaire).',
       absent: 'Absent', posS: 'Joueur', posG: 'Gardien', chooseSub: 'Remplaçant…', subPos: 'Joue comme',
@@ -72,7 +72,7 @@
     },
     en: {
       team: 'Team', chooseTeam: 'Choose the team…', game: 'Game', chooseGame: 'Choose the game…', upcoming: 'Upcoming', past: 'Past',
-      manual: 'Another date (game not in the schedule)', date: 'Date', time: 'Time', vs: 'vs', at: 'at',
+      manual: 'Another date (game not in the schedule)', date: 'Date', time: 'Time', vs: 'vs',
       step1: '1. The game', step2: '2. Who is absent, and who replaces them', step3: '3. Checks', loading: 'Loading…',
       pickGameFirst: 'Choose the game first: the replacement list depends on it (age, schedule).',
       absent: 'Absent', posS: 'Skater', posG: 'Goalie', chooseSub: 'Replacement…', subPos: 'Plays as',
@@ -156,7 +156,7 @@
   /* g = { date, time, venue, court, home (true when the team plays at home), opp: { abb } } (from the tools' schedule) */
   function gameText(ctx, g, noVenue) {
     var opp = (g.opp && g.opp.abb) || '?';
-    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + (g.home ? t(ctx.lang, 'vs') : t(ctx.lang, 'at')) + ' ' + opp + (g.venue && !noVenue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
+    return day(ctx, g.date) + (g.time ? ' · ' + g.time : '') + ' · ' + t(ctx.lang, 'vs') + ' ' + opp   /* one venue for all (owner): no home or away wording */ + (g.venue && !noVenue ? ' · ' + g.venue + (g.court ? ' ' + g.court : '') : '');
   }
   function requestGame(ctx, q) {
     if (q.game) return gameText(ctx, q.game, true);   // a card header: no venue (it is in the schedule)
@@ -361,10 +361,10 @@
     return g ? day(b.ctx, g.date) + (g.time ? ' · ' + g.time : '') : '';
   }
   function gameCard(b, g) {
-    var d = b.d, isHome = g.home, opp = g.opp || { abb: '?' }, on = String(b.slot) === String(g.id);
+    var d = b.d, opp = g.opp || { abb: '?' }, on = String(b.slot) === String(g.id);
     return '<button type="button" class="bd-gcard' + (on ? ' bd-on' : '') + '" data-b-game="' + esc(g.id) + '" aria-pressed="' + on + '">' +
       '<span class="bd-gday">' + esc(day(b.ctx, g.date)) + '</span><span class="bd-gtime">' + esc(g.time || '') + '</span>' +
-      '<span class="bd-gopp">' + esc(t(b.ctx.lang, isHome ? 'vs' : 'at')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, d.team.league, 'sm') + '<b title="' + esc(opp.name || opp.abb) + '">' + esc(opp.abb) + '</b></span>' +
+      '<span class="bd-gopp">' + esc(t(b.ctx.lang, 'vs')) + ' ' + window.LDLook.crest({ abb: opp.abb, logo: opp.logo }, d.team.league, 'sm') + '<b title="' + esc(opp.name || opp.abb) + '">' + esc(opp.abb) + '</b></span>' +
       (g.venue ? '<span class="note">' + esc(g.venue + (g.court ? ' ' + g.court : '')) + '</span>' : '') + '</button>';
   }
   function step1(b) {
