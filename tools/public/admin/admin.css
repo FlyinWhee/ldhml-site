@@ -410,3 +410,10 @@ html.ta-demo .bd-nav { bottom: 22px; }
   html.ta-demo.ta-has-tabbar .ta-demobar { bottom: calc(57px + env(safe-area-inset-bottom, 0px)); }
   html.ta-demo.ta-has-tabbar .bd-nav { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 }
+/* À valider: one tap from any page (the pill in the top bar), by game night */
+.ta-pill { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; background: var(--ball); color: var(--on-ball); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.ta-pill b { font: 600 20px/1 var(--f-display); }
+.ta-pill:hover { filter: brightness(1.08); }
+.ta-vday { display: flex; align-items: center; gap: 10px; margin: 18px 0 8px; }
+.ta-vlabel { padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; font: 600 12px/1.5 var(--f-text); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.ta-vlabel.ta-vsoon { border-color: var(--ball); color: var(--ball); }

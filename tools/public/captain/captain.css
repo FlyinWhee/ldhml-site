@@ -102,3 +102,7 @@
 .cp-game details[open] .cp-slim { display: none; }
 .cp-slim li { display: block; position: relative; padding-left: 14px; }
 .cp-slim i { position: absolute; left: 0; top: .45em; transform: none; }
+/* After a request: the link for the admins */
+.cp-share { margin: 0 0 14px; border-color: var(--ball); }
+.cp-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px; margin: 8px 0 0; }
+.cp-share-row .ctl { min-width: 0; font-size: 13px; }

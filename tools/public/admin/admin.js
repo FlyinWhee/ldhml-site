@@ -156,6 +156,8 @@
       personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
+      tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
+      backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -234,6 +236,8 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
+      tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
+      backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -869,6 +873,31 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     return head + leaguesP + (todoP ? '<div class="ta-grid2 ta-grid-wide"><div class="ta-col">' + val + '</div><div class="ta-col">' + todoP + '</div></div>' : val) +
       '<p class="ta-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
   }
+  /* ---------- À valider (#/valider): every replacement to validate, all leagues, by game night, soonest first ----------
+   * The phone page of an admin on short notice: one tap from the pill in the top bar, then Valider or Refuser. */
+  function viewValider() {
+    var ctx = builderCtx(), today = torontoToday(), tomorrow = new Date(Date.now() + 864e5).toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+    var pending = S.subs.filter(function (q) { return q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
+    var head = '<h1 class="ph">' + t('tabValider') + (pending.length ? ' <span class="ta-hcnt">' + pending.length + '</span>' : '') + '</h1>';
+    if (!pending.length) return head + '<p class="empty">' + t('noPending') + '</p>';
+    var days = []; pending.forEach(function (q) { var g = days[days.length - 1]; if (!g || g.date !== q.game_date) days.push(g = { date: q.game_date, list: [] }); g.list.push(q); });
+    return head + days.map(function (g) {
+      var label = g.date === today ? t('dayToday') : g.date === tomorrow ? t('dayTomorrow') : g.date < today ? t('dayPast') : '';
+      return '<h2 class="ta-h3 ta-vday">' + esc(window.LDBuilder.day(ctx, g.date)) + (label ? ' <span class="ta-vlabel' + (g.date <= tomorrow ? ' ta-vsoon' : '') + '">' + esc(label) + '</span>' : '') + '</h2>' +
+        '<div class="bd-reqs">' + g.list.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }); }).join('') + '</div>';
+    }).join('');
+  }
+  /* ---------- One replacement (#/r/<id>): the link a captain shares with the admins ----------
+   * The card with its actions, and where it belongs: the team, the game in the calendar, the league's queue. */
+  function viewReq() {
+    var back = '<p class="ta-back"><a class="lnk" href="#/valider">' + t('backValider') + '</a></p>', q = S.req;
+    if (!q) return back + '<p class="empty">' + t(S.reqMissing ? 'reqNotFound' : 'loading') + '</p>';
+    var ctx = builderCtx(), l = leagueOf(q.league);
+    var links = '<p class="ta-subline">' + (q.team ? '<a class="lnk" href="' + hrefTeam(q.league, q.team.id) + '">' + esc(q.team.name) + '</a>' : '') +
+      (l ? '<a class="lnk" href="' + hrefL(q.league, 'cal') + '/' + q.game_date + '">' + t('tabCal') + ' · ' + esc(window.LDBuilder.day(ctx, q.game_date)) + '</a><a class="lnk" href="' + hrefL(q.league, 'subs') + '">' + t('reqLeagueQueue', { l: l.short }) + '</a>' : '') + '</p>';
+    return back + '<h1 class="ph">' + esc(t('reqTitle', { n: q.id })) + '</h1>' + links +
+      '<div class="bd-reqs">' + window.LDBuilder.requestCard(q, ctx, subActions(q), { league: true }) + '</div>';
+  }
   /* ---------- A league: its overview (what needs doing in this league now) ----------
    * Four key numbers (to validate, next night, teams and captains, rules), the replacements to validate, the teams. */
   function viewOverview() {
@@ -1044,16 +1073,18 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var tabIcon = function (k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; };
   TAB_ICONS.overview = '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>';
   TAB_ICONS.config = TAB_ICONS.setup;
+  TAB_ICONS.valider = '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>';
   TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
   /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
-  var navTab = function () { return { captain: 'config', person: 'players' }[S.tab] || S.tab; };
+  var navTab = function () { return { captain: 'config', person: 'players', req: 'valider' }[S.tab] || S.tab; };
+  var pendAll = function () { return Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0); };
   function levelTabs() {
     var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
     if (S.level === 'league') return [mk('overview', 'tabOverview', hrefL(S.league)), mk('cal', 'tabCal', hrefL(S.league, 'cal')), mk('teams', 'tabTeams', hrefL(S.league, 'teams')),
       mk('subs', 'tabSubs', hrefL(S.league, 'subs'), 'subs', S.pending[S.league]), mk('setup', 'tabLgSetup', hrefL(S.league, 'setup'), 'lgsetup')];
     if (S.level === 'section') return [mk('players', 'tabPlayers', hrefS(S.section))];
     var pend = Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0);
-    return [mk('home', 'tabHome', hrefTop('home'), 'home', pend), mk('config', 'tabSetup', hrefTop('config'), 'config'), mk('audit', 'tabAudit', hrefTop('audit'), 'audit')];
+    return [mk('home', 'tabHome', hrefTop('home')), mk('valider', 'tabValider', '#/valider', 'valider', pend), mk('config', 'tabSetup', hrefTop('config'), 'config'), mk('audit', 'tabAudit', hrefTop('audit'), 'audit')];
   }
   function renderTabbar(tabs) {
     var bar = $('#tabbar'), more = $('#more');
@@ -1079,9 +1110,10 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     renderTabbar(tabs);
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
       (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (navTab() === x.k ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
-      '<div class="ta-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ta-long">' + t('lang') + '</span><span class="ta-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
+      '<div class="ta-tools">' + (S.me && pendAll() ? '<a class="ta-pill" href="#/valider" title="' + esc(t('tabValider')) + '"><b>' + pendAll() + '</b> <span class="ta-long">' + esc(t('pillValider')) + '</span><span class="ta-short">✓</span></a>' : '') +
+      '<button type="button" class="lgbtn" data-act="lang"><span class="ta-long">' + t('lang') + '</span><span class="ta-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     if (!S.booting) $('#main').setAttribute('data-ready', '1');   // shared/guard.js: the page started
@@ -1114,8 +1146,9 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       if (S.seasonId) more.push(api('/replacements/pending?season=' + S.seasonId).then(function (r) { S.pending = r.data.counts || {}; }));
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
-      if (S.seasonId && (['subs', 'home', 'overview'].indexOf(S.tab) >= 0 || (S.tab === 'teams' && S.teamId))) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
+      if (S.seasonId && (['subs', 'home', 'overview', 'valider'].indexOf(S.tab) >= 0 || (S.tab === 'teams' && S.teamId))) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
       if (S.tab === 'config' && S.me && S.me.super) more.push(api('/admins').then(function (r) { S.admins = r.ok ? r.data.admins : []; }));
+      if (S.tab === 'req' && S.reqId) more.push(api('/replacements?id=' + S.reqId).then(function (r) { S.req = r.ok ? (r.data.replacements || [])[0] || null : null; S.reqMissing = !S.req; }));
       if (S.tab === 'person' && S.personId) more.push(api('/people/' + S.personId).then(function (r) { S.person = r.ok ? r.data : null; S.personMissing = !r.ok; }));
       if (S.tab === 'teams' && S.teamId) more.push(api('/lineups?team=' + S.teamId).then(function (r) { S.teamSched = r.ok ? r.data : null; }));
       if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
@@ -1327,6 +1360,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var parts = raw ? raw.split('/') : [], p0 = parts[0], before = S.level + ':' + S.tab, sub = null;
     var sec = S.data && p0 ? (S.data.sections || []).filter(function (x) { return x.path === p0 || x.key === p0; })[0] : null;
     if (!p0) { S.level = 'ldhml'; S.tab = 'home'; }
+    else if (p0 === 'valider') { S.level = 'ldhml'; S.tab = 'valider'; }
+    else if (p0 === 'r' && Number(parts[1])) { S.level = 'ldhml'; S.tab = 'req'; if (S.reqId !== Number(parts[1])) S.req = null; S.reqId = Number(parts[1]); }
     else if (p0 === 'config' && parts[1] === 'captain') { S.level = 'ldhml'; S.tab = 'captain'; if (S.capId !== Number(parts[2])) S.cap = null; S.capId = Number(parts[2]) || 0; }
     else if (TOP_TABS.indexOf(p0) >= 0) { S.level = 'ldhml'; S.tab = p0; }
     else if (sec) {

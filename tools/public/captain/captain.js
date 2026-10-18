@@ -28,7 +28,9 @@
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer',
+      shareTitle: 'Lien pour l’administration', shareLede: 'Envoyez-le dans le groupe des capitaines : un admin l’ouvre et valide le remplacement en un clic.',
+      shareGo: 'Partager', shareCopy: 'Copier', shareCopied: 'Lien copié.', shareShort: 'Partager le lien', shareText: 'Remplacement à valider · {t}',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
       e_not_open: 'Ce remplacement n’est plus ouvert.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
       foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi déclarer le remplacement pour vous.'
@@ -51,7 +53,9 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…',
+      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close',
+      shareTitle: 'Link for the admins', shareLede: 'Send it to the captains’ group: an admin opens it and validates the replacement in one click.',
+      shareGo: 'Share', shareCopy: 'Copy', shareCopied: 'Link copied.', shareShort: 'Share the link', shareText: 'Replacement to validate · {t}',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
       e_not_open: 'This replacement is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
       foot: 'LDHML tools. Need help? Write to your league’s admins: they can also declare the replacement for you.'
@@ -75,7 +79,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var home = function (l) { return ((S.data && S.data.siteUrl) || '/') + l.sectionPath + '/' + l.path + '/'; };
   var ctx = function () {
     return { lang: lang, data: S.data, api: api,
-      onSaved: function () { S.flash = { kind: 'ok', text: t('sent') }; S.sub = null; location.hash = '#equipe'; },
+      onSaved: function (res) { S.flash = { kind: 'ok', text: t('sent') }; S.shared = res && res.status === 'pending' ? res.id : null; S.sub = null; location.hash = '#equipe'; },
       onCancel: function () { S.sub = null; location.hash = '#equipe'; } };
   };
 
@@ -122,13 +126,31 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   /* ---------- the captain dashboard ----------
    * Top: the team and the main action. Then four key numbers (next game, requests, payroll, roster). Then two columns:
    * the timeline (the team's games, each with its requests: the work in its context) and the roster. One column on a phone. */
+  /* After a request: the link the admins open to validate it, to share in the captains' group (or copy). */
+  var shareUrl = function (id) { return location.origin + '/admin/#/r/' + id; };
+  function sharePanel() {
+    if (!S.shared) return '';
+    return '<section class="ta-panel cp-share"><h2 class="ta-ph">' + t('shareTitle') + '</h2><p class="note">' + t('shareLede') + '</p>' +
+      '<p class="cp-share-row"><input class="ctl" readonly value="' + esc(shareUrl(S.shared)) + '" aria-label="' + esc(t('shareTitle')) + '" id="cp-share-url">' +
+      (navigator.share ? '<button type="button" class="ta-btn ta-btn-sm" data-share-go="' + S.shared + '">' + t('shareGo') + '</button>' : '') +
+      '<button type="button" class="ta-btn ta-btn-sm ta-ghost" data-share-copy="' + S.shared + '">' + t('shareCopy') + '</button>' +
+      '<button type="button" class="ta-x" data-share-close aria-label="' + esc(t('close')) + '">×</button></p></section>';
+  }
+  /* Share (the phone's share sheet: Messenger, SMS…) or copy the link of a request. */
+  function shareReq(id, copyOnly) {
+    var url = shareUrl(id), tm = team(), text = t('shareText', { t: tm ? tm.name : '' });
+    if (!copyOnly && navigator.share) { navigator.share({ title: text, text: text, url: url }).catch(function () { /* closed by the user */ }); return; }
+    var done = function () { say('ok', t('shareCopied')); render(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { S.shared = id; render(); });
+    else { S.shared = id; render(); }
+  }
   function viewTeam() {
     var tm = team();
     if (!tm) return '<h1 class="ph">' + t('title') + '</h1><p class="lede">' + t('noTeams') + '</p>';
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
       '<p class="cp-ask"><button type="button" class="ta-btn" data-act="ask">' + t('ask') + '</button></p></div>';
-    return switcher() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
+    return switcher() + sharePanel() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
   /* The two key numbers (owner: the others were noise): the next game, with what is declared for it, and the payroll. */
   function kpis(tm, reqs) {
@@ -173,9 +195,11 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     rows.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
     var up = rows.filter(function (r) { return r.date >= S.today; }), past = rows.filter(function (r) { return r.date < S.today && r.reqs.length; }).reverse();
     var actions = function (q) {
-      if ((q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today) return '<div class="bd-acts"><button type="button" class="lnk ta-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button></div>';
-      if (q.status === 'refused') return '<div class="bd-acts"><button type="button" class="lnk ta-linkbtn" data-hide="' + q.id + '">' + t('hideReq') + '</button></div>';
-      return '';
+      var a = [];
+      if (q.status === 'pending') a.push('<button type="button" class="lnk ta-linkbtn" data-share="' + q.id + '">' + t('shareShort') + '</button>');   // still to validate: its link for the admins
+      if ((q.status === 'pending' || q.status === 'approved') && q.game_date >= S.today) a.push('<button type="button" class="lnk ta-linkbtn" data-cancel="' + q.id + '">' + t('cancelReq') + '</button>');
+      if (q.status === 'refused') a.push('<button type="button" class="lnk ta-linkbtn" data-hide="' + q.id + '">' + t('hideReq') + '</button>');
+      return a.length ? '<div class="bd-acts">' + a.join('') + '</div>' : '';
     };
     var row = function (r, i) {
       var lu = r.x && r.x.lineup, changed = lu && (lu.subs.length || lu.absents.length), next = i === 0 && r.date >= S.today, upcoming = r.date >= S.today;
@@ -295,7 +319,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide],[data-ask-game]');
+    var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide],[data-ask-game],[data-share],[data-share-go],[data-share-copy],[data-share-close]');
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
@@ -304,6 +328,10 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (act === 'ask') { S.msg = null; location.hash = '#remplacement'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
     if (b.hasAttribute('data-ask-game')) { e.preventDefault(); S.msg = null; location.hash = '#remplacement/' + b.getAttribute('data-ask-game'); return; }
+    if (b.hasAttribute('data-share')) { shareReq(Number(b.getAttribute('data-share'))); return; }
+    if (b.hasAttribute('data-share-go')) { shareReq(Number(b.getAttribute('data-share-go'))); return; }
+    if (b.hasAttribute('data-share-copy')) { shareReq(Number(b.getAttribute('data-share-copy')), true); return; }
+    if (b.hasAttribute('data-share-close')) { S.shared = null; render(); return; }
     if (b.hasAttribute('data-hide')) { api('/replacements/' + b.getAttribute('data-hide') + '/hide', 'POST', {}).then(function (r) { if (r.ok) say('ok', t('hidden')); else say('err', errMsg(r)); refresh(); }); return; }
     if (b.hasAttribute('data-cancel')) {
       if (!window.confirm(t('confirmCancel'))) return;

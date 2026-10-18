@@ -403,6 +403,14 @@ assert.ok(Array.isArray(r.data.requests) && r.data.person === null, 'captain pag
 assert.equal((await call('/api/admin/captains/999999', { cookie })).status, 404);
 assert.equal((await call('/api/admin/captains/' + capRetro)).status, 401, 'admins only');
 
+// one request by id (the link a captain shares with the admins)
+{
+  const any = await DB.prepare('SELECT id FROM replacements ORDER BY id LIMIT 1').first('id');
+  r = await call('/api/admin/replacements?id=' + any, { cookie });
+  assert.ok(r.data.replacements.length === 1 && r.data.replacements[0].id === any && r.data.replacements[0].lines.length, 'one request by id, with its lines');
+  assert.equal((await call('/api/admin/replacements?id=999999', { cookie })).data.replacements.length, 0);
+}
+
 // ---- admins: super admins (SUPER_ADMINS secret) manage the other admins ----
 {
   assert.equal((await call('/api/admin/me', { cookie })).data.admin.super, true, 'boss is a super admin (SUPER_ADMINS)');
@@ -669,7 +677,7 @@ assert.ok(d.querySelector('.ta-dive .ta-lcard') && !d.querySelector('.ta-kpis'),
 const hL = (l, tab) => '#/' + l.sectionPath + '/' + l.path + (tab ? '/' + tab : '');
 const hS = (key) => '#/' + season.sections.find((x) => x.key === key).path;
 assert.ok(d.querySelector('.ta-ctxbar #ta-ctx') && d.querySelector('.ta-ctxbar #ta-season'), 'every page: the context bar (where you are, a switcher) and the season');
-assert.ok(d.querySelector('.nav a[href="#/config"]') && d.querySelector('.nav a[href="#/audit"]') && d.querySelectorAll('#tabbar a').length === 3, 'LDHML level: Accueil, Configuration, Journal (top bar; bottom bar on phones)');
+assert.ok(d.querySelector('.nav a[href="#/config"]') && d.querySelector('.nav a[href="#/audit"]') && d.querySelector('.nav a[href="#/valider"]') && d.querySelectorAll('#tabbar a').length === 4, 'LDHML level: Accueil, À valider, Configuration, Journal (top bar; bottom bar on phones)');
 assert.equal(d.querySelectorAll('.ta-lcard').length, season.leagues.length, 'home: one card per league, by section');
 assert.ok([...d.querySelectorAll('.ta-lcard')].every((c) => c.querySelector('.ta-lc-head') && c.querySelector('.ta-lc-links a')), 'each card: the league, its action items, its pages');
 assert.equal(d.querySelectorAll('.ta-ctx-pop .ta-ctx-lg').length, season.leagues.length, 'the switcher lists every league');
@@ -794,6 +802,18 @@ assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="' + hL(lg, 'subs') + '"]').
 assert.ok(d.querySelector('.ta-ctx-lg[href^="' + hL(lg) + '"] .ta-cnt'), 'the switcher shows the league\'s pending count');
 w.location.hash = '#/'; await wait(250);
 assert.equal(d.querySelector('.ta-lcard a.ta-lc-val[href="' + hL(lg, 'subs') + '"] b').textContent, '1', 'home: the league card says 1 to validate, one click to the league queue');
+{ // every request to validate, one tap from any page: the pill in the top bar, the #/valider page, the link of one request
+  w.location.hash = hL(lg, 'teams'); await wait(250);
+  assert.ok(d.querySelector('#top a.ta-pill[href="#/valider"] b') && d.querySelector('#top a.ta-pill b').textContent === '1', 'the top bar shows the requests to validate, from any page');
+  w.location.hash = '#/valider'; await wait(300);
+  assert.ok(d.querySelectorAll('.bd-req.bd-st-pending [data-decide="approve"]').length === 1 && d.querySelector('.ta-vday') && d.querySelector('.bd-req .lgb'), 'À valider: the pending requests by game night, with their league and actions');
+  const qid = await DB.prepare("SELECT id FROM replacements WHERE status = 'pending' ORDER BY id DESC LIMIT 1").first('id');
+  w.location.hash = '#/r/' + qid; await wait(300);
+  assert.ok(d.querySelector('h1').textContent.includes(String(qid)) && d.querySelector('.bd-req [data-decide="approve"]') && d.querySelector('.nav a[href="#/valider"][aria-current="page"]'), 'one request by its link: the card with its actions');
+  w.location.hash = '#/r/999999'; await wait(300);
+  assert.ok(d.querySelector('#main .empty'), 'a request that no longer exists: said so');
+  w.location.hash = '#/'; await wait(250);
+}
 assert.ok(d.querySelector('.ta-panel .bd-req.bd-st-pending [data-decide="approve"]') && d.querySelector('.ta-panel .bd-req .lgb'), 'with its actions and its league');
 const missBtn = d.querySelector('[data-home-miss]');
 if (missBtn) { const kind = missBtn.getAttribute('data-home-miss').split(':')[1]; missBtn.click(); await wait(250);
@@ -1023,6 +1043,8 @@ assert.ok(cq('.ta-msg.ta-err'), 'failing without a note: refused, the builder st
 const cnote = cq('[data-b-note]'); cnote.value = 'Seule disponible ce soir'; cnote.dispatchEvent(new cw.Event('input', { bubbles: true }));
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
 assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ta-msg.ta-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
+assert.ok(/\/admin\/#\/r\/\d+$/.test(cd.getElementById('cp-share-url').value) && cd.querySelector('[data-share-copy]'), 'sent: the link for the admins, to share or copy');
+assert.ok(cd.querySelector('[data-share]'), 'each pending request: share its link');
 assert.ok(!cd.querySelector('.bd-req .bd-req-h .tcell'), 'compact cards on the team page (no team repeated)');
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE created_kind = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue');
 // a second team: now the switcher shows

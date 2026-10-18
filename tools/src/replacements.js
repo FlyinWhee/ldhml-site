@@ -266,8 +266,9 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
   // The requests: admin, one season (every league); captain, their teams. Pending requests carry their checks run again now.
   if (m === 'GET' && path === '/replacements') {
     // A captain does not see the refused requests they hid; the admins see everything.
-    const where = isAdmin ? 'q.season_id = ?' : `q.team_id IN (${allowed.map(() => '?').join(',') || 'NULL'}) AND q.captain_hidden_at IS NULL`;
-    const args = isAdmin ? [intId(q.get('season')) || 0] : allowed;
+    const one = isAdmin && intId(q.get('id'));   // ?id=: one request, any season (the link a captain shares with the admins)
+    const where = one ? 'q.id = ?' : isAdmin ? 'q.season_id = ?' : `q.team_id IN (${allowed.map(() => '?').join(',') || 'NULL'}) AND q.captain_hidden_at IS NULL`;
+    const args = one ? [one] : isAdmin ? [intId(q.get('season')) || 0] : allowed;
     const { results: reqs } = await DB.prepare(`SELECT q.*, t.name AS team_name, t.abb, t.logo AS team_logo, t.nbhpa_team_id,
         CASE q.created_kind WHEN 'captain' THEN c.name ELSE a.name END AS created_name, d.name AS decided_name
       FROM replacements q JOIN teams t ON t.id = q.team_id
