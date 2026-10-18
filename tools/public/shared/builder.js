@@ -137,11 +137,13 @@
     var l = leagueOf(ctx, league) || { slug: league, teams: [] };
     var dt = (l.teams || []).filter(function (x) { return x.id === team.nbhpa_team_id; })[0] || {};
     if (team.logo) dt = { logo: team.logo };
-    var name = team.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(home(ctx, l) + '#team-' + team.nbhpa_team_id) + '">' + esc(team.name) + '</a>' : '<b>' + esc(team.name) + '</b>';
+    var href = ctx.teamHref ? ctx.teamHref(team, league) : team.nbhpa_team_id && l.path ? home(ctx, l) + '#team-' + team.nbhpa_team_id : '';   // ctx.teamHref: the admin's own team page
+    var name = href ? '<a class="tl strong" href="' + esc(href) + '">' + esc(team.name) + '</a>' : '<b>' + esc(team.name) + '</b>';
     return '<span class="tcell">' + window.LDLook.crest({ abb: team.abb, logo: dt.logo }, league, 'sm') + name + '</span>';
   }
   /* A person in a league context: their page in that league (most detail); the section page when they have not played in it. */
-  function person(ctx, league, name, siteId) {
+  function person(ctx, league, name, siteId, personId) {
+    if (ctx.personHref) { var ph = personId ? ctx.personHref(personId, league) : ''; return ph ? '<a class="lnk" href="' + esc(ph) + '">' + esc(name) + '</a>' : esc(name); }   // the admin's own player page
     var l = leagueOf(ctx, league), dp = siteId && ctx.data && ctx.data.people.filter(function (x) { return x.id === siteId; })[0];
     if (!siteId || !l) return esc(name);
     var href = dp && dp.lg && dp.lg[l.slug] ? home(ctx, l) + '#player-' + siteId : ((ctx.data && ctx.data.siteUrl) || '/') + l.sectionPath + '/#player-' + siteId;
@@ -218,13 +220,13 @@
 
   /* ---------- a request: the same compact card in the queue, the history and the captain's list ----------
    * Header: (team) game, status (result). One line per replacement. Then only the problems, in words; every check in a fold. */
-  var leagueTag = function (ctx, slug) { var l = leagueOf(ctx, slug); return l ? window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: home(ctx, l), title: l.name, theme: l.theme }) : ''; };
+  var leagueTag = function (ctx, slug) { var l = leagueOf(ctx, slug); return l ? window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: ctx.leagueHref ? ctx.leagueHref(slug) : home(ctx, l), title: l.name, theme: l.theme }) : ''; };
   function requestCard(q, ctx, actions, o) {
     o = o || {};
     var L = ctx.lang;
     var names = q.lines.map(function (l) { return { a: l.absent_name, s: l.sub_name }; });
     var lines = q.lines.map(function (l) {
-      return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + person(ctx, q.league, l.sub_name, l.sub_site) + '</b>' + (l.guest ? ' ' + guestTag(ctx, l.guest) : '') +
+      return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site, l.absent_id) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + person(ctx, q.league, l.sub_name, l.sub_site, l.sub_id) + '</b>' + (l.guest ? ' ' + guestTag(ctx, l.guest) : '') +
         ' <span class="note">' + esc(posName(ctx, l.sub_pos)) + ' · ' + esc(money(l.absent_salary)) + ' → ' + esc(money(l.sub_salary)) + '</span></li>';
     }).join('');
     var outSum = 0, inSum = 0; q.lines.forEach(function (l) { outSum += l.absent_salary || 0; inSum += l.sub_salary || 0; });
@@ -604,7 +606,7 @@
     if (lu.missing) return '<div class="ld-team">' + head + '<p class="note">' + esc(t(L, 'ldMissing')) + '</p></div>';
     var g = function (p) { return p.pos === 'g' ? ' <abbr class="ld-g" title="' + esc(t(L, 'ldGoalieTitle')) + '">' + esc(t(L, 'ldG')) + '</abbr>' : ''; };
     var subs = lu.subs.map(function (x) {
-      return '<li class="ld-sub ld-' + x.req.status + '"><span class="ld-mark" aria-hidden="true">' + (x.req.status === 'approved' ? '✓' : '!') + '</span><span><b>' + person(ctx, league, x.name, x.site_id) + '</b>' + g(x) +
+      return '<li class="ld-sub ld-' + x.req.status + '"><span class="ld-mark" aria-hidden="true">' + (x.req.status === 'approved' ? '✓' : '!') + '</span><span><b>' + person(ctx, league, x.name, x.site_id, x.person_id) + '</b>' + g(x) +
         (x.guest ? ' ' + guestTag(ctx, x.guest) : '') + ' <span class="note">' + esc(t(L, 'ldFor', { n: x.for }) + ' · ' + t(L, 'st_' + x.req.status)) + '</span></span></li>';
     }).join('');
     var p = lu.payroll, over = p.cap != null && p.after > p.cap + 1e-9;

@@ -385,3 +385,12 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-super { color: var(--ball); border-color: var(--ball); }
 .ad-cfg-top > .sec { margin-top: 0; }
 .ad-cfg-top { margin-top: 28px; }
+/* Entity pages (team, player): the title, a sub-line with the context and the public stats link */
+.ad-teamh { display: flex; align-items: center; gap: 14px; }
+.ad-teamh .crest { width: 56px; height: 56px; flex: none; }
+.ad-subline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: -4px 0 14px; }
+.ad-ext { font-size: 14px; }
+.ad-tgames { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
+.ad-tgame { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.ad-tgame-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.ad-tgame .ld-team { margin-top: 8px; }

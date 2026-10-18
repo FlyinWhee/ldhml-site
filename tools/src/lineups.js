@@ -47,7 +47,7 @@ export function lineup(team, roster, reqs, game, cap) {
     if (!x) { players.push(r); continue; }
     absents.push({ ...r, req: { id: x.q.id, status: x.q.status } });
     const l = x.l;
-    subs.push({ name: l.sub_name || l.guest_name, site_id: l.sub_site || null, pos: l.sub_pos, salary: l.sub_salary ?? null, for: r.name,
+    subs.push({ name: l.sub_name || l.guest_name, person_id: l.sub_id || null, site_id: l.sub_site || null, pos: l.sub_pos, salary: l.sub_salary ?? null, for: r.name,
       guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null, req: { id: x.q.id, status: x.q.status } });
   }
   const known = (v) => v || 0;

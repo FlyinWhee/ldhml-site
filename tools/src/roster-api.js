@@ -69,6 +69,25 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
   x = path.match(/^\/people\/(\d+)$/);
+  // One person (the player page): their lists and salaries (all seasons), teams (with the history), sign-ups, captain
+  // account, and every replacement line they are in (absent or replacing).
+  if (m === 'GET' && x) {
+    const id = Number(x[1]);
+    const p = await DB.prepare('SELECT id, site_id, nid, name, sex, birth_year, birth_month, created_at FROM people WHERE id = ?').bind(id).first();
+    if (!p) return fail(404, 'person');
+    const { results: lists } = await DB.prepare(`SELECT sp.id AS sp_id, sp.season_id, s.name AS season_name, sp.section, sp.salary_s, sp.salary_g
+      FROM section_players sp JOIN seasons s ON s.id = sp.season_id WHERE sp.person_id = ? ORDER BY s.created_at DESC, sp.section`).bind(id).all();
+    const { results: rosters } = await DB.prepare(`SELECT r.id, r.season_id, s.name AS season_name, r.league, r.pos, r.added_at, r.removed_at, t.id AS team_id, t.abb, t.name AS team_name, t.nbhpa_team_id, t.logo
+      FROM rosters r JOIN teams t ON t.id = r.team_id JOIN seasons s ON s.id = r.season_id WHERE r.person_id = ? ORDER BY r.added_at DESC, r.id DESC`).bind(id).all();
+    const { results: signups } = await DB.prepare('SELECT season_id, league, pos, created_at FROM league_players WHERE person_id = ?').bind(id).all();
+    const captain = p.site_id ? await DB.prepare('SELECT id, name, disabled_at FROM captains WHERE person_id = ?').bind(p.site_id).first() : null;
+    const { results: lines } = await DB.prepare(`SELECT l.replacement_id, l.absent_id, l.sub_id, l.sub_pos, q.status, q.league, q.season_id, q.game_date, q.game_time,
+        t.id AS team_id, t.abb, t.name AS team_name, pa.name AS absent_name, COALESCE(ps.name, l.guest_name) AS sub_name
+      FROM replacement_lines l JOIN replacements q ON q.id = l.replacement_id JOIN teams t ON t.id = q.team_id
+      LEFT JOIN people pa ON pa.id = l.absent_id LEFT JOIN people ps ON ps.id = l.sub_id
+      WHERE l.absent_id = ? OR l.sub_id = ? ORDER BY q.game_date DESC, q.id DESC LIMIT 40`).bind(id, id).all();
+    return json({ person: p, lists, rosters, signups, captain: captain || null, lines });
+  }
   if (m === 'POST' && x) {
     const id = Number(x[1]), b = await readJson(req) || {}, f = personFields(b);
     if (!await DB.prepare('SELECT 1 FROM people WHERE id = ?').bind(id).first()) return fail(404, 'person');

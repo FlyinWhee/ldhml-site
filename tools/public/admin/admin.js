@@ -151,6 +151,9 @@
       superNote: 'défini sur le serveur', meNote: 'vous', newAdminNote: 'La personne se connecte avec un code envoyé à ce courriel.', adminEmailNote: 'le courriel ne change pas (supprimez et recréez au besoin).',
       adminAdded: 'Administrateur ajouté.', confirmDisableAdmin: 'Désactiver cet administrateur ? Ses sessions seront fermées.', confirmDeleteAdmin: 'Supprimer l’administrateur {n} ? Le journal garde ses actions.',
       e_admin: 'Nom et courriel valides requis.', e_admin_exists: 'Ce courriel est déjà un administrateur.', e_super_admin: 'Un super admin se change dans SUPER_ADMINS, sur le serveur.', e_self: 'Vous ne pouvez pas faire ça à votre propre compte.', e_super_only: 'Réservé aux super admins.',
+      publicStats: 'Statistiques publiques', teamNotFound: 'Cette équipe n’existe pas dans cette saison.', pastGames: 'Matchs joués ({n})', backPlayers: '← Joueurs de la section',
+      personNotFound: 'Cette personne n’existe plus.', personWho: 'Identité', personCaptain: 'Compte de capitaine', personSeason: '{s} cette saison', personNotListed: 'Pas sur la liste de la section cette saison.',
+      personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -224,6 +227,9 @@
       superNote: 'set on the server', meNote: 'you', newAdminNote: 'The person signs in with a code sent to this email.', adminEmailNote: 'the email does not change (delete and create again if needed).',
       adminAdded: 'Admin added.', confirmDisableAdmin: 'Disable this admin? Their sessions will be closed.', confirmDeleteAdmin: 'Delete the admin {n}? The log keeps their actions.',
       e_admin: 'A valid name and email are required.', e_admin_exists: 'This email is already an admin.', e_super_admin: 'A super admin is changed in SUPER_ADMINS, on the server.', e_self: 'You cannot do that to your own account.', e_super_only: 'Super admins only.',
+      publicStats: 'Public stats', teamNotFound: 'This team does not exist in this season.', pastGames: 'Games played ({n})', backPlayers: '← Section players',
+      personNotFound: 'This person no longer exists.', personWho: 'Identity', personCaptain: 'Captain account', personSeason: '{s} this season', personNotListed: 'Not on the section list this season.',
+      personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -281,6 +287,10 @@
   /* Links inside the admin (the context first): the LDHML level, a section, a league (and one of its tabs). */
   var secOf = function (key) { return ((S.data && S.data.sections) || []).filter(function (x) { return x.key === key; })[0]; };
   var hrefCap = function (id) { return '#/config/captain/' + id; };
+  var hrefTeam = function (slug, id) { return hrefL(slug, 'teams') + '/' + id; };
+  var hrefP = function (id, sec) { return hrefS(sec || S.section) + '/players/' + id; };
+  /* The page of the stats site, as an explicit secondary link (a new tab). */
+  var pubLink = function (href) { return href ? '<a class="lnk ad-ext" href="' + esc(href) + '" target="_blank" rel="noopener">' + t('publicStats') + ' ↗</a>' : ''; };
   var hrefTop = function (tab) { return '#/' + (tab && tab !== 'home' ? tab : ''); };
   var hrefS = function (key) { var x = secOf(key); return x ? '#/' + x.path : '#/'; };
   var hrefL = function (slug, tab) { var l = leagueOf(slug); return l ? '#/' + l.sectionPath + '/' + l.path + (tab && tab !== 'overview' ? '/' + tab : '') : '#/'; };
@@ -289,34 +299,27 @@
   var sectionLeagues = function () { return S.data ? S.data.leagues.filter(function (l) { return l.section === S.section && !leagueOff(l.slug); }) : []; };
   var money = function (v) { return v == null ? '—' : (Math.round(v * 100) / 100) + 'M'; };   // salaries are in millions
   var personName = function (id) { var p = S.data && S.data.people.filter(function (x) { return x.id === id; })[0]; return p ? p.name : id; };
-  function personLink(id) {
-    var p = S.data && S.data.people.filter(function (x) { return x.id === id; })[0];
-    var l = p && leagueOf(Object.keys(p.lg)[0]);
-    return l ? '<a class="lnk" href="' + esc(site() + l.sectionPath + '/#player-' + id) + '">' + esc(p.name) + '</a>' : esc(personName(id));
-  }
-  var personCell = function (p) { return p.site_id ? personLink(p.site_id) : esc(p.name); };
-  /* A person in a league context (a team's roster): their page in that league; the section page when they have not played in it. */
-  function personIn(slug, p) {
-    var dp = p.site_id && S.data && S.data.people.filter(function (x) { return x.id === p.site_id; })[0], l = leagueOf(slug);
-    if (!dp || !l || !dp.lg[slug]) return personCell(p);
-    return '<a class="lnk" href="' + esc(leagueHome(l) + '#player-' + p.site_id) + '">' + esc(p.name) + '</a>';
-  }
+  /* A person (a tools people row): their player page in the admin, in the section of the context. */
+  var personCell = function (p, sec) { return p.id ? '<a class="lnk" href="' + hrefP(p.id, sec) + '">' + esc(p.name) + '</a>' : esc(p.name); };
+  /* A person in a league context (a roster or sign-up row, person_id): their player page, in that league's section. */
+  function personIn(slug, p) { return personCell({ id: p.person_id, name: p.name }, (leagueOf(slug) || {}).section); }
   var fmt = function (sec) { return sec ? new Date(sec * 1000).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' }) : ''; };
   /* League and team identity (docs/presentation.md): league badges, team chips and crests from shared/look.js. */
-  var leagueOnly = function (l, link) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: link === false ? '' : leagueHome(l), title: l.name, theme: l.theme }); };
-  function teamBadge(slug, abb, name, nbhpaId) {
+  var leagueOnly = function (l, link) { return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { href: link === false ? '' : hrefL(l.slug), title: l.name, theme: l.theme }); };
+  /* A team in a badge: the league opens the league in the admin, the team chip opens the team page (teamRef = our team id). */
+  function teamBadge(slug, abb, name, teamRef) {
     var l = leagueOf(slug) || { slug: slug, short: slug, name: slug, theme: 'default' };
     return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, {
-      href: l.path ? leagueHome(l) : '', title: l.name, theme: l.theme, teams: [{ abb: abb, name: name, href: nbhpaId && l.path ? leagueHome(l) + '#team-' + nbhpaId : '' }]
+      href: leagueOf(slug) ? hrefL(slug) : '', title: l.name, theme: l.theme, teams: [{ abb: abb, name: name, href: teamRef ? hrefTeam(slug, teamRef) : '' }]
     });
   }
-  var accessBadge = function (a) { return teamBadge(a.league, a.team_abb, a.team_name, a.team_id); };
-  var rosterBadge = function (r) { return teamBadge(r.league, r.abb, r.team_name, r.nbhpa_team_id); };
+  var accessBadge = function (a) { return teamBadge(a.league, a.team_abb, a.team_name, a.team_ref); };
+  var rosterBadge = function (r) { return teamBadge(r.league, r.abb, r.team_name, r.team_id); };
   function teamHead(tm) {
     var l = leagueOf(tm.league) || { slug: tm.league, teams: [] };
     var dataTeam = (l.teams || []).filter(function (x) { return x.id === tm.nbhpa_team_id; })[0] || {};
     return '<span class="tcell">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo || dataTeam.logo }, tm.league, 'sm') +
-      (tm.nbhpa_team_id && l.path ? '<a class="tl strong" href="' + esc(leagueHome(l) + '#team-' + tm.nbhpa_team_id) + '">' + esc(tm.name) + '</a>' : '<b>' + esc(tm.name) + '</b>') + '</span>';
+      (tm.id ? '<a class="tl strong" href="' + hrefTeam(tm.league, tm.id) + '">' + esc(tm.name) + '</a>' : '<b>' + esc(tm.name) + '</b>') + '</span>';
   }
 
   /* ---------- the context: LDHML > section > league ---------- */
@@ -525,7 +528,7 @@
    * Without it, admins create teams and put players on them, as before (a roster add signs the person up).
    * A replacement player is not signed up: being on the section list (with a salary) is enough. */
   var teamChip = function (l, tm) {
-    var href = tm.nbhpa_team_id && l.path ? leagueHome(l) + '#team-' + tm.nbhpa_team_id : '';
+    var href = tm.id ? hrefTeam(l.slug, tm.id) : '';
     return '<span class="tcell ad-tchip">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo }, l.slug, 'sm') +
       (href ? '<a class="tl" href="' + esc(href) + '" title="' + esc(tm.name) + '">' + esc(tm.abb) + '</a>' : '<span title="' + esc(tm.name) + '">' + esc(tm.abb) + '</span>') + '</span>';
   };
@@ -556,7 +559,36 @@
       (u.signups.length ? group('suH_pool', u.signups.filter(function (x) { return !x.team; })) + group('suH_team', u.signups.filter(function (x) { return x.team; }))
         : '<p class="empty">' + t('suNone') + '</p>') + '</details>';
   }
+  /* One team (#/<section>/<league>/teams/<id>): its card (captains, roster, payroll; edit mode like the Teams tab), its
+   * schedule with what changes each game, its replacements; the stats site as a secondary link. */
+  function viewTeam() {
+    var l = leagueOf(S.league), tm = S.teams.filter(function (x) { return x.id === S.teamId; })[0];
+    var back = '<p class="ad-back"><a class="lnk" href="' + hrefL(S.league, 'teams') + '">' + t('backTeams') + '</a></p>';
+    if (!l || !tm) return back + '<p class="empty">' + t(S.teamsLoaded ? 'teamNotFound' : 'loading') + '</p>';
+    var rule = S.rules.filter(function (r) { return r.league === l.slug; })[0], ctx = builderCtx(), today = torontoToday();
+    var onRoster = {}; S.teams.filter(function (x) { return x.league === l.slug; }).forEach(function (x) { x.roster.forEach(function (r) { onRoster[r.person_id] = 1; }); });
+    var free = S.players.filter(function (p) { return !onRoster[p.id]; });
+    var head = back + '<h1 class="ph ad-teamh">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo }, l.slug, '') + '<span>' + esc(tm.name) + '</span></h1>' +
+      '<p class="ad-subline">' + leagueOnly(l) + ' <span class="note">' + esc(tm.abb) + '</span>' + pubLink(tm.nbhpa_team_id && l.path ? leagueHome(l) + '#team-' + tm.nbhpa_team_id : '') + '</p>' + scopeBar('', editToggle());
+    var sched = (S.teamSched && S.teamSched.games) || [];
+    var gameRow = function (x) {
+      var txt = window.LDBuilder.gameText(ctx, { date: x.game.date, time: x.game.time, venue: x.game.venue, court: x.game.court, home: x.home, opp: x.opp });
+      var changed = x.lineup && (x.lineup.subs.length || x.lineup.absents.length);
+      return '<li class="ad-tgame"><div class="ad-tgame-h"><a class="lnk" href="' + hrefL(l.slug, 'cal') + '/' + x.game.date + '">' + esc(txt) + '</a>' +
+        (x.game.date >= today ? '<button type="button" class="lnk ad-linkbtn ad-ar" data-sub-game="' + tm.id + ':' + x.game.id + '">' + t('subForTeam') + '…</button>' : '') + '</div>' +
+        (changed ? window.LDBuilder.lineupHtml(x.lineup, ctx, { head: false }) : '') + '</li>';
+    };
+    var up = sched.filter(function (x) { return x.game.date >= today; }), past = sched.filter(function (x) { return x.game.date < today; }).reverse();
+    var schedP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabCal') + '</h2>' + (up.length ? '<ul class="ad-tgames">' + up.map(gameRow).join('') + '</ul>' : '<p class="note">' + t('noNight') + '</p>') +
+      (past.length ? '<details class="ad-fold"><summary>' + esc(t('pastGames', { n: past.length })) + '</summary><ul class="ad-tgames">' + past.map(gameRow).join('') + '</ul></details>' : '') + '</section>';
+    var reqs = S.subs.filter(function (q) { return q.team && q.team.id === tm.id; });
+    var subsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabSubs') + (reqs.length ? ' <span class="ad-hcnt">' + reqs.length + '</span>' : '') + '</h2>' +
+      (reqs.length ? '<div class="bd-reqs">' + reqs.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { team: false }); }).join('') + '</div>' : '<p class="note">' + t('noSubs') + '</p>') + '</section>';
+    return head + '<datalist id="ad-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
+      '<div class="ad-grid2"><div class="ad-col">' + teamCard(tm, l, rule) + '</div><div class="ad-col">' + schedP + subsP + '</div></div>';
+  }
   function viewTeams() {
+    if (S.teamId) return viewTeam();
     var s = curSeason(), l = leagueOf(S.league);
     var head = '<h1 class="ph">' + t('tabTeams') + '</h1><p class="lede">' + t('teamsLede') + '</p>' + scopeBar('league', editToggle());
     if (!s || !l) return head;
@@ -666,9 +698,9 @@
         var sec = secOf(sp.section), ros = p.rosters.filter(function (r) { return r.season_id === sp.season_id && (leagueOf(r.league) || {}).section === sp.section; });
         return '<tr><td>' + esc(nameOf(sec) || sp.section) + '</td><td data-label="' + esc(t('season')) + '">' + esc(sp.season_name) + '</td>' +
           '<td class="num" data-label="' + esc(t('colS')) + '">' + esc(money(sp.salary_s)) + '</td><td class="num" data-label="' + esc(t('colG')) + '">' + esc(money(sp.salary_g)) + '</td>' +
-          '<td><div class="lgbs">' + ros.map(function (r) { return teamBadge(r.league, r.abb, r.team_name, r.nbhpa_team_id); }).join('') + '</div></td></tr>';
+          '<td><div class="lgbs">' + ros.map(function (r) { return teamBadge(r.league, r.abb, r.team_name, r.team_id); }).join('') + '</div></td></tr>';
       }).join('');
-      player = '<section class="ad-panel"><h2 class="ad-ph">' + t('capPlayer') + '</h2><dl class="ad-dl">' + info('name', personCell(p)) +
+      player = '<section class="ad-panel"><h2 class="ad-ph">' + t('capPlayer') + '</h2><dl class="ad-dl">' + info('name', personCell(p, (p.lists[0] || {}).section)) +
         info('sex', esc(p.sex === 'm' ? t('sexM') : p.sex === 'f' ? t('sexF') : '—')) + info('birth', esc(birthTxt(p))) + info('colNid', p.nid ? esc(p.nid) : '<span class="ad-missing">—</span>') + '</dl>' +
         (lists ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('section') + '</th><th>' + t('season') + '</th><th class="num">' + t('colS') + '</th><th class="num">' + t('colG') + '</th><th>' + t('teamsCol') + '</th></tr></thead><tbody>' + lists + '</tbody></table></div>'
           : '<p class="note">' + t('capNoList') + '</p>') + '</section>';
@@ -686,6 +718,48 @@
     return back + '<h1 class="ph">' + esc(c.name) + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</h1>' +
       '<div class="ad-grid2"><div class="ad-col">' + account + access + reqs + '</div><div class="ad-col">' + player + log + '</div></div>';
   }
+  /* ---------- One player (#/<section>/players/<id>): the person in this section ----------
+   * Who they are (sex, birth, NBHPA no.), this season in the section (salaries, teams, sign-ups, or replacement player),
+   * their replacements (absent or replacing), their captain account, the history; the stats site as a secondary link. */
+  function viewPerson() {
+    var sec = secOf(S.section), back = '<p class="ad-back"><a class="lnk" href="' + hrefS(S.section) + '">' + t('backPlayers') + '</a></p>';
+    var x = S.person, p = x && x.person;
+    if (!p) return back + '<p class="empty">' + t(S.personMissing ? 'personNotFound' : 'loading') + '</p>';
+    var info = function (k, v) { return '<div><dt>' + esc(t(k)) + '</dt><dd>' + v + '</dd></div>'; };
+    var inSec = function (slug) { return (leagueOf(slug) || {}).section === S.section; };
+    var dp = p.site_id && S.data && S.data.people.filter(function (y) { return y.id === p.site_id; })[0];
+    var pl = dp && Object.keys(dp.lg).map(leagueOf).filter(function (l) { return l && l.section === S.section; })[0];
+    var pub = p.site_id && dp ? pubLink(pl ? leagueHome(pl) + '#player-' + p.site_id : site() + (sec ? sec.path : '') + '/#player-' + p.site_id) : '';
+    var listNow = x.lists.filter(function (sp) { return sp.season_id === S.seasonId && sp.section === S.section; })[0];
+    var rosNow = x.rosters.filter(function (r) { return !r.removed_at && r.season_id === S.seasonId && inSec(r.league); });
+    var pool = x.signups.filter(function (u) { return u.season_id === S.seasonId && inSec(u.league) && !rosNow.some(function (r) { return r.league === u.league; }); });
+    var role = rosNow.map(function (r) { return teamBadge(r.league, r.abb, r.team_name, r.team_id); }).join('') +
+      pool.map(function (u) { var l = leagueOf(u.league); return '<span class="ad-chip">' + esc((l ? l.short : u.league) + ' · ' + t('suChipPool')) + '</span>'; }).join('') +
+      (listNow && !x.signups.some(function (u) { return u.season_id === S.seasonId && inSec(u.league); }) ? '<span class="ad-chip ad-chip-sub">' + esc(t('suChipSub')) + '</span>' : '');
+    var who = '<section class="ad-panel"><h2 class="ad-ph">' + t('personWho') + '</h2><dl class="ad-dl">' + info('sex', esc(p.sex === 'm' ? t('sexM') : p.sex === 'f' ? t('sexF') : '—')) + info('birth', esc(birthTxt(p))) +
+      info('colNid', p.nid ? esc(p.nid) : '<span class="ad-missing">—</span>') + (x.captain ? info('personCaptain', '<a class="lnk" href="' + hrefCap(x.captain.id) + '">' + esc(x.captain.name) + '</a>') : '') + '</dl>' +
+      (listNow ? '<p class="ad-btns"><button type="button" class="ad-btn ad-btn-sm ad-ghost" data-edit-person-btn="' + p.id + '">' + t('edit') + '</button></p>' : '') + '</section>';
+    var seasonP = '<section class="ad-panel"><h2 class="ad-ph">' + esc(t('personSeason', { s: nameOf(sec) })) + '</h2>' + (listNow ? '<dl class="ad-dl">' + info('colSFull', esc(money(listNow.salary_s))) + info('colGFull', esc(money(listNow.salary_g))) + '</dl>' +
+        '<div class="lgbs">' + (role || '<span class="note">—</span>') + '</div>' : '<p class="note">' + t('personNotListed') + '</p>') +
+      x.lists.filter(function (sp) { return sp.season_id === S.seasonId && sp.section !== S.section; }).map(function (sp) {
+        return '<p class="note"><a class="lnk" href="' + hrefP(p.id, sp.section) + '">' + esc(t('personAlsoIn', { s: nameOf(secOf(sp.section)) })) + '</a></p>'; }).join('') + '</section>';
+    var lineRow = function (q) {
+      var ql = leagueOf(q.league) || { slug: q.league, short: q.league, name: q.league, theme: 'default' }, absent = q.absent_id === p.id;
+      return '<li><a href="' + hrefL(q.league, 'subs') + '">' + window.LDLook.leagueBadge({ slug: ql.slug, short: ql.short, name: ql.name, logo: ql.logo }, { theme: ql.theme, teams: [{ abb: q.abb, name: q.team_name }] }) +
+        '<span>' + esc(window.LDBuilder.day(builderCtx(), q.game_date)) + '</span><span class="note">' + esc(absent ? t('personWasAbsent', { n: q.sub_name || '?' }) : t('personReplaced', { n: q.absent_name || '?' })) + '</span>' +
+        '<span class="ad-qst ad-qst-' + q.status + '">' + esc(t('sf_' + q.status)) + '</span></a></li>';
+    };
+    var lines = x.lines.filter(function (q) { return inSec(q.league); });
+    var subsP = '<section class="ad-panel"><h2 class="ad-ph">' + t('tabSubs') + (lines.length ? ' <span class="ad-hcnt">' + lines.length + '</span>' : '') + '</h2>' +
+      (lines.length ? '<ul class="ad-capreqs">' + lines.map(lineRow).join('') + '</ul>' : '<p class="note">' + t('personNoSubs') + '</p>') + '</section>';
+    var hist = x.rosters.filter(function (r) { return inSec(r.league); });
+    var histP = '<section class="ad-panel"><h2 class="ad-ph">' + t('personHistory') + '</h2>' + (hist.length || x.lists.length ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><tbody>' +
+      x.lists.filter(function (sp) { return sp.section === S.section; }).map(function (sp) { return '<tr><td>' + esc(sp.season_name) + '</td><td>' + esc(t('personOnList')) + '</td><td class="num" data-label="' + esc(t('colS')) + '">' + esc(money(sp.salary_s)) + '</td><td class="num" data-label="' + esc(t('colG')) + '">' + esc(money(sp.salary_g)) + '</td></tr>'; }).join('') +
+      hist.map(function (r) { return '<tr' + (r.removed_at ? ' class="ad-off"' : '') + '><td>' + esc(r.season_name) + '</td><td>' + teamBadge(r.league, r.abb, r.team_name, r.team_id) + '</td><td class="ad-c-sm" colspan="2">' + esc(fmt(r.added_at)) + (r.removed_at ? ' → ' + esc(fmt(r.removed_at)) : '') + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' : '<p class="note">—</p>') + '</section>';
+    return back + '<h1 class="ph">' + esc(p.name) + '</h1><p class="ad-subline">' + (sec ? '<span class="note">' + esc(nameOf(sec)) + '</span>' : '') + pub + '</p>' +
+      '<div class="ad-grid2"><div class="ad-col">' + seasonP + subsP + '</div><div class="ad-col">' + who + histP + '</div></div>';
+  }
   /* A league's settings for the chosen season: active or not, its rules, its teams (with the NBHPA link). */
   function viewLgSetup() {
     var s = curSeason(), l = leagueOf(S.league);
@@ -696,6 +770,9 @@
   /* ---------- Replacements: the league's queue and history; admins can also build a request for a captain ---------- */
   var builderCtx = function () {
     return { lang: lang, data: S.data, api: api,
+      teamHref: function (team, league) { return team && team.id ? hrefTeam(league, team.id) : ''; },
+      personHref: function (id, league) { return hrefP(id, (leagueOf(league) || {}).section); },
+      leagueHref: function (slug) { return hrefL(slug); },
       onSaved: function (res) { S.flash = { kind: 'ok', text: res.status === 'approved' ? t('approved') : t('subSaved') }; S.sub = null; location.hash = S.subFrom || hrefL(S.league, 'subs'); },
       onCancel: function () { S.sub = null; location.hash = S.subFrom || hrefL(S.league, 'subs'); } };
   };
@@ -712,7 +789,7 @@
     var l = leagueOf(tm ? tm.league : S.league);
     S.sub.league = tm ? tm.league : S.league;
     if (S.sub.pick) { S.sub.teams = leagueTeams(); if (!S.sub.teamId && S.sub.teams.length === 1) S.sub.teamId = S.sub.teams[0].id; }
-    return '<p class="ad-back"><a class="lnk" href="' + esc(S.subFrom || hrefL(S.league, 'subs')) + '">' + t(S.subFrom.slice(-6) === '/teams' || S.subFrom === '#teams' ? 'backTeams' : S.subFrom.slice(-4) === '/cal' || S.subFrom === '#cal' ? 'backCal' : 'backSubs') + '</a></p>' +
+    return '<p class="ad-back"><a class="lnk" href="' + esc(S.subFrom || hrefL(S.league, 'subs')) + '">' + t(S.subFrom.indexOf('/teams') >= 0 || S.subFrom === '#teams' ? 'backTeams' : S.subFrom.indexOf('/cal') >= 0 || S.subFrom === '#cal' ? 'backCal' : 'backSubs') + '</a></p>' +
       '<h1 class="ph">' + t('newSub') + '</h1>' + (l ? '<p>' + leagueOnly(l) + '</p>' : '') + '<div class="bd-page" id="ad-builder"></div>';
   }
   var leagueTeams = function () { return S.teams.filter(function (x) { return x.league === S.league; }).map(function (x) { return { id: x.id, name: x.name, abb: x.abb }; }); };
@@ -952,6 +1029,7 @@
   TAB_ICONS.config = TAB_ICONS.setup;
   TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
   /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
+  var navTab = function () { return { captain: 'config', person: 'players' }[S.tab] || S.tab; };
   function levelTabs() {
     var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
     if (S.level === 'league') return [mk('overview', 'tabOverview', hrefL(S.league)), mk('cal', 'tabCal', hrefL(S.league, 'cal')), mk('teams', 'tabTeams', hrefL(S.league, 'teams')),
@@ -967,7 +1045,7 @@
     document.documentElement.classList.toggle('ad-has-tabbar', on);
     if (more) { more.innerHTML = ''; more.hidden = true; }
     bar.innerHTML = on ? tabs.map(function (x) {
-      return '<a href="' + x.href + '"' + (S.tab === x.k || (x.k === 'config' && S.tab === 'captain') ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ad-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
+      return '<a href="' + x.href + '"' + (navTab() === x.k ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ad-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
     }).join('') : '';
   }
   function render() {
@@ -975,10 +1053,10 @@
     var tabs = S.me ? levelTabs() : [];
     renderTabbar(tabs);
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
-      (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (S.tab === x.k || (x.k === 'config' && S.tab === 'captain') ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
+      (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (navTab() === x.k ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, config: viewConfig, captain: viewCaptain, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
@@ -1009,11 +1087,13 @@
       if (S.seasonId) more.push(api('/replacements/pending?season=' + S.seasonId).then(function (r) { S.pending = r.data.counts || {}; }));
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
-      if (S.seasonId && ['subs', 'home', 'overview'].indexOf(S.tab) >= 0) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
+      if (S.seasonId && (['subs', 'home', 'overview'].indexOf(S.tab) >= 0 || (S.tab === 'teams' && S.teamId))) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
       if (S.tab === 'config' && S.me && S.me.super) more.push(api('/admins').then(function (r) { S.admins = r.ok ? r.data.admins : []; }));
+      if (S.tab === 'person' && S.personId) more.push(api('/people/' + S.personId).then(function (r) { S.person = r.ok ? r.data : null; S.personMissing = !r.ok; }));
+      if (S.tab === 'teams' && S.teamId) more.push(api('/lineups?team=' + S.teamId).then(function (r) { S.teamSched = r.ok ? r.data : null; }));
       if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
-      if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
-      if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
+      if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; S.teamsLoaded = true; }));
+      if (S.seasonId && S.section && ['players', 'teams', 'person'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
       var suLg = S.tab === 'teams' && S.league && leagueOf(S.league);
       if (S.seasonId && suLg && suLg.section === 'draft') more.push(api('/league-players?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league)).then(function (r) { S.signups = r.ok ? Object.assign({ league: S.league }, r.data) : null; }));
       if (S.tab === 'players' || (suLg && suLg.section === 'draft')) more.push(api('/people?all=1').then(function (r) { S.allPeople = r.data.people || []; }));
@@ -1148,14 +1228,14 @@
     if (act === 'edit-toggle') { S.edit = !S.edit; S.msg = null; render(); return; }
     /* home: each item opens the place to act, in the right scope */
     var goScope = function (slug, tab) { location.hash = hrefL(slug, tab); };
-    if (b.hasAttribute('data-home-cal')) { var hc = b.getAttribute('data-home-cal').split(':'); S.calDate = hc[1]; goScope(hc[0], 'cal'); return; }
+    if (b.hasAttribute('data-home-cal')) { var hc = b.getAttribute('data-home-cal').split(':'); location.hash = hrefL(hc[0], 'cal') + '/' + hc[1]; return; }
     if (b.hasAttribute('data-home-teams')) { goScope(b.getAttribute('data-home-teams'), 'teams'); return; }
     if (b.hasAttribute('data-home-miss')) { var hm = b.getAttribute('data-home-miss').split(':'); S.plf = ''; S.pf.miss = hm[1]; location.hash = hrefS(hm[0]); return; }
     if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config'; return; }
     /* scope */
     if (b.hasAttribute('data-cf')) { S.cf = b.getAttribute('data-cf'); render(); return; }
     if (b.hasAttribute('data-plg')) { S.plLeague = b.getAttribute('data-plg'); render(); return; }
-    if (b.hasAttribute('data-cal-date')) { S.calDate = b.getAttribute('data-cal-date'); refresh(); return; }
+    if (b.hasAttribute('data-cal-date')) { location.hash = hrefL(S.league, 'cal') + '/' + b.getAttribute('data-cal-date'); return; }
     if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + sg[0] + '/' + sg[1]; return; }
     if (b.hasAttribute('data-plf')) { S.plf = b.getAttribute('data-plf'); render(); return; }
     if (b.hasAttribute('data-sf')) { S.sf = b.getAttribute('data-sf'); render(); return; }
@@ -1220,8 +1300,13 @@
     else if (sec) {
       S.section = sec.key;
       var lg = parts[1] && S.data.leagues.filter(function (l) { return l.section === sec.key && (l.path === parts[1] || l.slug === parts[1]); })[0];
-      if (!lg) { S.level = 'section'; S.tab = 'players'; }
-      else { S.level = 'league'; S.league = lg.slug; S.tab = LEAGUE_TABS.indexOf(parts[2]) >= 0 ? parts[2] : 'overview'; if (S.tab === 'subs' && parts[3] === 'new') sub = parts.slice(4); }
+      if (!lg) { S.level = 'section'; S.tab = parts[1] === 'players' && Number(parts[2]) ? 'person' : 'players'; if (S.tab === 'person' && S.personId !== Number(parts[2])) { S.person = null; S.personId = Number(parts[2]); } }
+      else {
+        S.level = 'league'; S.league = lg.slug; S.tab = LEAGUE_TABS.indexOf(parts[2]) >= 0 ? parts[2] : 'overview';
+        if (S.tab === 'subs' && parts[3] === 'new') sub = parts.slice(4);
+        S.teamId = S.tab === 'teams' ? Number(parts[3]) || null : null;
+        if (S.tab === 'cal' && parts[3] && parts[3].length === 10 && parts[3].charAt(4) === '-') S.calDate = parts[3];
+      }
     } else if (LEGACY[p0]) {   // an old link: the same page, in the remembered context
       S.tab = LEGACY[p0]; S.level = TOP_TABS.indexOf(S.tab) >= 0 ? 'ldhml' : S.tab === 'players' ? 'section' : 'league';
       if (S.tab === 'subs' && parts[1] === 'new') sub = parts.slice(2);

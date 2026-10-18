@@ -666,7 +666,7 @@ af.elements.team.value = String(teamRef);
 await submit('#f-access');
 w.location.hash = hL(lg, 'teams'); await wait(200);
 const card = () => d.querySelector('.ad-team[data-team="' + teamRef + '"]');
-assert.ok(card() && card().textContent.includes('Nouvelle Capitaine') && card().querySelector('a[href$="#team-' + team.id + '"]'), 'the captain is listed under the team (team linked to the stats site)');
+assert.ok(card() && card().textContent.includes('Nouvelle Capitaine') && card().querySelector('a[href="' + hL(lg, 'teams') + '/' + teamRef + '"]'), 'the captain is listed under the team (the team opens its admin page)');
 card().querySelector('[data-access-team]').click(); await wait(20);
 assert.ok(d.querySelector('#f-access select[name=captain]') && d.querySelector('#f-access input[name=team]').value === String(teamRef), 'team-side access modal: team fixed, captain to choose');
 await submit('#f-access');
@@ -853,7 +853,17 @@ assert.ok([...d.querySelectorAll('.ad-payroll')].every((p) => /\d/.test(p.textCo
 { const rows = [...d.querySelectorAll('.ad-team')].flatMap((c) => [[...c.querySelectorAll('.ad-roster tr')]]);
   const ok = rows.every((rs) => { const k = rs.map((tr) => [tr.children[2].textContent === 'Gardien' ? 2 : tr.children[1].textContent === 'F' ? 1 : 0, parseFloat(tr.children[3].textContent) || 0]); return k.every((x, i) => !i || x[0] > k[i - 1][0] || (x[0] === k[i - 1][0] && x[1] <= k[i - 1][1])); });
   assert.ok(ok && d.querySelector('.ad-roster .ad-sx'), 'team cards: the sex shown; men, women, goalies, salary high to low'); }
-assert.ok([...d.querySelectorAll('.ad-roster a.lnk')].some((x) => x.href.includes('/' + firstTeamsLg + '/#player-L')), 'team card: a name opens the player page in the league');
+assert.ok([...d.querySelectorAll('.ad-roster a.lnk')].every((x) => x.getAttribute('href').indexOf(hS('teams') + '/players/') === 0), 'team card: a name opens the admin player page (in the section)');
+{ // entity pages: a player (from a roster) and a team; the stats site is only a secondary link there
+  const pa = d.querySelector('.ad-roster a.lnk'), pname = pa.textContent;
+  w.location.hash = pa.getAttribute('href'); await wait(300);
+  assert.ok(d.querySelector('h1').textContent === pname && d.querySelector('.ad-dl') && d.querySelector('.ad-back a[href="' + hS('teams') + '"]'), 'a player page: who, this season in the section, replacements, history');
+  const tl0 = season.leagues.find((l) => l.slug === firstTeamsLg), tid = await DB.prepare('SELECT id FROM teams WHERE season_id = ? AND league = ? LIMIT 1').bind(seasonId, firstTeamsLg).first('id');
+  w.location.hash = hL(tl0, 'teams') + '/' + tid; await wait(300);
+  assert.ok(d.querySelector('.ad-team[data-team="' + tid + '"]') && d.querySelector('.ad-back a[href="' + hL(tl0, 'teams') + '"]') && d.querySelector('.nav a[href="' + hL(tl0, 'teams') + '"][aria-current="page"]'), 'a team page: its card, schedule and replacements; Teams stays lit');
+  assert.ok(!d.querySelector('#main a[href*="#team-"]:not(.ad-ext)'), 'no plain link to the stats site; only the "Statistiques publiques" link');
+  w.location.hash = hL(tl0, 'teams'); await wait(200);
+}
 assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'), 'team setup is not on the daily Teams tab');
 // Configuration: seasons, then one card per league with its rules and team setup
 w.location.hash = '#/config'; await wait(200);
