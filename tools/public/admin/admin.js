@@ -502,7 +502,8 @@
   }
 
   /* Our teams of the chosen league, with their rosters. */
-  function teamCard(tm, l, rule) {
+  /* noHead: on the team page (its title already shows the team) */
+  function teamCard(tm, l, rule, noHead) {
     var missing = 0, total = 0;
     tm.roster.forEach(function (r) { var v = r.pos === 'g' ? r.salary_g : r.salary_s; if (v == null) missing++; else total += v; });
     var cap = rule && rule.salary_cap != null ? rule.salary_cap : null, over = cap != null && total > cap;
@@ -511,8 +512,7 @@
         '<td class="ad-ed"><button type="button" class="ad-x" data-roster-remove="' + r.id + '" data-name="' + esc(r.name) + '" title="' + esc(t('removeFromRoster')) + '" aria-label="' + esc(t('removeFromRoster')) + '">×</button></td></tr>';
     }).join('');
     var caps = S.captains.map(function (c) { return { c: c, a: c.access.filter(function (a) { return a.season_id === S.seasonId && a.team_ref === tm.id; })[0] }; }).filter(function (x) { return x.a; });
-    return '<article class="ad-team" data-team="' + tm.id + '" style="--tc:' + window.LDLook.colorVar(l.slug, tm.abb) + '"><div class="ad-team-h">' + teamHead(tm) +
-      '<span class="note">' + esc(tm.abb) + '</span></div>' +
+    return '<article class="ad-team" data-team="' + tm.id + '" style="--tc:' + window.LDLook.colorVar(l.slug, tm.abb) + '">' + (noHead ? '' : '<div class="ad-team-h">' + teamHead(tm) + '</div>') +
       '<div class="ad-tcaps"><h3 class="ad-h3">' + t('teamCaptains') + '</h3>' + (caps.length ? '<ul class="ad-caps">' + caps.map(function (x) { return teamCaptain(x.c, x.a); }).join('') + '</ul>' : '<p class="note">' + t('noCaptainTeam') + '</p>') +
       '<button type="button" class="lnk ad-linkbtn ad-ed" data-access-team="' + tm.id + '">+ ' + t('addCaptainToTeam') + '</button></div>' +
       '<h3 class="ad-h3 ad-h3-row">' + t('rosterH') + ' <button type="button" class="ad-btn ad-btn-sm ad-ar" data-sub-team="' + tm.id + '">' + t('subForTeam') + '…</button></h3>' +
@@ -569,7 +569,7 @@
     var onRoster = {}; S.teams.filter(function (x) { return x.league === l.slug; }).forEach(function (x) { x.roster.forEach(function (r) { onRoster[r.person_id] = 1; }); });
     var free = S.players.filter(function (p) { return !onRoster[p.id]; });
     var head = back + '<h1 class="ph ad-teamh">' + window.LDLook.crest({ abb: tm.abb, logo: tm.logo }, l.slug, '') + '<span>' + esc(tm.name) + '</span></h1>' +
-      '<p class="ad-subline">' + leagueOnly(l) + ' <span class="note">' + esc(tm.abb) + '</span>' + pubLink(tm.nbhpa_team_id && l.path ? leagueHome(l) + '#team-' + tm.nbhpa_team_id : '') + '</p>' + scopeBar('', editToggle());
+      '<p class="ad-subline">' + teamBadge(l.slug, tm.abb, tm.name, tm.id) + pubLink(tm.nbhpa_team_id && l.path ? leagueHome(l) + '#team-' + tm.nbhpa_team_id : '') + '</p>' + scopeBar('', editToggle());
     var sched = (S.teamSched && S.teamSched.games) || [];
     var gameRow = function (x) {
       var txt = window.LDBuilder.gameText(ctx, { date: x.game.date, time: x.game.time, venue: x.game.venue, court: x.game.court, home: x.home, opp: x.opp });
@@ -594,7 +594,7 @@
       (live.length ? '<div class="bd-reqs">' + live.map(function (q) { return window.LDBuilder.requestCard(q, ctx, subActions(q), { team: false }); }).join('') + '</div>' : reqs.length ? '<p class="note">' + t('noUpcomingSubs') + '</p>' : '<p class="note">' + t('noSubs') + '</p>') +
       (done.length ? '<h3 class="ad-h3">' + esc(t('pastSubs', { n: done.length })) + '</h3><ul class="ad-qrows">' + done.map(slim).join('') + '</ul>' : '') + '</section>';
     return head + '<datalist id="ad-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
-      '<div class="ad-grid2"><div class="ad-col">' + teamCard(tm, l, rule) + '</div><div class="ad-col">' + schedP + subsP + '</div></div>';
+      '<div class="ad-grid2"><div class="ad-col">' + teamCard(tm, l, rule, true) + '</div><div class="ad-col">' + schedP + subsP + '</div></div>';
   }
   function viewTeams() {
     if (S.teamId) return viewTeam();
