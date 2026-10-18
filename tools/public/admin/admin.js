@@ -142,6 +142,10 @@
       colTeamsSeason: 'Équipes cette saison', colLogin: 'Dernière connexion', neverShort: 'Jamais', capSearch: 'Filtrer par nom ou courriel', noCapsMatch: 'Aucun capitaine ne correspond.',
       cf_all: 'Tous', cf_noaccess: 'Sans équipe', cf_never: 'Jamais connectés', cf_off: 'Désactivés', nbhpaShort: 'No NBHPA', leagueOnShort: 'Active',
       capsHint: 'Un compte par personne : un capitaine peut avoir des équipes dans plusieurs ligues. Donner un accès ici ou depuis la carte d’une équipe.',
+      backCaps: '← Configuration · Capitaines', capNotFound: 'Ce capitaine n’existe plus.', loading: 'Chargement…', capAccount: 'Compte', capActive: 'Actif',
+      capAccess: 'Accès cette saison', accHistory: 'Tous les accès, toutes saisons ({n})', accGiven: 'Donné', accRevoked: 'Retiré', accOpen: 'en cours',
+      capPlayer: 'Joueur (dans les outils)', capNoPerson: 'Aucun profil de joueur lié. « Modifier » pour le lier, si ce capitaine joue.', capPersonMissing: 'Le profil lié n’est pas encore dans les outils.',
+      capNoList: 'Sur aucune liste de section.', capRequests: 'Remplacements déclarés', capNoRequests: 'Aucun remplacement déclaré.', capLines: '{n} joueur(s)',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -206,6 +210,10 @@
       colTeamsSeason: 'Teams this season', colLogin: 'Last sign-in', neverShort: 'Never', capSearch: 'Filter by name or email', noCapsMatch: 'No captain matches.',
       cf_all: 'All', cf_noaccess: 'No team', cf_never: 'Never signed in', cf_off: 'Disabled', nbhpaShort: 'NBHPA no.', leagueOnShort: 'On',
       capsHint: 'One account per person: a captain can have teams in several leagues. Give access here or from a team card.',
+      backCaps: '← Setup · Captains', capNotFound: 'This captain no longer exists.', loading: 'Loading…', capAccount: 'Account', capActive: 'Active',
+      capAccess: 'Access this season', accHistory: 'Every access, all seasons ({n})', accGiven: 'Given', accRevoked: 'Removed', accOpen: 'current',
+      capPlayer: 'Player (in the tools)', capNoPerson: 'No player profile linked. “Edit” to link one, if this captain plays.', capPersonMissing: 'The linked profile is not in the tools yet.',
+      capNoList: 'On no section list.', capRequests: 'Replacements declared', capNoRequests: 'No replacement declared.', capLines: '{n} player(s)',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -262,6 +270,7 @@
   var leagueHome = function (l) { return site() + l.sectionPath + '/' + l.path + '/'; };
   /* Links inside the admin (the context first): the LDHML level, a section, a league (and one of its tabs). */
   var secOf = function (key) { return ((S.data && S.data.sections) || []).filter(function (x) { return x.key === key; })[0]; };
+  var hrefCap = function (id) { return '#/config/captain/' + id; };
   var hrefTop = function (tab) { return '#/' + (tab && tab !== 'home' ? tab : ''); };
   var hrefS = function (key) { var x = secOf(key); return x ? '#/' + x.path : '#/'; };
   var hrefL = function (slug, tab) { var l = leagueOf(slug); return l ? '#/' + l.sectionPath + '/' + l.path + (tab && tab !== 'overview' ? '/' + tab : '') : '#/'; };
@@ -353,7 +362,7 @@
 
   /* A captain in a team card: name, email, edit, and × to remove this access. */
   function teamCaptain(c, acc) {
-    return '<li class="ad-cap ad-cap-sm' + (c.disabled_at ? ' ad-off' : '') + '"><div class="ad-cap-who"><b>' + esc(c.name) + '</b>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') +
+    return '<li class="ad-cap ad-cap-sm' + (c.disabled_at ? ' ad-off' : '') + '"><div class="ad-cap-who"><a class="tl strong" href="' + hrefCap(c.id) + '">' + esc(c.name) + '</a>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') +
       '<span class="note ad-cap-mail" title="' + esc(c.email) + '">' + esc(c.email) + '</span></div><div class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="ad-x" data-revoke="' + acc.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></div></li>';
   }
@@ -362,8 +371,7 @@
    * (edit mode) give access, edit, disable or enable, delete. */
   function captainRow(c) {
     var acc = c.access.filter(function (a) { return a.season_id === S.seasonId; });
-    var person = c.person_id ? '<span class="note ad-cap-prof">' + personLink(c.person_id) + '</span>' : '';
-    return '<tr class="ad-caprow' + (c.disabled_at ? ' ad-off' : '') + '" data-cap="' + c.id + '"><td class="ad-c-name"><b>' + esc(c.name) + '</b>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + person + '</td>' +
+    return '<tr class="ad-caprow' + (c.disabled_at ? ' ad-off' : '') + '" data-cap="' + c.id + '"><td class="ad-c-name"><a class="lnk" href="' + hrefCap(c.id) + '">' + esc(c.name) + '</a>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</td>' +
       '<td class="ad-cap-mail" data-label="' + esc(t('email')) + '" title="' + esc(c.email) + '">' + esc(c.email) + '</td>' +
       '<td data-label="' + esc(t('colTeamsSeason')) + '"><div class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">—</span>') + '</div></td>' +
       '<td class="ad-c-sm" data-label="' + esc(t('colLogin')) + '">' + (c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
@@ -598,6 +606,60 @@
       }).join('') + '</ul>';
     }).join('') + '</section>';
     return head + '<div class="ad-cfg-top">' + seasons + lgs + '</div>' + accountsPanel();
+  }
+  /* ---------- One captain (from Configuration or a team card): everything about them ----------
+   * The account and its actions; the access of every season (with the history); their player profile in the tools
+   * (sex, birth, NBHPA no., lists and salaries, teams); the replacements they declared; the log of their account. */
+  function viewCaptain() {
+    var back = '<p class="ad-back"><a class="lnk" href="#/config">' + t('backCaps') + '</a></p>';
+    var x = S.cap, c = x && x.captain;
+    if (!c) return back + '<p class="empty">' + t(S.capMissing ? 'capNotFound' : 'loading') + '</p>';
+    var info = function (k, v) { return '<div><dt>' + esc(t(k)) + '</dt><dd>' + v + '</dd></div>'; };
+    var acts = '<p class="ad-btns ad-ar">' + (c.disabled_at ? '' : '<button type="button" class="ad-btn ad-btn-sm" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
+      '<button type="button" class="ad-btn ad-btn-sm ad-ghost" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
+      '<button type="button" class="ad-btn ad-btn-sm ad-ghost" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
+      '<button type="button" class="ad-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></p>';
+    var account = '<section class="ad-panel"><h2 class="ad-ph">' + t('capAccount') + '</h2><dl class="ad-dl">' + info('email', esc(c.email)) +
+      info('status', c.disabled_at ? '<span class="ad-warn-t">' + esc(t('disabled')) + ' · ' + esc(fmt(c.disabled_at)) + '</span>' : esc(t('capActive'))) +
+      info('colLogin', c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + esc(t('never')) + '</span>') + info('created', c.created_at ? esc(fmt(c.created_at)) : '—') + '</dl>' + acts + '</section>';
+    // access: this season first, then the others; revoked ones stay as history
+    var accRow = function (a) {
+      return '<tr' + (a.revoked_at ? ' class="ad-off"' : '') + '><td>' + accessBadge(a) + '</td><td data-label="' + esc(t('season')) + '">' + esc(a.season_name) + '</td>' +
+        '<td class="ad-c-sm" data-label="' + esc(t('accGiven')) + '">' + esc(fmt(a.created_at)) + (a.granted_by ? ' · ' + esc(a.granted_by) : '') + '</td>' +
+        '<td class="ad-c-sm" data-label="' + esc(t('accRevoked')) + '">' + (a.revoked_at ? esc(fmt(a.revoked_at)) + (a.revoked_by ? ' · ' + esc(a.revoked_by) : '') : '<span class="note">' + esc(t('accOpen')) + '</span>') + '</td>' +
+        '<td class="ad-ar">' + (a.revoked_at || a.season_status === 'archived' ? '' : '<button type="button" class="ad-x" data-revoke="' + a.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button>') + '</td></tr>';
+    };
+    var cur = x.access.filter(function (a) { return a.season_id === S.seasonId && !a.revoked_at; });
+    var access = '<section class="ad-panel"><h2 class="ad-ph">' + t('capAccess') + '</h2>' +
+      (cur.length ? '<div class="lgbs ad-cap-now">' + cur.map(accessBadge).join('') + '</div>' : '<p class="note">' + t('noAccess') + '</p>') +
+      (x.access.length ? '<details class="ad-fold"' + (x.access.length > cur.length ? '' : '') + '><summary>' + esc(t('accHistory', { n: x.access.length })) + '</summary><div class="tbl-wrap"><table class="tbl ad-tbl ad-acc-t"><tbody>' + x.access.map(accRow).join('') + '</tbody></table></div></details>' : '') + '</section>';
+    // the player in the tools: what the tools hold about them (lists and salaries per section and season, teams)
+    var p = x.person, player;
+    if (!p) player = '<section class="ad-panel"><h2 class="ad-ph">' + t('capPlayer') + '</h2><p class="note">' + t(c.person_id ? 'capPersonMissing' : 'capNoPerson') + '</p></section>';
+    else {
+      var lists = p.lists.map(function (sp) {
+        var sec = secOf(sp.section), ros = p.rosters.filter(function (r) { return r.season_id === sp.season_id && (leagueOf(r.league) || {}).section === sp.section; });
+        return '<tr><td>' + esc(nameOf(sec) || sp.section) + '</td><td data-label="' + esc(t('season')) + '">' + esc(sp.season_name) + '</td>' +
+          '<td class="num" data-label="' + esc(t('colS')) + '">' + esc(money(sp.salary_s)) + '</td><td class="num" data-label="' + esc(t('colG')) + '">' + esc(money(sp.salary_g)) + '</td>' +
+          '<td><div class="lgbs">' + ros.map(function (r) { return teamBadge(r.league, r.abb, r.team_name, r.nbhpa_team_id); }).join('') + '</div></td></tr>';
+      }).join('');
+      player = '<section class="ad-panel"><h2 class="ad-ph">' + t('capPlayer') + '</h2><dl class="ad-dl">' + info('name', personCell(p)) +
+        info('sex', esc(p.sex === 'm' ? t('sexM') : p.sex === 'f' ? t('sexF') : '—')) + info('birth', esc(birthTxt(p))) + info('colNid', p.nid ? esc(p.nid) : '<span class="ad-missing">—</span>') + '</dl>' +
+        (lists ? '<div class="tbl-wrap"><table class="tbl ad-tbl"><thead><tr><th>' + t('section') + '</th><th>' + t('season') + '</th><th class="num">' + t('colS') + '</th><th class="num">' + t('colG') + '</th><th>' + t('teamsCol') + '</th></tr></thead><tbody>' + lists + '</tbody></table></div>'
+          : '<p class="note">' + t('capNoList') + '</p>') + '</section>';
+    }
+    // the replacements they declared (newest game first)
+    var ctx = builderCtx();
+    var reqs = '<section class="ad-panel"><h2 class="ad-ph">' + t('capRequests') + (x.requests.length ? ' <span class="ad-hcnt">' + x.requests.length + '</span>' : '') + '</h2>' + (x.requests.length ? '<ul class="ad-capreqs">' + x.requests.map(function (q) {
+      var ql = leagueOf(q.league) || { slug: q.league, short: q.league, name: q.league, theme: 'default' };
+      return '<li><a href="' + hrefL(q.league, 'subs') + '">' + window.LDLook.leagueBadge({ slug: ql.slug, short: ql.short, name: ql.name, logo: ql.logo }, { theme: ql.theme, teams: [{ abb: q.abb, name: q.team_name }] }) + '<span>' + esc(window.LDBuilder.day(ctx, q.game_date)) + (q.game_time ? ' · ' + esc(q.game_time) : '') + '</span>' +
+        '<span class="note">' + esc(t('capLines', { n: q.lines })) + '</span><span class="ad-qst ad-qst-' + q.status + '">' + esc(t('sf_' + q.status)) + '</span></a></li>';
+    }).join('') + '</ul>' : '<p class="note">' + t('capNoRequests') + '</p>') + '</section>';
+    var log = '<section class="ad-panel"><h2 class="ad-ph">' + t('audit') + '</h2>' + (x.log.length ? '<ul class="ad-caplog">' + x.log.map(function (a) {
+      return '<li><span class="note">' + esc(fmt(a.at)) + '</span> <code>' + esc(a.action) + '</code> <span class="note">' + esc(a.actor_name || a.actor_kind) + '</span></li>';
+    }).join('') + '</ul>' : '<p class="note">—</p>') + '</section>';
+    return back + '<h1 class="ph">' + esc(c.name) + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</h1>' +
+      '<div class="ad-grid2"><div class="ad-col">' + account + access + reqs + '</div><div class="ad-col">' + player + log + '</div></div>';
   }
   /* A league's settings for the chosen season: active or not, its rules, its teams (with the NBHPA link). */
   function viewLgSetup() {
@@ -875,7 +937,7 @@
     document.documentElement.classList.toggle('ad-has-tabbar', on);
     if (more) { more.innerHTML = ''; more.hidden = true; }
     bar.innerHTML = on ? tabs.map(function (x) {
-      return '<a href="' + x.href + '"' + (S.tab === x.k ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ad-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
+      return '<a href="' + x.href + '"' + (S.tab === x.k || (x.k === 'config' && S.tab === 'captain') ? ' aria-current="page"' : '') + '>' + tabIcon(x.icon) + '<span>' + esc(x.label) + '</span>' + (x.cnt ? '<b class="ad-tbcnt">' + x.cnt + '</b>' : '') + '</a>';
     }).join('') : '';
   }
   function render() {
@@ -883,10 +945,10 @@
     var tabs = S.me ? levelTabs() : [];
     renderTabbar(tabs);
     $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="#/"><span><b>LDHML <i>Admin</i></b><small>' + esc(S.me ? S.me.email : t('title')) + '</small></span></a>' +
-      (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (S.tab === x.k ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
+      (S.me ? '<nav class="nav" aria-label="' + esc(t('navLabel')) + '">' + tabs.map(function (x) { return '<a href="' + x.href + '"' + (S.tab === x.k || (x.k === 'config' && S.tab === 'captain') ? ' aria-current="page"' : '') + '>' + esc(x.label) + (x.cnt ? ' (' + x.cnt + ')' : '') + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, config: viewConfig, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, config: viewConfig, captain: viewCaptain, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
@@ -918,7 +980,8 @@
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
       if (S.seasonId && ['subs', 'home', 'overview'].indexOf(S.tab) >= 0) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
-      if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
+      if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
+      if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
       var suLg = S.tab === 'teams' && S.league && leagueOf(S.league);
       if (S.seasonId && suLg && suLg.section === 'draft') more.push(api('/league-players?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league)).then(function (r) { S.signups = r.ok ? Object.assign({ league: S.league }, r.data) : null; }));
@@ -1097,7 +1160,7 @@
     if (b.hasAttribute('data-revoke')) { if (window.confirm(t('confirmRevoke'))) api('/access/' + b.getAttribute('data-revoke') + '/revoke', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-disable')) { if (window.confirm(t('confirmDisable'))) api('/captains/' + b.getAttribute('data-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-enable')) { api('/captains/' + b.getAttribute('data-enable') + '/enable', 'POST', {}).then(function (r) { done(r); }); return; }
-    if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: nm }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
+    if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: nm }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { if (r.ok && S.tab === 'captain') { S.flash = { kind: 'ok', text: t('deleted') }; location.hash = '#/config'; return; } done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-delete-season')) { if (window.confirm(t('confirmDeleteSeason', { n: nm }))) api('/seasons/' + b.getAttribute('data-delete-season') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-del-list')) { if (window.confirm(t('confirmRemoveList', { n: nm }))) api('/section-players/' + b.getAttribute('data-del-list') + '/delete', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-del-person')) { if (window.confirm(t('confirmDeletePerson', { n: nm }))) api('/people/' + b.getAttribute('data-del-person') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
@@ -1112,6 +1175,7 @@
     var parts = raw ? raw.split('/') : [], p0 = parts[0], before = S.level + ':' + S.tab, sub = null;
     var sec = S.data && p0 ? (S.data.sections || []).filter(function (x) { return x.path === p0 || x.key === p0; })[0] : null;
     if (!p0) { S.level = 'ldhml'; S.tab = 'home'; }
+    else if (p0 === 'config' && parts[1] === 'captain') { S.level = 'ldhml'; S.tab = 'captain'; if (S.capId !== Number(parts[2])) S.cap = null; S.capId = Number(parts[2]) || 0; }
     else if (TOP_TABS.indexOf(p0) >= 0) { S.level = 'ldhml'; S.tab = p0; }
     else if (sec) {
       S.section = sec.key;

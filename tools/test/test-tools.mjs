@@ -396,6 +396,13 @@ assert.match(r.cookie, /^__Host-ldhml_captain=[A-Za-z0-9_-]{40,}; Path=\/; HttpO
 const ccookie = r.cookie.split(';')[0], ctoken = ccookie.split('=')[1];
 assert.equal((await call('/api/captain/me', { cookie: ccookie })).data.captain.name, 'Cap Retro');
 assert.equal((await call('/api/admin/me', { cookie: '__Host-ldhml_admin=' + ctoken })).status, 401, 'a captain session never opens the admin area');
+// the captain page data: the account, every access (with who gave it), the player profile, the requests they declared, the log
+r = await call('/api/admin/captains/' + capRetro, { cookie });
+assert.ok(r.data.captain.name === 'Cap Retro' && r.data.access.some((a) => a.team_ref === teamA && a.granted_by) && Array.isArray(r.data.log) && r.data.log.some((a) => a.action === 'access.grant'), 'captain page: account, access with who gave it, log');
+assert.ok(Array.isArray(r.data.requests) && r.data.person === null, 'captain page: requests list; no player profile linked');
+assert.equal((await call('/api/admin/captains/999999', { cookie })).status, 404);
+assert.equal((await call('/api/admin/captains/' + capRetro)).status, 401, 'admins only');
+
 assert.equal((await call('/api/captain/me', { cookie: '__Host-ldhml_captain=' + token })).status, 401, 'an admin session never opens the captain area');
 assert.equal((await call('/api/captain/replacements', { method: 'POST', cookie: ccookie, body: body(sub1), origin: 'https://evil.example' })).status, 403, 'captain writes: origin check');
 r = await call('/api/captain/teams', { cookie: ccookie });
@@ -608,6 +615,13 @@ await submit('#f-cap');
 assert.ok(!d.querySelector('#modal .ad-modal') && !d.documentElement.classList.contains('ad-modal-open'), 'the modal closes after saving');
 const nocap = () => [...d.querySelectorAll('#ad-accounts .ad-caprow')].find((li) => li.textContent.includes('Nouvelle Capitaine'));
 assert.ok(nocap(), 'a new captain is in the captain accounts panel');
+{ // the captain page: everything about one captain (account, access with history, player profile, requests, log)
+  const capLink = nocap().querySelector('a[href^="#/config/captain/"]');
+  assert.ok(capLink, 'the name opens the captain page');
+  w.location.hash = capLink.getAttribute('href'); await wait(250);
+  assert.ok(d.querySelector('.ad-dl') && d.querySelector('[data-access-cap]') && d.querySelector('.nav a[href="#/config"][aria-current="page"]') && /Nouvelle Capitaine/.test(d.querySelector('h1').textContent), 'captain page: account, actions; Configuration stays lit');
+  w.location.hash = '#/config'; await wait(200);
+}
 nocap().querySelector('[data-access-cap]').click(); await wait(20);
 const af = d.querySelector('#f-access');
 const allTeams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id = ?').bind(seasonId).first('n');

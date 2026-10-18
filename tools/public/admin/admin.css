@@ -365,3 +365,20 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-caps-t tr.ad-off td { opacity: .55; }
 .ad-caps-t .ad-acts { white-space: nowrap; }
 @media (max-width: 600px) { .ad-caps-t .ad-cap-mail { max-width: none; white-space: normal; overflow-wrap: anywhere; } }
+/* Captain page */
+.ad-dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px 18px; margin: 0 0 12px; }
+.ad-dl dt { font: 600 11px/1.2 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ad-dl dd { margin: 2px 0 0; min-width: 0; overflow-wrap: anywhere; }
+.ad-warn-t { color: var(--warn); font-weight: 600; }
+.ad-cap-now { margin: 0 0 10px; }
+.ad-fold > summary { cursor: pointer; color: var(--muted); margin: 6px 0; }
+.ad-acc-t tr.ad-off td { opacity: .55; }
+.ad-capreqs, .ad-caplog { list-style: none; display: grid; gap: 6px; margin: 0; padding: 0; }
+.ad-capreqs a { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.ad-capreqs a:hover { border-color: var(--ball); }
+.ad-capreqs .bd-st { margin-left: auto; }
+.ad-caplog li { font-size: 14px; }
+.ad-capreqs .ad-qst { margin-left: auto; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.ad-qst-pending { border-color: var(--ball) !important; }
+.ad-qst-approved { border-color: var(--ok, #3fb67a) !important; color: var(--ok, #3fb67a); }
+.ad-qst-refused { border-color: var(--bad) !important; color: var(--bad); }

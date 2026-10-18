@@ -110,6 +110,35 @@ export async function adminApi(req, env, url) {
   // Edit a captain (typo in the name or email, player link). A new email ends the captain's sessions and pending codes:
   // a code sent to the old address must not sign in.
   let x = path.match(/^\/captains\/(\d+)$/);
+  // One captain, everything the admins need (the captain page): the account, every access (all seasons, with the
+  // history), their player profile in the tools (lists, salaries, teams), the replacements they declared, the log.
+  if (m === 'GET' && x) {
+    const id = Number(x[1]), DB = env.DB;
+    const cap = await DB.prepare('SELECT id, email, name, person_id, created_at, last_login_at, disabled_at FROM captains WHERE id = ?').bind(id).first();
+    if (!cap) return fail(404, 'captain');
+    const { results: access } = await DB.prepare(`SELECT a.id, a.season_id, s.name AS season_name, s.status AS season_status, a.league, a.team_id, a.team_abb, a.team_name, a.team_ref,
+        a.created_at, ga.name AS granted_by, a.revoked_at, ra.name AS revoked_by
+      FROM captain_access a JOIN seasons s ON s.id = a.season_id LEFT JOIN admins ga ON ga.id = a.created_by LEFT JOIN admins ra ON ra.id = a.revoked_by
+      WHERE a.captain_id = ? ORDER BY s.created_at DESC, (a.revoked_at IS NOT NULL), a.league, a.team_name`).bind(id).all();
+    let person = null;
+    if (cap.person_id) {
+      const p = await DB.prepare('SELECT id, site_id, nid, name, sex, birth_year, birth_month FROM people WHERE site_id = ?').bind(cap.person_id).first();
+      if (p) {
+        const { results: lists } = await DB.prepare('SELECT sp.season_id, s.name AS season_name, sp.section, sp.salary_s, sp.salary_g FROM section_players sp JOIN seasons s ON s.id = sp.season_id WHERE sp.person_id = ? ORDER BY s.created_at DESC, sp.section').bind(p.id).all();
+        const { results: rosters } = await DB.prepare(`SELECT r.season_id, r.league, r.pos, t.id AS team_id, t.abb, t.name AS team_name, t.nbhpa_team_id
+          FROM rosters r JOIN teams t ON t.id = r.team_id WHERE r.person_id = ? AND r.removed_at IS NULL ORDER BY r.league`).bind(p.id).all();
+        person = { ...p, lists, rosters };
+      }
+    }
+    const { results: requests } = await DB.prepare(`SELECT q.id, q.season_id, q.league, q.status, q.game_date, q.game_time, q.created_at, t.abb, t.name AS team_name, t.nbhpa_team_id,
+        (SELECT COUNT(*) FROM replacement_lines l WHERE l.replacement_id = q.id) AS lines
+      FROM replacements q JOIN teams t ON t.id = q.team_id WHERE q.created_kind = 'captain' AND q.created_by = ? ORDER BY q.game_date DESC, q.id DESC LIMIT 30`).bind(id).all();
+    const targets = ['captain:' + id, ...access.map((a) => 'access:' + a.id)];
+    const { results: log } = await DB.prepare(`SELECT a.id, a.at, a.actor_kind, COALESCE(ad.name, c.name) AS actor_name, a.action, a.target FROM audit a
+      LEFT JOIN admins ad ON a.actor_kind = 'admin' AND ad.id = a.actor_id LEFT JOIN captains c ON a.actor_kind = 'captain' AND c.id = a.actor_id
+      WHERE a.target IN (${targets.map(() => '?').join(',')}) OR (a.actor_kind = 'captain' AND a.actor_id = ?) ORDER BY a.id DESC LIMIT 30`).bind(...targets, id).all();
+    return json({ captain: cap, access, person, requests, log });
+  }
   if (m === 'POST' && x) {
     const id = Number(x[1]);
     const cur = await env.DB.prepare('SELECT id, email, name, person_id FROM captains WHERE id = ?').bind(id).first();
