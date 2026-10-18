@@ -14,7 +14,7 @@ const OPEN = new Set(['/api/admin/demo-login', '/api/captain/demo-login', '/api/
 export const demoRefuses = (env, req, url) => isDemo(env) && req.method !== 'GET' && !OPEN.has(url.pathname);
 
 async function keyOk(env, key) {
-  return !!env.DEMO_KEY && env.DEMO_KEY.length >= 12 && typeof key === 'string' && key.length <= 200 && await sameSecret(env, key, env.DEMO_KEY);
+  return !!env.DEMO_KEY && env.DEMO_KEY.length >= 8 && typeof key === 'string' && key.length <= 200 && await sameSecret(env, key, env.DEMO_KEY);
 }
 
 /** POST /api/admin/demo-login { key }: a session for the demo admin (created the first time). { user, token } or a Response. */

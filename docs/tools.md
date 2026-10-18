@@ -145,7 +145,7 @@ A read-only copy of the tools online, to walk the admins through them before the
   1. `npx wrangler d1 create ldhml-tools-demo`, then put the printed id in `env.demo` of `tools/wrangler.jsonc`.
   2. `npx wrangler d1 migrations apply ldhml-tools-demo --remote -c tools/wrangler.jsonc --env demo`
   3. Import the cleaned data: `npx wrangler d1 execute ldhml-tools-demo --remote -c tools/wrangler.jsonc --env demo --file <cleaned.sql>`
-  4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc --env demo` and the same for `DEMO_KEY` (12 characters or more; share it with the admins only).
+  4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc --env demo` and the same for `DEMO_KEY` (8 characters or more; today `ldhml-demo`: the demo is harmless, read only, no personal data).
   5. `node build.mjs`, then `npx wrangler deploy -c tools/wrangler.jsonc --env demo`.
 - To refresh the demo data: export again, clean, and import into a new empty demo database (or delete the rows first).
 

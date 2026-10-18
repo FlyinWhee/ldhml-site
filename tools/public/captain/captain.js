@@ -28,7 +28,7 @@
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)',
+      demoBanner: 'Démo : lecture seule. Les changements sont refusés.', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
       e_not_open: 'Ce remplacement n’est plus ouvert.', e_server: 'Erreur du serveur. Réessayez.', e_net: 'Le serveur ne répond pas.', e_origin: 'Requête refusée.',
       foot: 'Outils LDHML. Besoin d’aide ? Écrivez à l’administration de votre ligue : elle peut aussi déclarer le remplacement pour vous.'
@@ -51,7 +51,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)',
+      demoBanner: 'Demo: read only. Changes are refused.', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
       e_not_open: 'This replacement is no longer open.', e_server: 'Server error. Try again.', e_net: 'The server does not answer.', e_origin: 'Request refused.',
       foot: 'LDHML tools. Need help? Write to your league’s admins: they can also declare the replacement for you.'
@@ -97,6 +97,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
 
   /* ---------- views ---------- */
   function viewLogin() {
+    if (S.booting) return '<p class="note">' + t('loading') + '</p>';   // the first answers are on their way
     // the online demo (no email yet): the demo key, then a captain picked from the list
     if (S.demoMode) return '<h1 class="ph">' + t('demoTitle') + '</h1><p class="lede">' + t('demoLede') + '</p>' + (!S.demoCaps
       ? '<form id="f-demo" class="ad-form ad-login"><label>' + t('demoKey') + '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>'
@@ -211,6 +212,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="ad-tools"><button type="button" class="lgbtn" data-act="lang"><span class="ad-long">' + t('lang') + '</span><span class="ad-short">' + t('langShort') + '</span></button>' + (S.me ? '<button type="button" class="lgbtn" data-act="logout">' + t('signOut') + '</button>' : '') + '</div></div>';
     var msg = S.msg ? '<p class="ad-msg ad-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
     var asking = S.me && S.sub && team();
+    $('#main').setAttribute('data-ready', S.booting ? '' : '1');   // shared/guard.js: the page started
     $('#main').innerHTML = (S.me && S.me.demo ? '<p class="ad-msg ad-demo" role="status">' + esc(t('demoBanner')) + '</p>' : '') + msg + (!S.me ? viewLogin() : asking ? viewAsk() : viewTeam());
     if (asking) window.LDBuilder.mount($('#cp-builder'), S.sub, ctx());
     $('#foot').innerHTML = '<p>' + t('foot') + '</p>';
@@ -301,10 +303,11 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   });
 
   /* ---------- start ---------- */
+  S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
-    S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
+    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
     if (rs[1].ok) { S.me = rs[1].data.captain; return refresh(); }
     render();
-  });
+  }).catch(function () { S.booting = false; say('err', t('e_net')); render(); });
 })();

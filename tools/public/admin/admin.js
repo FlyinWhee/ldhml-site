@@ -369,6 +369,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
 
   /* ---------- views ---------- */
   function viewLogin() {
+    if (S.booting) return '<p class="note">' + t('loading') + '</p>';   // the first answers are on their way
     // the online demo (no email yet): the demo key opens the demo admin account
     if (S.demoMode) return '<h1 class="ph">' + t('demoTitle') + '</h1><p class="lede">' + t('demoLede') + '</p><form id="f-demo" class="ad-form ad-login"><label>' + t('demoKey') +
       '<input class="ctl" type="password" name="key" autocomplete="off" required></label><button class="ad-btn" type="submit">' + t('demoEnter') + '</button></form>';
@@ -1075,6 +1076,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var views = { home: viewHome, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
+    if (!S.booting) $('#main').setAttribute('data-ready', '1');   // shared/guard.js: the page started
     var archived = !!(S.me && curSeason() && curSeason().status === 'archived' && S.tab !== 'audit');
     $('#main').classList.toggle('ad-editing', !!(S.me && S.edit && !archived && ['teams', 'players', 'cal'].indexOf(S.tab) >= 0));
     $('#main').classList.toggle('ad-archived', archived);
@@ -1350,11 +1352,12 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
 
   /* ---------- start ---------- */
   route();
+  S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
-    S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
+    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
     route(); fixScope();
     if (rs[1].ok) { S.me = rs[1].data.admin; return refresh(); }
     render();
-  });
+  }).catch(function () { S.booting = false; say('err', t('e_net')); render(); });
 })();
