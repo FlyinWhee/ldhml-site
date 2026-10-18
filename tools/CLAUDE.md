@@ -11,6 +11,7 @@ src/replacements.js replacement requests and their checks, shared by both areas 
 src/lineups.js     the actual lineup of a game (roster - absents + replacements on file): admin calendar, captain games
 src/games.js       our schedule (games table): read helpers, the optional NBHPA import (never over a hand edit), admin edits
 src/guest.js       a replacement player not on the list ("joueur hors-ligue")
+src/admins.js      admin accounts: super admins (SUPER_ADMINS secret), the admin list and its changes (super admins only)
 src/auth.js        passwordless sign-in (emailed code), sessions, cookies; admin and captain kinds kept apart
 src/email.js       sends the code: "console" (local only) or "resend"
 src/http.js        JSON responses, origin check, input cleaning
@@ -58,4 +59,4 @@ npm run tools:remove-admin -- someone@example.com [--remote]  delete an admin (n
 npm run tools:seed        fill the LOCAL database from the current stats data (safe to run again)
 node tools/scripts/seed-local.mjs --demo   also FAKE salaries (from stats; goalies 4; Retro under 41), birth dates, Retro rules (local only)
 ```
-`tools/.dev.vars` (git-ignored): `CODE_PEPPER=<any 16+ characters>` and `DEV=1`.
+`tools/.dev.vars` (git-ignored): `CODE_PEPPER=<any 16+ characters>`, `DEV=1` and `SUPER_ADMINS=you@example.com` (comma-separated; the super admins manage the other admins in Configuration).

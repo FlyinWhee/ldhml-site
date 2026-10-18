@@ -382,3 +382,4 @@ tr.ad-cur td:first-child b { color: var(--ball); }
 .ad-qst-pending { border-color: var(--ball) !important; }
 .ad-qst-approved { border-color: var(--ok, #3fb67a) !important; color: var(--ok, #3fb67a); }
 .ad-qst-refused { border-color: var(--bad) !important; color: var(--bad); }
+.ad-super { color: var(--ball); border-color: var(--ball); }

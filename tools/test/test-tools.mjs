@@ -13,7 +13,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const ORIGIN = 'http://localhost:8787';
 const season = JSON.parse(await readFile(path.join(root, 'dist-tools/data/season.json'), 'utf8'));
 const DB = await makeD1(path.join(root, 'tools/migrations'));
-const env = { DB, ASSETS: makeAssets(path.join(root, 'dist-tools')), CODE_PEPPER: 'test-pepper-0123456789', DEV: '1', EMAIL_MODE: 'console' };
+const env = { DB, ASSETS: makeAssets(path.join(root, 'dist-tools')), CODE_PEPPER: 'test-pepper-0123456789', DEV: '1', EMAIL_MODE: 'console', SUPER_ADMINS: 'boss@example.test, Root@example.test' };
 const quiet = console.log; console.log = () => {};   // the console email mode prints codes
 
 const call = async (p, { method = 'GET', body, cookie, origin = ORIGIN, host = ORIGIN } = {}) => {
@@ -403,6 +403,42 @@ assert.ok(Array.isArray(r.data.requests) && r.data.person === null, 'captain pag
 assert.equal((await call('/api/admin/captains/999999', { cookie })).status, 404);
 assert.equal((await call('/api/admin/captains/' + capRetro)).status, 401, 'admins only');
 
+// ---- admins: super admins (SUPER_ADMINS secret) manage the other admins ----
+{
+  assert.equal((await call('/api/admin/me', { cookie })).data.admin.super, true, 'boss is a super admin (SUPER_ADMINS)');
+  // a super admin email signs in even before its row exists (the first admin of a new database)
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM admins WHERE email = 'root@example.test'").first('n'), 0);
+  r = await call('/api/admin/login/start', { method: 'POST', body: { email: 'root@example.test' } });
+  const rootCookie = (await call('/api/admin/login/verify', { method: 'POST', body: { email: 'root@example.test', code: r.data.devCode } })).cookie.split(';')[0];
+  assert.equal((await call('/api/admin/me', { cookie: rootCookie })).data.admin.super, true, 'first sign-in creates the super admin row');
+  r = await call('/api/admin/admins', { method: 'POST', cookie, body: { name: 'Aide', email: 'aide@example.test' } });
+  assert.equal(r.status, 201); const aideId = r.data.id;
+  assert.equal((await call('/api/admin/admins', { method: 'POST', cookie, body: { name: 'Aide', email: 'aide@example.test' } })).data.error, 'admin_exists');
+  assert.equal((await call('/api/admin/admins', { method: 'POST', cookie, body: { name: '', email: 'x' } })).status, 400);
+  r = await call('/api/admin/login/start', { method: 'POST', body: { email: 'aide@example.test' } });
+  const aideCookie = (await call('/api/admin/login/verify', { method: 'POST', body: { email: 'aide@example.test', code: r.data.devCode } })).cookie.split(';')[0];
+  assert.ok((await call('/api/admin/me', { cookie: aideCookie })).data.admin.super === false && (await call('/api/admin/admins', { cookie: aideCookie })).status === 403, 'a plain admin cannot see or manage admins');
+  assert.equal((await call('/api/admin/admins', { method: 'POST', cookie: aideCookie, body: { name: 'X', email: 'x@example.test' } })).status, 403);
+  r = await call('/api/admin/admins', { cookie });
+  const rootRow = r.data.admins.find((a) => a.email === 'root@example.test'), meRow = r.data.admins.find((a) => a.me);
+  assert.ok(rootRow.super && meRow.email === 'boss@example.test' && !r.data.admins.find((a) => a.id === aideId).super, 'the list says who is super and who you are');
+  assert.equal((await call('/api/admin/admins/' + rootRow.id + '/disable', { method: 'POST', cookie, body: {} })).data.error, 'super_admin', 'a super admin is changed on the server only');
+  assert.equal((await call('/api/admin/admins/' + rootRow.id + '/delete', { method: 'POST', cookie, body: {} })).data.error, 'super_admin');
+  assert.equal((await call('/api/admin/admins/' + aideId, { method: 'POST', cookie, body: { name: 'Aide Corrigé' } })).status, 200, 'rename');
+  assert.equal((await call('/api/admin/admins/' + aideId + '/disable', { method: 'POST', cookie, body: {} })).status, 200);
+  assert.equal((await call('/api/admin/me', { cookie: aideCookie })).status, 401, 'disabled: out at once');
+  assert.equal((await call('/api/admin/admins/' + aideId + '/enable', { method: 'POST', cookie, body: {} })).status, 200);
+  assert.equal((await call('/api/admin/admins/' + aideId + '/delete', { method: 'POST', cookie, body: {} })).status, 200, 'delete for good');
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM admins WHERE id = ?').bind(aideId).first('n'), 0);
+  assert.ok(await DB.prepare("SELECT 1 FROM audit WHERE action = 'admin.delete'").first() && await DB.prepare("SELECT 1 FROM audit WHERE action = 'admin.bootstrap'").first(), 'logged');
+  // a super admin disabled by hand comes back at the next sign-in (the secret is the truth)
+  await DB.prepare("UPDATE admins SET disabled_at = 1 WHERE email = 'root@example.test'").run();
+  await call('/api/admin/login/start', { method: 'POST', body: { email: 'root@example.test' } });
+  assert.equal(await DB.prepare("SELECT disabled_at FROM admins WHERE email = 'root@example.test'").first('disabled_at'), null);
+  await DB.prepare('DELETE FROM login_codes').run();
+}
+
+
 assert.equal((await call('/api/captain/me', { cookie: '__Host-ldhml_captain=' + token })).status, 401, 'an admin session never opens the captain area');
 assert.equal((await call('/api/captain/replacements', { method: 'POST', cookie: ccookie, body: body(sub1), origin: 'https://evil.example' })).status, 403, 'captain writes: origin check');
 r = await call('/api/captain/teams', { cookie: ccookie });
@@ -513,7 +549,7 @@ assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.length,
 r = await call('/api/admin/audit', { cookie });
 const actions = r.data.audit.map((a) => a.action);
 for (const a of ['admin.login', 'season.create', 'captain.create', 'access.grant', 'access.revoke', 'captain.disable', 'captain.enable']) assert.ok(actions.includes(a), 'audit has ' + a);
-assert.ok(r.data.audit.filter((a) => a.actor_kind === 'admin').every((a) => a.actor_name === 'Boss'), 'audit names the admin');
+assert.ok(r.data.audit.some((a) => a.actor_kind === 'admin' && a.actor_name === 'Boss') && r.data.audit.filter((a) => a.actor_kind === 'admin').every((a) => a.actor_name || a.action === 'admin.login'), 'audit names the admin (a deleted admin keeps the action, by number)');
 assert.ok(r.data.audit.some((a) => a.action === 'seed.local' && a.actor_kind === 'system'), 'the seed logs itself as the system');
 for (const a of ['roster.add', 'roster.remove', 'person.create', 'person.update', 'person.delete', 'list.set', 'rules.set', 'team.import', 'team.create']) assert.ok(actions.includes(a), 'audit has ' + a);
 
@@ -823,6 +859,7 @@ assert.ok(!d.querySelector('#main [data-edit-team-btn], #main [data-del-team]'),
 w.location.hash = '#/config'; await wait(200);
 assert.equal(d.querySelectorAll('.ad-lgrow [data-league-on]').length, season.leagues.length, 'Configuration: each league of the season, on or off');
 assert.ok(!d.querySelector('[data-rules]'), 'rules are in each league\'s settings, not here');
+assert.ok(d.querySelector('#ad-admins [data-act="admin-new"]') && /Super admin/.test(d.getElementById('ad-admins').textContent), 'a super admin sees the admins (and who is super)');
 w.location.hash = hL(lg, 'setup'); await wait(200);
 assert.ok(d.querySelectorAll('[data-league-setup]').length === 1 && d.querySelectorAll('[data-rules]').length === 1, 'a league\'s settings: its own setup and rules only');
 const setupRetro = d.querySelector('[data-league-setup="retro"]');

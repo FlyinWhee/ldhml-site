@@ -59,10 +59,10 @@ If it says "address in use", another copy is still running: close that window fi
 1. Cloudflare account: decide the owner (personal or league). Install nothing: `npx wrangler login` opens the browser.
 2. `npx wrangler d1 create ldhml-tools` → copy the `database_id` into `tools/wrangler.jsonc`.
 3. `npx wrangler d1 migrations apply ldhml-tools --remote -c tools/wrangler.jsonc`
-4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc` (a long random string; keep a copy in a password manager), and the email key (`RESEND_API_KEY` for Resend).
+4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc` (a long random string; keep a copy in a password manager), the email key (`RESEND_API_KEY` for Resend), and `npx wrangler secret put SUPER_ADMINS -c tools/wrangler.jsonc` (the super admin emails, comma-separated; never in `wrangler.jsonc`: emails stay out of git).
 5. Email: verify the sending domain at the provider (DNS records in Cloudflare). Set `EMAIL_MODE` to `"resend"` and `EMAIL_FROM` (for example `LDHML <no-reply@your-domain>`) in `tools/wrangler.jsonc`.
 6. `npm run build && npx wrangler deploy -c tools/wrangler.jsonc`. Then attach a custom domain to the Worker (for example `outils.your-domain`) in the Cloudflare dashboard.
-7. `npm run tools:add-admin -- you@example.com "Name" --remote`
+7. Sign in at `/admin/` with a super admin email: the account is created at the first sign-in. Then add the other admins in Configuration → Administrateurs. (`npm run tools:add-admin -- you@example.com "Name" --remote` still works.)
 8. Later: deploy from GitHub Actions on push to `main` (a Cloudflare API token as a GitHub secret). Deploying to Cloudflare is fine; only fetching NBHPA from the cloud is blocked.
 
 ## Workers Paid ($5 a month): what it adds for us
@@ -159,4 +159,4 @@ The tools have **their own schedule** (`games`, migration 0007; code `tools/src/
 - Confirm the Retro rules with the league (cap sum, ages, goalie age, age date) and whether other leagues use them.
 - Emails on decisions ("your request was approved") with the Cloudflare email mode at deploy.
 - Later: auto-approve per league when every check passes (once the league trusts the checks).
-- Manage admins from the admin area (today: the `add-admin` script).
+- **Admins (built 2026-10-17):** super admins (the `SUPER_ADMINS` secret) see Configuration → Administrateurs: add an admin (name, email), rename, disable (their sessions end), enable, delete for good (`src/admins.js`; the links to them are cleared, the log keeps their actions by number). A super admin signs in even before their row exists (created, or enabled again, at sign-in) and cannot be disabled or deleted from the page; nobody can disable or delete their own account. Plain admins do not see the section (the API answers 403 `super_only`). Audit: `admin.bootstrap`, `admin.create`, `admin.update`, `admin.disable`, `admin.enable`, `admin.delete`.

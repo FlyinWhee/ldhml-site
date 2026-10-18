@@ -146,6 +146,11 @@
       capAccess: 'Accès cette saison', accHistory: 'Tous les accès, toutes saisons ({n})', accGiven: 'Donné', accRevoked: 'Retiré', accOpen: 'en cours',
       capPlayer: 'Joueur (dans les outils)', capNoPerson: 'Aucun profil de joueur lié. « Modifier » pour le lier, si ce capitaine joue.', capPersonMissing: 'Le profil lié n’est pas encore dans les outils.',
       capNoList: 'Sur aucune liste de section.', capRequests: 'Remplacements déclarés', capNoRequests: 'Aucun remplacement déclaré.', capLines: '{n} joueur(s)',
+      adminsH: 'Administrateurs', newAdmin: 'Nouvel administrateur', editAdmin: 'Modifier l’administrateur', superTag: 'Super admin',
+      adminsHint: 'Visible des super admins seulement. Un super admin est défini dans le secret SUPER_ADMINS du serveur : il ne se désactive ni ne se supprime ici.',
+      superNote: 'défini sur le serveur', meNote: 'vous', newAdminNote: 'La personne se connecte avec un code envoyé à ce courriel.', adminEmailNote: 'le courriel ne change pas (supprimez et recréez au besoin).',
+      adminAdded: 'Administrateur ajouté.', confirmDisableAdmin: 'Désactiver cet administrateur ? Ses sessions seront fermées.', confirmDeleteAdmin: 'Supprimer l’administrateur {n} ? Le journal garde ses actions.',
+      e_admin: 'Nom et courriel valides requis.', e_admin_exists: 'Ce courriel est déjà un administrateur.', e_super_admin: 'Un super admin se change dans SUPER_ADMINS, sur le serveur.', e_self: 'Vous ne pouvez pas faire ça à votre propre compte.', e_super_only: 'Réservé aux super admins.',
       pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -214,6 +219,11 @@
       capAccess: 'Access this season', accHistory: 'Every access, all seasons ({n})', accGiven: 'Given', accRevoked: 'Removed', accOpen: 'current',
       capPlayer: 'Player (in the tools)', capNoPerson: 'No player profile linked. “Edit” to link one, if this captain plays.', capPersonMissing: 'The linked profile is not in the tools yet.',
       capNoList: 'On no section list.', capRequests: 'Replacements declared', capNoRequests: 'No replacement declared.', capLines: '{n} player(s)',
+      adminsH: 'Admins', newAdmin: 'New admin', editAdmin: 'Edit the admin', superTag: 'Super admin',
+      adminsHint: 'Seen by super admins only. A super admin is set in the server secret SUPER_ADMINS: they cannot be disabled or deleted here.',
+      superNote: 'set on the server', meNote: 'you', newAdminNote: 'The person signs in with a code sent to this email.', adminEmailNote: 'the email does not change (delete and create again if needed).',
+      adminAdded: 'Admin added.', confirmDisableAdmin: 'Disable this admin? Their sessions will be closed.', confirmDeleteAdmin: 'Delete the admin {n}? The log keeps their actions.',
+      e_admin: 'A valid name and email are required.', e_admin_exists: 'This email is already an admin.', e_super_admin: 'A super admin is changed in SUPER_ADMINS, on the server.', e_self: 'You cannot do that to your own account.', e_super_only: 'Super admins only.',
       pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -248,7 +258,7 @@
    * #/<section>/<league>[/<tab>]. The last league is remembered in this browser; old links (#teams, #cal…) land there. */
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, level: 'ldhml', tab: 'home', seasons: [], captains: [], audit: [], data: null, seasonId: null,
     section: null, league: null, plLeague: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'grp', d: 1 }, modal: null, accountsOpen: false,
-    subs: [], pending: {}, sf: 'pending', sub: null, subFrom: '', flash: null, cal: null, calDate: null, dash: null, edit: false };
+    subs: [], pending: {}, admins: [], sf: 'pending', sub: null, subFrom: '', flash: null, cal: null, calDate: null, dash: null, edit: false };
   var TOP_TABS = ['home', 'config', 'audit'], LEAGUE_TABS = ['overview', 'cal', 'teams', 'subs', 'setup'];
   var LEGACY = { home: 'home', audit: 'audit', setup: 'config', seasons: 'config', captains: 'config', rules: 'setup', teams: 'teams', cal: 'cal', subs: 'subs', players: 'players' };
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
@@ -605,7 +615,22 @@
           '<label class="ad-switch ad-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOnShort') + '</label></li>';
       }).join('') + '</ul>';
     }).join('') + '</section>';
-    return head + '<div class="ad-cfg-top">' + seasons + lgs + '</div>' + accountsPanel();
+    return head + '<div class="ad-cfg-top">' + seasons + lgs + '</div>' + accountsPanel() + adminsPanel();
+  }
+  /* The admins (super admins only; a super admin is set in the SUPER_ADMINS secret and cannot be disabled or deleted here). */
+  function adminsPanel() {
+    if (!S.me || !S.me.super) return '';
+    var rows = S.admins.map(function (a) {
+      var tag = a.super ? ' <em class="subtag ad-super">' + t('superTag') + '</em>' : a.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '';
+      var acts = a.super || a.me ? '<span class="note">' + esc(t(a.super ? 'superNote' : 'meNote')) + '</span>' :
+        '<button type="button" class="lnk ad-linkbtn" data-adm-' + (a.disabled_at ? 'enable' : 'disable') + '="' + a.id + '">' + t(a.disabled_at ? 'enable' : 'disable') + '</button>' +
+        '<button type="button" class="ad-del" data-adm-del="' + a.id + '" data-name="' + esc(a.name) + '">' + t('del') + '</button>';
+      return '<tr' + (a.disabled_at ? ' class="ad-off"' : '') + '><td class="ad-c-name"><b>' + esc(a.name) + '</b>' + tag + '</td><td class="ad-cap-mail" data-label="' + esc(t('email')) + '">' + esc(a.email) + '</td>' +
+        '<td class="ad-c-sm" data-label="' + esc(t('colLogin')) + '">' + (a.last_login_at ? esc(fmt(a.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
+        '<td class="ad-acts ad-ed"><button type="button" class="lnk ad-linkbtn" data-adm-edit="' + a.id + '">' + t('edit') + '</button>' + acts + '</td></tr>';
+    }).join('');
+    return '<section class="sec" id="ad-admins"><div class="sec-h ad-sec-h"><h2>' + t('adminsH') + '</h2><button type="button" class="ad-btn ad-btn-sm ad-ed" data-act="admin-new">+ ' + t('newAdmin') + '</button></div>' +
+      '<p class="note">' + t('adminsHint') + '</p><div class="tbl-wrap"><table class="tbl ad-tbl ad-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colLogin') + '</th><th class="ad-ed"></th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
   }
   /* ---------- One captain (from Configuration or a team card): everything about them ----------
    * The account and its actions; the access of every season (with the history); their player profile in the tools
@@ -879,6 +904,11 @@
         (gm ? '<label class="ad-switch"><input type="checkbox" name="cancelled"> ' + t('gameCancelled') + '</label>' : '') +
         '<p class="note">' + t(gm ? 'gameEditNote' : 'gameNewNote') + '</p>' + footer(gm ? t('save') : t('create')) + '</form>' };
     }
+    if (m.kind === 'admin-new') return { title: t('newAdmin'), body: '<form id="f-admin" class="ad-form ad-col"><label>' + t('name') + '<input class="ctl" name="name" required maxlength="80"></label>' +
+      '<label>' + t('email') + '<input class="ctl" type="email" name="email" required></label><p class="note">' + t('newAdminNote') + '</p>' + footer(t('create')) + '</form>' };
+    var adm = m.kind === 'admin-edit' && S.admins.filter(function (x) { return x.id === m.id; })[0];
+    if (adm) return { title: t('editAdmin'), body: '<form class="ad-form ad-col" data-adm-f="' + adm.id + '"><label>' + t('name') + '<input class="ctl" name="name" required maxlength="80" value="' + esc(adm.name) + '"></label>' +
+      '<p class="note">' + esc(adm.email) + ' · ' + t('adminEmailNote') + '</p>' + footer() + '</form>' };
     if (m.kind === 'season-new') {
       var d = S.data || {}, known = S.seasons.some(function (x) { return x.nbhpa_season_id === d.seasonId; });
       return { title: t('newSeason'), body: '<form id="f-season" class="ad-form ad-col">' +
@@ -980,6 +1010,7 @@
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
       if (S.seasonId && ['subs', 'home', 'overview'].indexOf(S.tab) >= 0) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
+      if (S.tab === 'config' && S.me && S.me.super) more.push(api('/admins').then(function (r) { S.admins = r.ok ? r.data.admins : []; }));
       if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
       if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; }));
       if (S.seasonId && S.section && ['players', 'teams'].indexOf(S.tab) >= 0) more.push(api('/people?season=' + S.seasonId + '&section=' + S.section).then(function (r) { S.players = r.data.players || []; }));
@@ -1022,6 +1053,10 @@
     } else if (f.id === 'f-cap') {
       var m = /L\d{4,}/.exec(v('person'));
       api('/captains', 'POST', { name: v('name'), email: v('email'), person_id: m ? m[0] : null }).then(function (r) { done(r); });
+    } else if (f.id === 'f-admin') {
+      api('/admins', 'POST', { name: v('name'), email: v('email') }).then(function (r) { done(r, r.ok ? t('adminAdded') : null); });
+    } else if (f.hasAttribute('data-adm-f')) {
+      api('/admins/' + f.getAttribute('data-adm-f'), 'POST', { name: v('name') }).then(function (r) { done(r); });
     } else if (f.hasAttribute('data-game-f')) {
       var gid = f.getAttribute('data-game-f'), gb = { season_id: S.seasonId, league: S.league, date: v('date'), time: v('time') || null, venue: v('venue') || null, court: v('court') || null,
         away_team: Number(v('away')), home_team: Number(v('home')), cancelled: !!(f.elements.cancelled && f.elements.cancelled.checked) };
@@ -1101,7 +1136,7 @@
   document.addEventListener('click', function (e) { var c = $('#ad-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ad-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-plg],[data-plf],[data-cf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del]');
+      '[data-plg],[data-plf],[data-cf],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del],[data-adm-edit],[data-adm-disable],[data-adm-enable],[data-adm-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -1139,6 +1174,11 @@
     if (b.hasAttribute('data-edit-team-btn')) { openModal({ kind: 'team-edit', id: num('data-edit-team-btn') }); return; }
     if (b.hasAttribute('data-team-new')) { openModal({ kind: 'team-new', league: b.getAttribute('data-team-new') }); return; }
     if (act === 'season-new') { openModal({ kind: 'season-new' }); return; }
+    if (act === 'admin-new') { openModal({ kind: 'admin-new' }); return; }
+    if (b.hasAttribute('data-adm-edit')) { openModal({ kind: 'admin-edit', id: num('data-adm-edit') }); return; }
+    if (b.hasAttribute('data-adm-disable')) { if (window.confirm(t('confirmDisableAdmin'))) api('/admins/' + b.getAttribute('data-adm-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
+    if (b.hasAttribute('data-adm-enable')) { api('/admins/' + b.getAttribute('data-adm-enable') + '/enable', 'POST', {}).then(function (r) { done(r); }); return; }
+    if (b.hasAttribute('data-adm-del')) { if (window.confirm(t('confirmDeleteAdmin', { n: nm }))) api('/admins/' + b.getAttribute('data-adm-del') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-su-del')) { if (window.confirm(t('confirmDelSignup', { n: b.getAttribute('data-name') }))) api('/league-players/' + b.getAttribute('data-su-del') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-games-import')) { api('/games/import', 'POST', { season_id: S.seasonId }).then(function (r) { done(r, r.ok ? t('gamesImported', { a: r.data.added, u: r.data.updated, k: r.data.kept }) : null); }); return; }
     if (b.hasAttribute('data-game-new')) { openModal({ kind: 'game-new' }); return; }

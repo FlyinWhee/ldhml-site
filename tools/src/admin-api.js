@@ -7,6 +7,7 @@ import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
 import { isArchived, archiveOthers } from './seasons.js';
 import { gamesApi, nbhpaPlan } from './games.js';
+import { adminsApi, ensureSuperAdmin, isSuper } from './admins.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -28,6 +29,7 @@ export async function adminApi(req, env, url) {
   if (m === 'POST' && path === '/login/start') {
     const body = await readJson(req), email = body && cleanEmail(body.email);
     if (!email) return fail(400, 'email');
+    await ensureSuperAdmin(env, email);   // a SUPER_ADMINS email gets its row (first sign-in, or enabled again)
     const r = await startLogin(env, 'admin', email, req.headers.get('CF-Connecting-IP'));
     if (r.code) await sendCode(env, url, email, r.code);
     // Same answer whether the email is an admin or not. On a local dev server only, the code comes back for testing.
@@ -38,7 +40,7 @@ export async function adminApi(req, env, url) {
     const r = email && await verifyLogin(env, 'admin', email, String(body.code || '').trim());
     if (!r) return fail(401, 'code');
     await audit(env, r.user, 'admin.login', 'admin:' + r.user.id);
-    return json({ ok: true, admin: { email: r.user.email, name: r.user.name } }, 200, { 'Set-Cookie': sessionCookie('admin', r.token) });
+    return json({ ok: true, admin: { email: r.user.email, name: r.user.name, super: isSuper(env, r.user) } }, 200, { 'Set-Cookie': sessionCookie('admin', r.token) });
   }
 
   // ---- everything else: an admin session ----
@@ -49,7 +51,10 @@ export async function adminApi(req, env, url) {
     await endSession(env, req, 'admin');
     return json({ ok: true }, 200, { 'Set-Cookie': clearCookie('admin') });
   }
-  if (m === 'GET' && path === '/me') return json({ admin: { email: admin.email, name: admin.name } });
+  if (m === 'GET' && path === '/me') return json({ admin: { email: admin.email, name: admin.name, super: isSuper(env, admin) } });
+  // ---- the admins (super admins only) ----
+  const admins = await adminsApi({ req, env, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail) });
+  if (admins) return admins;
 
   // ---- seasons ----
   if (m === 'GET' && path === '/seasons') {
