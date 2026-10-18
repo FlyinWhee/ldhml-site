@@ -137,88 +137,16 @@ The lineup of a team for a game = its roster, minus the absent players, plus the
 - API: `GET /api/admin/league-players?season&league` (signups, counts, pool), `POST /api/admin/league-players`, `POST /api/admin/league-players/:id/delete`. Audit: `signup.add`, `signup.delete`.
 
 ## The online demo (built 2026-10-18)
-A read-only copy of the tools online, to walk the admins through them before the domain (no email sign-in without it). Its own Worker (, at ) and its own database (): the real ones are never touched. Code: ; config:  in .
-- : every write is refused (403 , a banner on both pages). Still allowed: the demo sign-in, sign-out, and the replacement checks (they write nothing), so the builder can be shown.
-- Sign-in: the  secret. Admin page: the key opens the demo admin (, a super admin). Captain page: the key, then a captain from the list (captains with a team this season).
-- Data: a copy of a local database with no personal data: admin emails become , captain emails dummy addresses, no sessions or codes. Birth dates and salaries are the seed's demo values.
-- Steps (once 
-╭────────────────────────────────╮
-│ Did you mean "wrangler login"? │
-╰────────────────────────────────╯
-
-wrangler
-
-COMMANDS
-  wrangler docs [search..]        📚 Open Wrangler's command documentation in your browser
-  wrangler complete [shell]       ⌨️ Generate and handle shell completions
-
-  wrangler email                  Manage Cloudflare Email services [open beta]
-
-ACCOUNT
-  wrangler auth                   🔐 Manage authentication
-  wrangler login                  🔓 Login to Cloudflare
-  wrangler logout                 🚪 Logout from Cloudflare
-  wrangler whoami                 🕵️ Retrieve your user information
-
-COMPUTE & AI
-  wrangler agent-memory           🧠 Manage Agent Memory namespaces [private beta]
-  wrangler ai                     🤖 Manage AI models
-  wrangler ai-search              🔍 Manage AI Search instances [open beta]
-  wrangler browser                🌐 Manage Browser Run sessions [open beta]
-  wrangler containers             📦 Manage Containers
-  wrangler delete [name]          🗑️ Delete a Worker from Cloudflare
-  wrangler deploy [path]          🆙 Deploy a Worker to Cloudflare
-  wrangler deployments            🚢 List and view the current and past deployments for your Worker
-  wrangler dev [script]           👂 Start a local server for developing your Worker
-  wrangler dispatch-namespace     🏗️ Manage dispatch namespaces
-  wrangler flagship               🚩 Manage Flagship apps and feature flags [open beta]
-  wrangler init [name]            📥 Initialize a basic Worker
-  wrangler pages                  ⚡️ Configure Cloudflare Pages
-  wrangler preview [script]       👀 Create a Preview deployment of the current Worker [open beta]
-  wrangler queues                 📬 Manage Workers Queues
-  wrangler rollback [version-id]  🔙 Rollback a deployment for a Worker
-  wrangler secret                 🤫 Generate a secret that can be referenced in a Worker
-  wrangler setup                  🪄 Setup a project to work on Cloudflare
-  wrangler tail [worker]          🦚 Start a log tailing session for a Worker
-  wrangler triggers               🎯 Updates the triggers of your current deployment [experimental]
-  wrangler types [path]           📝 Generate types from your Worker configuration
-  wrangler versions               🫧 List, view, upload and deploy Versions of your Worker to Cloudflare
-  wrangler vpc                    🌐 Manage VPC [open beta]
-  wrangler workflows              🔁 Manage Workflows
-
-STORAGE & DATABASES
-  wrangler artifacts              🧱 Manage Artifacts namespaces and repos [open beta]
-  wrangler basin                  🏞️ Manage Basin products
-  wrangler d1                     🗄️ Manage Workers D1 databases
-  wrangler hyperdrive             🚀 Manage Hyperdrive databases
-  wrangler k2                     ⛰️ Manage K2 streams [open beta]
-  wrangler kv                     🗂️ Manage Workers KV Namespaces
-  wrangler r2                     📦 Manage R2 buckets & objects
-  wrangler secrets-store          🔐 Manage the Secrets Store [open beta]
-  wrangler vectorize              🧮 Manage Vectorize indexes
-
-NETWORKING & SECURITY
-  wrangler cert                   🪪 Manage client mTLS certificates and CA certificate chains used for secured connections [open beta]
-  wrangler mtls-certificate       🪪 Manage certificates used for mTLS connections
-  wrangler tunnel                 🚇 Manage Cloudflare Tunnels [experimental]
-  wrangler turnstile              🛡️ Manage Turnstile widgets [alpha]
-
-GLOBAL FLAGS
-  -c, --config          Path to Wrangler configuration file  [string]
-      --cwd             Run as if Wrangler was started in the specified directory instead of the current working directory  [string]
-  -e, --env             Environment to use for operations, and for selecting .env and .dev.vars files  [string]
-      --env-file        Path to an .env file to load - can be specified multiple times - values from earlier files are overridden by values in later files  [array]
-  -h, --help            Show help  [boolean]
-      --install-skills  Install Cloudflare skills for detected AI coding agents before running the command  [boolean] [default: false]
-      --profile         Use a specific auth profile  [string]
-  -v, --version         Show version number  [boolean]
-
-Please report any issues to https://github.com/cloudflare/workers-sdk/issues/new/choose is done):  ⛅️ wrangler 4.151.1
-──────────────────── (put the id in ),  ⛅️ wrangler 4.151.1
-────────────────────
-Resource location: remote , import the cleaned data (),  ⛅️ wrangler 4.151.1
-──────────────────── and  (both with ), Built the home page, 2 sections (draft, equipes) and 6 leagues: draft/retro, equipes/vintage, draft/ldhml, equipes/3v3-a, equipes/3v3-b, equipes/4v4-b (about 346 KB each). 239 people.,  ⛅️ wrangler 4.151.1
-────────────────────.
+A read-only copy of the tools online, to walk the admins through them before the domain (no email sign-in without it). Its own Worker (`ldhml-tools-demo`, at `https://ldhml-tools-demo.<account>.workers.dev`) and its own database (`ldhml-tools-demo`): the real ones are never touched. Code: `src/demo.js`; config: `env.demo` in `tools/wrangler.jsonc`.
+- `DEMO=1`: every write is refused (403 `demo_readonly`, a banner on both pages). Still allowed: the demo sign-in, sign-out, and the replacement checks (they write nothing), so the builder can be shown.
+- Sign-in: the `DEMO_KEY` secret. Admin page: the key opens the demo admin (`demo@demo.invalid`, a super admin). Captain page: the key, then a captain from the list (captains with a team this season).
+- Data: a copy of a local database with no personal data: admin emails become `admin<id>@demo.invalid`, captain emails dummy addresses, no sessions or codes. Birth dates and salaries are the seed's demo values.
+- Steps (after `npx wrangler login`):
+  1. `npx wrangler d1 create ldhml-tools-demo`, then put the printed id in `env.demo` of `tools/wrangler.jsonc`.
+  2. `npx wrangler d1 migrations apply ldhml-tools-demo --remote -c tools/wrangler.jsonc --env demo`
+  3. Import the cleaned data: `npx wrangler d1 execute ldhml-tools-demo --remote -c tools/wrangler.jsonc --env demo --file <cleaned.sql>`
+  4. Secrets: `npx wrangler secret put CODE_PEPPER -c tools/wrangler.jsonc --env demo` and the same for `DEMO_KEY` (12 characters or more; share it with the admins only).
+  5. `node build.mjs`, then `npx wrangler deploy -c tools/wrangler.jsonc --env demo`.
 - To refresh the demo data: export again, clean, and import into a new empty demo database (or delete the rows first).
 
 ## Our schedule (built 2026-10-17)
