@@ -1060,7 +1060,7 @@ assert.ok(cd.querySelectorAll('#tabbar a').length === 2 && cd.querySelector('.na
   const prow = () => cd.querySelectorAll('.cp-players tbody tr').length, all = prow();
   assert.ok(all > 0 && cd.querySelector('[data-cpsex]') && cd.querySelector('[data-cpsort="rank"]'), 'captain: the section players, with filters and sorting');
   cd.querySelector('[data-cpsex="f"]').click(); await wait(30);
-  assert.ok(prow() > 0 && prow() < all && [...cd.querySelectorAll('.cp-players tbody tr')].every((tr) => tr.children[1].textContent === 'F'), 'filter: women');
+  assert.ok(prow() > 0 && prow() < all && [...cd.querySelectorAll('.cp-players tbody tr')].every((tr) => tr.querySelector('.cp-sx').textContent === 'F'), 'filter: women');
   cd.querySelector('[data-cpsex=""]').click(); await wait(30);
   cd.querySelector('[data-cpst="team"]').click(); await wait(30);
   const onTeams = prow();

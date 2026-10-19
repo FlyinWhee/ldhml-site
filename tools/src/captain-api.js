@@ -88,7 +88,7 @@ export async function captainApi(req, env, url) {
       WHERE r.season_id = ? AND r.removed_at IS NULL`).bind(team.season_id).all();
     const { results: ups } = await env.DB.prepare('SELECT person_id, league FROM league_players WHERE season_id = ?').bind(team.season_id).all();
     return json({ section: lg.section, players: list.map((p) => ({ ...p,
-      rosters: ros.filter((r) => r.person_id === p.id && leagues.includes(r.league)).map((r) => ({ league: r.league, pos: r.pos, abb: r.abb, name: r.team_name, nbhpa_team_id: r.nbhpa_team_id })),
+      rosters: ros.filter((r) => r.person_id === p.id && leagues.includes(r.league)).map((r) => ({ league: r.league, pos: r.pos, abb: r.abb, name: r.team_name, nbhpa_team_id: r.nbhpa_team_id })),   // this section only
       signups: ups.filter((u) => u.person_id === p.id && leagues.includes(u.league)).map((u) => u.league) })) });
   }
   const lu = await lineupApi({ env, path, m, url, isAdmin: false, teamIds: async () => (await myTeams(env, cap)).map((t) => t.id), seasonData: () => seasonData(env, url) });

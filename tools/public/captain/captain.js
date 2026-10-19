@@ -31,7 +31,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer', account: 'Compte',
       playersTitle: 'Joueurs de la section', playersLede: 'Tous les joueurs de la liste cette saison, pour trouver un remplaçant : leur rang NBHPA, leur salaire, leurs équipes. Les noms ouvrent leurs statistiques.',
       backTeam: '← Mon équipe', findPlayer: 'Trouver un remplaçant : les joueurs de la section →', filterName: 'Filtrer par nom', fAll: 'Tous', fAllPos: 'Toutes positions',
-      stAll: 'Tous', stFree: 'Sans équipe', stSub: 'Remplaçants', stTeam: 'Dans une équipe', stPoolChip: 'inscrit, sans équipe', stSubChip: 'Remplaçant',
+      stAll: 'Tous', stFree: 'Sans équipe', stSub: 'Remplaçants', stTeam: 'Avec équipe', teamsCol: 'Équipes', stPoolChip: 'inscrit, sans équipe', stSubChip: 'Remplaçant',
       league: 'Ligue', allLeagues: 'Toutes les ligues', colS: 'J$', colG: 'G$', from: 'de', to: 'à', rankFrom: 'Rang de', rankTo: 'à', rankCol: 'Rang', sexShort: 'Sexe', name: 'Nom',
       nPlayers: '{n} joueurs', noPlayersMatch: 'Aucun joueur ne correspond.', filters: 'Filtres', sexLabel: 'Sexe', posLabel: 'Position', stLabel: 'Statut', salLabel: 'Salaire ({s})', clearFilters: 'Effacer les filtres', showN: 'Voir {n} joueurs',
       rankNote: 'Rang NBHPA à la position : un plus petit nombre est plus fort (H8 > H12).', navTeam: 'Mon équipe', navAsk: 'Déclarer', navPlayers: 'Joueurs',
@@ -62,7 +62,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close', account: 'Account',
       playersTitle: 'Section players', playersLede: 'Every player on the list this season, to find a replacement: their NBHPA rank, salary and teams. Names open their stats.',
       backTeam: '← My team', findPlayer: 'Find a replacement: the section players →', filterName: 'Filter by name', fAll: 'All', fAllPos: 'All positions',
-      stAll: 'All', stFree: 'No team', stSub: 'Replacements', stTeam: 'On a team', stPoolChip: 'signed up, no team', stSubChip: 'Replacement',
+      stAll: 'All', stFree: 'No team', stSub: 'Replacements', stTeam: 'With a team', teamsCol: 'Teams', stPoolChip: 'signed up, no team', stSubChip: 'Replacement',
       league: 'League', allLeagues: 'All leagues', colS: 'S$', colG: 'G$', from: 'from', to: 'to', rankFrom: 'Rank from', rankTo: 'to', rankCol: 'Rank', sexShort: 'Sex', name: 'Name',
       nPlayers: '{n} players', noPlayersMatch: 'No player matches.', filters: 'Filters', sexLabel: 'Sex', posLabel: 'Position', stLabel: 'Status', salLabel: 'Salary ({s})', clearFilters: 'Clear filters', showN: 'Show {n} players',
       rankNote: 'NBHPA rank at the position: a lower number is stronger (H8 > H12).', navTeam: 'My team', navAsk: 'Declare', navPlayers: 'Players',
@@ -252,14 +252,15 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var head = '<p class="ta-back"><a class="lnk" href="#equipe">' + t('backTeam') + '</a></p><h1 class="ph">' + t('playersTitle') + '</h1><p class="lede">' + t('playersLede') + '</p>';
     if (!S.players) return head + '<p class="note">' + t('loading') + '</p>';
     var pos = f.pos === 'g' ? 'g' : 's';   // the position the rank and the salary are read at
-    var isG = function (p) { return p.rosters.some(function (r) { return r.pos === 'g'; }) || (!p.rosters.length && rankOf(p).g && !rankOf(p).s); };
-    var stOf = function (p) { return p.rosters.length ? 'team' : p.signups.length ? 'pool' : 'sub'; };
+    var mineR = function (p) { return p.rosters; };   // the teams in this section (the server sends no other)
+    var isG = function (p) { var rs = mineR(p); return rs.some(function (r) { return r.pos === 'g'; }) || (!rs.length && rankOf(p).g && !rankOf(p).s); };
+    var stOf = function (p) { return mineR(p).length ? 'team' : 'free'; };
     var smin = numOf(f.smin), smax = numOf(f.smax);
     var list = S.players.filter(function (p) {
       var sal = pos === 'g' ? p.salary_g : p.salary_s, rk = rankOf(p)[pos];
       return (!f.q || p.name.toLowerCase().indexOf(f.q.trim().toLowerCase()) >= 0) && (!f.sex || p.sex === f.sex) &&
-        (!f.pos || (f.pos === 'g' ? isG(p) : !isG(p) || p.rosters.some(function (r) { return r.pos === 's'; }))) &&
-        (!f.st || stOf(p) === f.st || (f.st === 'free' && stOf(p) !== 'team')) && (!f.lg || p.rosters.some(function (r) { return r.league === f.lg; })) &&
+        (!f.pos || (f.pos === 'g' ? isG(p) : !isG(p) || mineR(p).some(function (r) { return r.pos === 's'; }))) &&
+        (!f.st || stOf(p) === f.st) && (!f.lg || mineR(p).some(function (r) { return r.league === f.lg; })) &&
         (smin == null || (sal != null && sal >= smin)) && (smax == null || (sal != null && sal <= smax)) &&
         (!(f.rfrom || f.rto) || (R && R.inRange(rk, f.rfrom, f.rto)));
     });
@@ -279,7 +280,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="fp-back" data-fpanel-close></div><div class="fpanel" id="fpanel" role="dialog" aria-label="' + esc(t('filters')) + '"><div class="fp-head"><b>' + t('filters') + '</b><button type="button" class="fp-x" data-fpanel-close aria-label="' + esc(t('close')) + '">×</button></div>' +
       grp(t('sexLabel'), seg('data-cpsex', f.sex, [['', t('fAll')], ['m', t('sxM')], ['f', t('sxF')]])) +
       grp(t('posLabel'), seg('data-cppos', f.pos, [['', t('fAllPos')], ['s', t('posS')], ['g', t('posG')]])) +
-      grp(t('stLabel'), '<span class="cp-seg4">' + seg('data-cpst', f.st, [['', t('stAll')], ['free', t('stFree')], ['sub', t('stSub')], ['team', t('stTeam')]]) + '</span>') +
+      grp(t('stLabel'), seg('data-cpst', f.st, [['', t('stAll')], ['free', t('stFree')], ['team', t('stTeam')]])) +
       '<span class="cp-break" aria-hidden="true"></span>' +
       (lgs.length > 1 ? grp(t('league'), '<select class="ctl" data-cplg aria-label="' + esc(t('league')) + '"><option value="">' + esc(t('allLeagues')) + '</option>' + lgs.map(function (l) { return '<option value="' + esc(l.slug) + '"' + (f.lg === l.slug ? ' selected' : '') + '>' + esc(l.short) + '</option>'; }).join('') + '</select>') : '') +
       grp(t('salLabel', { s: salTag }), '<span class="rk-range"><span class="rk-l">' + esc(salTag) + '</span><input id="cp-smin" class="ctl ta-xs" data-cpf="smin" inputmode="decimal" placeholder="' + esc(t('from')) + '" value="' + esc(f.smin) + '" aria-label="' + esc(salTag + ' ' + t('from')) + '">' +
@@ -289,18 +290,17 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="fp-foot"><button type="button" class="lnk clearf" data-fclear' + (any ? '' : ' disabled') + '>' + t('clearFilters') + '</button><button type="button" class="fp-go" data-fpanel-close>' + esc(t('showN', { n: list.length })) + '</button></div>' +
       '</div></div>';
     var site = (S.data && S.data.siteUrl) || '/', secPath = (S.data && S.data.sections || []).filter(function (s) { return lgs[0] && s.key === lgs[0].section; }).map(function (s) { return s.path; })[0] || '';
-    var stLabel = { pool: t('stPoolChip'), sub: t('stSubChip') };
     var rows = list.map(function (p) {
       var rk = rankOf(p)[pos], sal = pos === 'g' ? p.salary_g : p.salary_s, st = stOf(p);
       var name = p.site_id ? '<a class="lnk" href="' + esc(site + secPath + '/#player-' + p.site_id) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a>' : esc(p.name);
       var teams = p.rosters.map(function (r) { var l = lgs.filter(function (x) { return x.slug === r.league; })[0] || { slug: r.league, short: r.league, name: r.league, theme: 'default' };
         return window.LDLook.leagueBadge({ slug: l.slug, short: l.short, name: l.name, logo: l.logo }, { theme: l.theme, teams: [{ abb: r.abb, name: r.name }] }); }).join('');
-      return '<tr><td><b>' + name + '</b><div class="cp-pl-sub lgbs">' + teams + (stLabel[st] ? '<span class="ta-chip' + (st === 'sub' ? ' ta-chip-sub' : '') + '">' + esc(stLabel[st]) + '</span>' : '') + '</div></td>' +
+      return '<tr><td><b>' + name + '</b><div class="cp-pl-sub lgbs cp-m-only">' + teams + '</div></td><td class="cp-pl-teams"><div class="lgbs">' + teams + '</div></td>' +
         '<td class="cp-sx">' + esc(p.sex === 'f' ? t('sxF') : p.sex === 'm' ? t('sxM') : '—') + '</td><td class="num">' + esc(rk || '—') + '</td><td class="num">' + esc(money(sal)) + '</td></tr>';
     }).join('');
     var sh = function (k, label, cls) { var on = S.ps.k === k; return '<th' + (cls ? ' class="' + cls + '"' : '') + '><button type="button" class="cp-sort" data-cpsort="' + k + '">' + esc(label) + (on ? (S.ps.d > 0 ? ' ▲' : ' ▼') : '') + '</button></th>'; };
     return head + filters + '<p class="note">' + esc(t('nPlayers', { n: list.length })) + '</p>' +
-      (list.length ? '<div class="tbl-wrap"><table class="tbl cp-players"><thead><tr>' + sh('name', t('name')) + '<th>' + t('sexShort') + '</th>' + sh('rank', t('rankCol'), 'num') + sh('sal', pos === 'g' ? t('colG') : t('colS'), 'num') + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+      (list.length ? '<div class="tbl-wrap"><table class="tbl cp-players"><thead><tr>' + sh('name', t('name')) + '<th class="cp-pl-teams">' + t('teamsCol') + '</th><th>' + t('sexShort') + '</th>' + sh('rank', t('rankCol'), 'num') + sh('sal', pos === 'g' ? t('colG') : t('colS'), 'num') + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<p class="empty">' + t('noPlayersMatch') + '</p>');
   }
   function rosterPanel(tm) {

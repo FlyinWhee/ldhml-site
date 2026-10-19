@@ -130,5 +130,8 @@
 .cp-fbar #cp-pq { flex: 1 1 220px; min-width: 0; }
 .cp-break { flex-basis: 100%; height: 0; }
 @media (max-width: 600px) { .cp-break { display: none; } .cp-fbar #cp-pq { flex: 1 1 auto; } .fp-grp .rk-range .ta-xs { width: 100%; } }
-.cp-seg4 { display: contents; }
-@media (max-width: 600px) { .cp-seg4 { display: block; } .cp-seg4 .seg { grid-auto-flow: row !important; grid-template-columns: 1fr 1fr; } }
+/* teams: a column of their own on a computer (same row as the name); under the name on a phone */
+.cp-players .cp-m-only { display: none; }
+.cp-players td.cp-pl-teams .lgbs { display: flex; flex-wrap: wrap; gap: 4px; }
+.cp-players td { vertical-align: middle; }
+@media (max-width: 600px) { .cp-players .cp-m-only { display: flex; } .cp-players .cp-pl-teams { display: none; } .cp-players td { vertical-align: top; } }
