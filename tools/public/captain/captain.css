@@ -106,3 +106,29 @@
 .cp-share { margin: 0 0 14px; border-color: var(--ball); }
 .cp-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 6px; margin: 8px 0 0; }
 .cp-share-row .ctl { min-width: 0; font-size: 13px; }
+/* #joueurs: the section's players, compact on every screen */
+.cp-pfs { flex-wrap: wrap; gap: 8px; }
+.cp-pfs #cp-pq { flex: 1 1 180px; min-width: 0; }
+.cp-pf { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.cp-players td { vertical-align: top; padding: 7px 6px; }
+.cp-players td.num, .cp-players th.num { text-align: right; white-space: nowrap; }
+.cp-pl-sub { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.cp-sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.cp-pfs select[data-cplg] { min-width: 150px; }
+#cp-filt { margin: 0 0 6px; }
+/* The nav: a bottom tab bar on phones (site.css .tabbar), three tabs */
+.cp-tabbar { grid-template-columns: repeat(2, 1fr) !important; }
+/* A pending request's link: a small box (icon, the address, copy, share); "Annuler" beside it */
+.bd-acts .cp-link { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 220px; min-width: 0; max-width: 420px; padding: 3px 4px 3px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
+.cp-link-url { flex: 1 1 auto; min-width: 0; padding: 4px 2px; border: 0; background: transparent; color: var(--ink); font: 13px var(--f-text); text-overflow: ellipsis; }
+.cp-link-url:focus { outline: none; }
+.cp-link:focus-within { border-color: var(--ball); }
+.cp-link-b { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border: 0; border-radius: 6px; background: none; color: var(--ink); cursor: pointer; }
+.cp-link-b:hover, .cp-link-b:focus-visible { background: color-mix(in srgb, var(--ball) 18%, transparent); }
+.bd-acts:has(.cp-link) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+/* The filters: the stats site's component (.fbar / .fpanel in site.css); here the salary and the rank start a second line */
+.cp-fbar #cp-pq { flex: 1 1 220px; min-width: 0; }
+.cp-break { flex-basis: 100%; height: 0; }
+@media (max-width: 600px) { .cp-break { display: none; } .cp-fbar #cp-pq { flex: 1 1 auto; } .fp-grp .rk-range .ta-xs { width: 100%; } }
+.cp-seg4 { display: contents; }
+@media (max-width: 600px) { .cp-seg4 { display: block; } .cp-seg4 .seg { grid-auto-flow: row !important; grid-template-columns: 1fr 1fr; } }

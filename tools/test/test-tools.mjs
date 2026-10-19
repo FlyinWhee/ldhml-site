@@ -403,6 +403,15 @@ assert.ok(Array.isArray(r.data.requests) && r.data.person === null, 'captain pag
 assert.equal((await call('/api/admin/captains/999999', { cookie })).status, 404);
 assert.equal((await call('/api/admin/captains/' + capRetro)).status, 401, 'admins only');
 
+// a captain sees the section players (to find a replacement): nothing personal
+{
+  r = await call('/api/captain/players?team=' + teamA, { cookie: ccookie });
+  const listN = await DB.prepare("SELECT COUNT(*) AS n FROM section_players WHERE season_id = ? AND section = 'draft'").bind(seasonId).first('n');
+  assert.ok(r.data.players.length === listN && r.data.players.some((p) => p.rosters.length), 'captain: the section list with teams');
+  assert.ok(r.data.players.every((p) => !('birth_year' in p) && !('nid' in p) && !('email' in p)), 'no birth dates, NBHPA numbers or emails for captains');
+  assert.equal((await call('/api/captain/players?team=' + teamA)).status, 401, 'captains only');
+}
+
 // one request by id (the link a captain shares with the admins)
 {
   const any = await DB.prepare('SELECT id FROM replacements ORDER BY id LIMIT 1').first('id');
@@ -972,7 +981,7 @@ await call('/api/admin/rules', { method: 'POST', cookie: cookie3b, body: { seaso
 const cjar = {};   // one browser: the session cookie stays across page loads
 const openCaptainPage = async () => {
   const chtml = await readFile(path.join(root, 'dist-tools/captain/index.html'), 'utf8');
-  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
+  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
   const cdom = new JSDOM(chtml.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + cscripts[src] + '</script>'), {
     runScripts: 'dangerously', url: ORIGIN + '/captain/', virtualConsole: vc,
     beforeParse(cw) {
@@ -1044,7 +1053,22 @@ const cnote = cq('[data-b-note]'); cnote.value = 'Seule disponible ce soir'; cno
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
 assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ta-msg.ta-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
 assert.ok(/\/admin\/#\/r\/\d+$/.test(cd.getElementById('cp-share-url').value) && cd.querySelector('[data-share-copy]'), 'sent: the link for the admins, to share or copy');
-assert.ok(cd.querySelector('[data-share]'), 'each pending request: share its link');
+assert.ok([...cd.querySelectorAll('.cp-link .cp-link-url')].some((i) => i.value.indexOf('/admin/#/r/') > 0) && cd.querySelector('.cp-link [data-share-copy]'), 'each pending request: its link shown, with copy');
+assert.ok(cd.querySelectorAll('#tabbar a').length === 2 && cd.querySelector('.nav a[href="#joueurs"]'), 'captain nav: Mon équipe, Joueurs');
+{ // #joueurs: the section players, to find a replacement (rank, salary, teams, status), with filters
+  cw.location.hash = '#joueurs'; await wait(300);
+  const prow = () => cd.querySelectorAll('.cp-players tbody tr').length, all = prow();
+  assert.ok(all > 0 && cd.querySelector('[data-cpsex]') && cd.querySelector('[data-cpsort="rank"]'), 'captain: the section players, with filters and sorting');
+  cd.querySelector('[data-cpsex="f"]').click(); await wait(30);
+  assert.ok(prow() > 0 && prow() < all && [...cd.querySelectorAll('.cp-players tbody tr')].every((tr) => tr.children[1].textContent === 'F'), 'filter: women');
+  cd.querySelector('[data-cpsex=""]').click(); await wait(30);
+  cd.querySelector('[data-cpst="team"]').click(); await wait(30);
+  const onTeams = prow();
+  cd.querySelector('[data-cpst="free"]').click(); await wait(30);
+  assert.equal(onTeams + prow(), all, 'on a team, or not');
+  cd.querySelector('[data-cpst=""]').click(); await wait(30);
+  cw.location.hash = '#equipe'; await wait(250);
+}
 assert.ok(!cd.querySelector('.bd-req .bd-req-h .tcell'), 'compact cards on the team page (no team repeated)');
 assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE created_kind = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue');
 // a second team: now the switcher shows

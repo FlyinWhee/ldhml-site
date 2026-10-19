@@ -75,6 +75,22 @@ export async function captainApi(req, env, url) {
     return json({ teams: out });
   }
 
+  // The player list of my team's section, this season, to find a replacement: name, sex, salaries, teams, sign-ups.
+  // Never birth dates, emails or NBHPA numbers (a captain sees what a replacement needs, nothing personal).
+  if (m === 'GET' && path === '/players') {
+    const mine = await myTeams(env, cap), team = mine.find((x) => x.id === Number(url.searchParams.get('team'))) || mine[0];
+    const data = team && await seasonData(env, url), lg = data && data.leagues.find((l) => l.slug === team.league);
+    if (!lg) return json({ players: [] });
+    const leagues = data.leagues.filter((l) => l.section === lg.section).map((l) => l.slug);
+    const { results: list } = await env.DB.prepare(`SELECT p.id, p.site_id, p.name, p.sex, sp.salary_s, sp.salary_g FROM section_players sp JOIN people p ON p.id = sp.person_id
+      WHERE sp.season_id = ? AND sp.section = ? ORDER BY p.name COLLATE NOCASE`).bind(team.season_id, lg.section).all();
+    const { results: ros } = await env.DB.prepare(`SELECT r.person_id, r.league, r.pos, t.abb, t.name AS team_name, t.nbhpa_team_id FROM rosters r JOIN teams t ON t.id = r.team_id
+      WHERE r.season_id = ? AND r.removed_at IS NULL`).bind(team.season_id).all();
+    const { results: ups } = await env.DB.prepare('SELECT person_id, league FROM league_players WHERE season_id = ?').bind(team.season_id).all();
+    return json({ section: lg.section, players: list.map((p) => ({ ...p,
+      rosters: ros.filter((r) => r.person_id === p.id && leagues.includes(r.league)).map((r) => ({ league: r.league, pos: r.pos, abb: r.abb, name: r.team_name, nbhpa_team_id: r.nbhpa_team_id })),
+      signups: ups.filter((u) => u.person_id === p.id && leagues.includes(u.league)).map((u) => u.league) })) });
+  }
   const lu = await lineupApi({ env, path, m, url, isAdmin: false, teamIds: async () => (await myTeams(env, cap)).map((t) => t.id), seasonData: () => seasonData(env, url) });
   if (lu) return lu;
   const rep = await replacementApi({ req, env, url, path, m, actor: { kind: 'captain', id: cap.id },
