@@ -207,7 +207,7 @@ main { padding-block: 28px 60px; }
 .tbl th[aria-sort="ascending"] button::after { content: " \25B4"; color: var(--accent-text); }
 .tcell { display: inline-flex; align-items: center; gap: 10px; }
 .abbs { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.abbs a { font: 600 15px/1 var(--f-display); letter-spacing: .06em; padding: 3px 7px 2px; border-radius: 2px; background: var(--tc); color: var(--tx, #fff); text-decoration: none; }
+.abbs a, .abbs .tchip { font: 600 15px/1 var(--f-display); letter-spacing: .06em; padding: 3px 7px 2px; border-radius: 2px; background: var(--tc); color: var(--tx, #fff); text-decoration: none; }
 .abbs a:hover { filter: brightness(1.15); }
 .alsoplayed { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; }
 .alsoplayed a { text-decoration: none; }
@@ -608,7 +608,7 @@ a.lgb-l:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .lgb-l b { font: 600 15px/1 var(--f-brand, var(--f-display)); letter-spacing: .05em; text-transform: uppercase; background: var(--brand, linear-gradient(var(--ball), var(--ball))); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lgb-l span { color: var(--panel-mute); font-size: 13px; }
 .lgb .abbs { gap: 3px; padding-right: 2px; }
-.lgb .abbs a { font-size: 13px; padding: 3px 6px 2px; }
+.lgb .abbs a, .lgb .abbs .tchip { font-size: 13px; padding: 3px 6px 2px; }
 .lgb-lg .lgb-l { min-height: 40px; padding: 4px 14px 4px 6px; gap: 10px; }
 .lgb-lg .lgb-mk { width: 34px; height: 34px; }
 .lgb-lg .lgb-l b { font-size: 24px; }

@@ -647,6 +647,15 @@ assert.equal((await call('/api/nothing')).status, 404);
   await DB.prepare("DELETE FROM admins WHERE email = 'demo@demo.invalid'").run();
 }
 
+// the shared look: a team chip keeps its colour and full name with or without a link (fix the component, not the page)
+{
+  const look = await readFile(path.join(root, 'dist-tools/assets/look.js'), 'utf8'), g = {};
+  new Function('globalThis', 'window', look)(g, undefined);
+  const plain = g.LDLook.leagueBadge({ slug: 'retro', short: 'Retro', name: 'LDHML Retro' }, { teams: [{ abb: 'CAL', name: 'Câlinours' }] });
+  const linked = g.LDLook.leagueBadge({ slug: 'retro', short: 'Retro', name: 'LDHML Retro' }, { teams: [{ abb: 'CAL', name: 'Câlinours', href: '#x' }] });
+  for (const b of [plain, linked]) assert.ok(/class="tchip" style="--tc:[^"]+" title="Câlinours"/.test(b), 'team chip: colour and name, linked or not');
+}
+
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
 for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'admin/index.html', 'captain/index.html', 'index.html'])
   assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');

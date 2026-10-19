@@ -23,7 +23,7 @@
 | Team colour | `LDLook.teamColor(slug, abb)`: Retro uses its artwork table, other leagues a stable colour from the code. Set with `style="--tc:" + colorVar` (sets `--tc` and the ink `--tx`). | `colorOf(abb)` | `LDLook.colorVar(l.slug, abb)` |
 | Team badge (crest) | Team colour with the code; the NBHPA team logo on top once it loads. Sizes `sm`, default, `lg`. | `crest(abb, size)` | `crestOf(l, abb)` |
 | Team, full | Badge + full name, a link to the team page (`.tcell`, `a.tl.strong`). | `teamCell(id)` | `crestOf` + `teamName(l, tm)` |
-| Team, compact | Code chip in the team colour, a link; the full name is in `title` (`.abbs a`). For dense table cells. | `abbLinks([abb])` | `teamChips(l, [abb])` |
+| Team, compact | Code chip in the team colour (`.tchip`), a link where there is a page to open; the full name is in `title`. **With or without a link it looks the same** (owner, 2026-10-19). For dense table cells. | `abbLinks([abb])` | `teamChips(l, [abb])` |
 | League badge | `LDLook.leagueBadge(league, o)`: a container in the league theme (`data-t`): logo (or a dot) + short name in the brand gradient, then the team chips of this context. Size `lg` for a block heading. `extra` adds text (game night). | `crossLinks(pp)` | `badgeOf(l, o)`, `personBadge(p, l)` |
 | Person | Name, a link (`a.tl`, `strong` in tables). In a league: their page in the league. Across leagues: the section profile. Box rows hold an NBHPA `player_id`: go through `pLink` / `U()`. | `pLink(id)` | `<a class="tl strong" href="<league>/#player-<id>">` |
 | A person's teams | **Main team first, in a frame** (`.is-main`, title "Main team"), then `SUB:` (`.also`) and the teams the person subbed for, by games. In a per-team table: the main team row first, a `SUB` tag (`.subtag`) on the other rows. Games per team where known. The order comes from `people[id].teams` (league pages) and `m.teams` (section pages): never re-sort it in a view. | `viewPlayer`, `byTeamHtml`, `teamsHtml` | `.pl-teams` |
@@ -31,7 +31,7 @@
 | Numbers | Tabular figures (`.num`). Column labels are short with the long name in `title` (`COLS` fr/en `[short, long]`). Sortable tables use `dataTable`. Big numbers in heroes use LED digits (`led()`). | `COLS`, `dataTable`, `readout` | `.tbl` |
 | Game, date, score | A link to the game page (`#game-<id>`). Result chips V/D/N link to the opponent (`chip`). | `gameBlock`, `chipFor` | - |
 
-All team visuals come from `shared/look.js` (`LDLook`). It is inlined into every page. A new page type uses it; it does not make its own colours or badges.
+All team visuals come from `shared/look.js` (`LDLook`). It is inlined into every page (and loaded by the tools pages). A new page type uses it; it does not make its own colours or badges. **When a badge or chip looks wrong on one page, fix the component, not the page** (owner, 2026-10-19: the same fix was made page by page several times; one fix in `LDLook` fixes every page). The same goes for the other shared pieces: filters use the `.fbar` / `.fpanel` component of site.css on every page.
 
 ## Choosing the form
 - A row or a block about one team: badge + full name.

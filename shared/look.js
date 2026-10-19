@@ -46,8 +46,10 @@
     var logo = team && team.logo ? '<img src="' + LOGO_BASE + esc(team.logo) + '" alt="" loading="lazy" decoding="async">' : '';
     return '<span class="crest' + (size ? ' crest-' + size : '') + '" style="--tc:' + colorVar(slug, abb) + '"><span aria-hidden="true">' + esc(abb) + '</span>' + logo + '</span>';
   }
+  /* A team chip (its code in its colours). With a link or without: the same look everywhere (class "tchip"). */
   function abbLink(team, slug, href) {
-    return href ? '<a href="' + esc(href) + '" style="--tc:' + colorVar(slug, team.abb) + '" title="' + esc(team.name || team.abb) + '">' + esc(team.abb) + '</a>' : '<span>' + esc(team.abb) + '</span>';
+    var attrs = ' class="tchip" style="--tc:' + colorVar(slug, team.abb) + '" title="' + esc(team.name || team.abb) + '"';
+    return href ? '<a href="' + esc(href) + '"' + attrs + '>' + esc(team.abb) + '</a>' : '<span' + attrs + '>' + esc(team.abb) + '</span>';
   }
   /* League badge: the league (logo or dot, short name in its theme) and, inside it, the teams of this context.
    * The league part opens the league IN THE CURRENT CONTEXT (on a person: that person's page in the league;
