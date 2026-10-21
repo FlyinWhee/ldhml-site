@@ -446,3 +446,19 @@ html.ta-demo .bd-nav { bottom: 22px; }
   .ta-tbl.ta-ovteams td.num, .ta-tbl.ta-ovteams th.num { white-space: nowrap; text-align: right; }
   .ta-tbl.ta-ovteams .tcell .crest { display: inline-grid; }
 }
+/* Captains: a summary in Configuration, a filterable list of slim rows */
+.ta-capsum { display: flex; flex-wrap: wrap; gap: 8px; }
+.ta-capsum-i { display: inline-flex; align-items: baseline; gap: 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.ta-capsum-i b { font: 600 22px/1 var(--f-display); }
+.ta-capsum-i:hover { border-color: var(--ball); }
+.ta-capf { margin-top: 0; }
+.ta-caps-t .ta-cap-mail { display: block; max-width: none; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+a.ta-btn { display: inline-flex; align-items: center; color: var(--on-ball); font-family: var(--f-display); font-weight: 600; text-decoration: none; }
+#ta-cq { flex: 1 1 280px; }
+/* A phone: each captain on two short lines (name and email, then the team badges); the last sign-in is on their page */
+@media (max-width: 600px) {
+  .ta-capl tr { padding: 8px 0; }
+  .ta-capl td { padding: 2px 12px; }
+  .ta-capl .ta-cap-login { display: none !important; }
+  .ta-capf .seg { flex-wrap: wrap; }
+}

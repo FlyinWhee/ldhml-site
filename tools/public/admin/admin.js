@@ -158,6 +158,8 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
       backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
+      cf_multi: 'Plusieurs équipes', noTeamShort: 'Aucune équipe', backConfig: '← Configuration', capsManage: 'Gérer les capitaines →', capsSumAll: 'capitaines',
+      capsLede: 'Tous les comptes de capitaine. L’accès se donne depuis la carte d’une équipe ; tout le reste (accès, modifier, désactiver, supprimer) se fait sur la page du capitaine.', allLeaguesF: 'Toutes les ligues',
       account: 'Compte', seasonNow: 'Saison : {n} · {st}', seasonBack: 'Revenir à la saison en cours ({n})', pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
       ovAges: 'âges {m} / {f} / {g}', ovSeeTeams: 'Voir les équipes →', payrollShort: 'Masse', accountsLink: 'Comptes des capitaines',
       configLede: 'Ce qui vaut pour toute la LDHML : les saisons, les ligues actives de la saison et les comptes des capitaines.',
@@ -238,6 +240,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
       backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
+      cf_multi: 'Several teams', noTeamShort: 'No team', backConfig: '← Setup', capsManage: 'Manage the captains →', capsSumAll: 'captains',
+      capsLede: 'Every captain account. Access is given from a team card; everything else (access, edit, disable, delete) is on the captain’s page.', allLeaguesF: 'All leagues',
       account: 'Account', seasonNow: 'Season: {n} · {st}', seasonBack: 'Back to the live season ({n})', pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
       ovAges: 'ages {m} / {f} / {g}', ovSeeTeams: 'See the teams →', payrollShort: 'Payroll', accountsLink: 'Captain accounts',
       configLede: 'What counts for all of LDHML: the seasons, the leagues active this season and the captain accounts.',
@@ -397,35 +401,47 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<span class="note ta-cap-mail" title="' + esc(c.email) + '">' + esc(c.email) + '</span></div><div class="ta-acts ta-ed"><button type="button" class="lnk ta-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
       '<button type="button" class="ta-x" data-revoke="' + acc.id + '" title="' + esc(t('revoke')) + '" aria-label="' + esc(t('revoke')) + '">×</button></div></li>';
   }
-  /* The captain accounts (Configuration): one row per captain, with a search and quick filters, so 40+ captains stay
-   * readable. A row: name (and their player profile), email, the teams of this season as badges, the last sign-in, and
-   * (edit mode) give access, edit, disable or enable, delete. */
+  /* One captain in the list: name (opens their page) and email, their teams this season, the last sign-in. No buttons:
+   * access is given from a team card, everything else is on the captain's page (owner, 2026-10-21). */
   function captainRow(c) {
     var acc = c.access.filter(function (a) { return a.season_id === S.seasonId; });
-    return '<tr class="ta-caprow' + (c.disabled_at ? ' ta-off' : '') + '" data-cap="' + c.id + '"><td class="ta-c-name"><a class="lnk" href="' + hrefCap(c.id) + '">' + esc(c.name) + '</a>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') + '</td>' +
-      '<td class="ta-cap-mail" data-label="' + esc(t('email')) + '" title="' + esc(c.email) + '">' + esc(c.email) + '</td>' +
-      '<td data-label="' + esc(t('colTeamsSeason')) + '"><div class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">—</span>') + '</div></td>' +
-      '<td class="ta-c-sm" data-label="' + esc(t('colLogin')) + '">' + (c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td>' +
-      '<td class="ta-acts">' + (c.disabled_at ? '' : '<button type="button" class="lnk ta-linkbtn" data-access-cap="' + c.id + '">' + t('giveAccess') + '</button>') +
-      '<button type="button" class="lnk ta-linkbtn" data-edit-cap="' + c.id + '">' + t('edit') + '</button>' +
-      '<button type="button" class="lnk ta-linkbtn" data-' + (c.disabled_at ? 'enable' : 'disable') + '="' + c.id + '">' + t(c.disabled_at ? 'enable' : 'disable') + '</button>' +
-      '<button type="button" class="ta-del" data-delete-cap="' + c.id + '" data-name="' + esc(c.name) + '">' + t('del') + '</button></td></tr>';
+    return '<tr class="ta-caprow' + (c.disabled_at ? ' ta-off' : '') + '" data-cap="' + c.id + '"><td class="ta-c-name"><a class="lnk" href="' + hrefCap(c.id) + '">' + esc(c.name) + '</a>' + (c.disabled_at ? ' <em class="subtag">' + t('disabled') + '</em>' : '') +
+      '<span class="ta-cap-mail" title="' + esc(c.email) + '">' + esc(c.email) + '</span></td>' +
+      '<td class="ta-cap-teams"><div class="lgbs">' + (acc.length ? acc.map(accessBadge).join('') : '<span class="note">' + t('noTeamShort') + '</span>') + '</div></td>' +
+      '<td class="ta-c-sm ta-cap-login">' + (c.last_login_at ? esc(fmt(c.last_login_at)) : '<span class="note">' + t('neverShort') + '</span>') + '</td></tr>';
   }
-  function accountsPanel() {
-    var q = (S.cq || '').trim().toLowerCase(), f = S.cf || '';
-    var hasAcc = function (c) { return c.access.some(function (a) { return a.season_id === S.seasonId; }); };
-    var keep = { '': function () { return true; }, noaccess: function (c) { return !c.disabled_at && !hasAcc(c); }, never: function (c) { return !c.disabled_at && !c.last_login_at; }, off: function (c) { return !!c.disabled_at; } };
-    var n = function (k) { return S.captains.filter(keep[k]).length; };
-    var list = S.captains.filter(function (c) { return keep[f](c) && (!q || (c.name + ' ' + c.email).toLowerCase().indexOf(q) >= 0); })
+  /* Which captains a quick filter keeps (this season): all, with several teams, with no team, never signed in, disabled. */
+  var capKeep = function (k) {
+    var n = function (c) { return c.access.filter(function (a) { return a.season_id === S.seasonId; }).length; };
+    return { '': function () { return true; }, multi: function (c) { return n(c) > 1; }, noaccess: function (c) { return !c.disabled_at && !n(c); }, never: function (c) { return !c.disabled_at && !c.last_login_at; }, off: function (c) { return !!c.disabled_at; } }[k] || function () { return true; };
+  };
+  var CAP_FILTERS = [['', 'cf_all'], ['multi', 'cf_multi'], ['noaccess', 'cf_noaccess'], ['never', 'cf_never'], ['off', 'cf_off']];
+  /* #/config/captains[/<filter>]: every captain account, a search (name, email, team), a league, quick filters with counts. */
+  function viewCaps() {
+    var q = (S.cq || '').trim().toLowerCase(), f = S.cf || '', lgf = S.cqLg || '';
+    var inLg = function (c) { return !lgf || c.access.some(function (a) { return a.season_id === S.seasonId && a.league === lgf; }); };
+    var text = function (c) { return (c.name + ' ' + c.email + ' ' + c.access.filter(function (a) { return a.season_id === S.seasonId; }).map(function (a) { return a.team_name + ' ' + a.team_abb; }).join(' ')).toLowerCase(); };
+    var list = S.captains.filter(function (c) { return capKeep(f)(c) && inLg(c) && (!q || text(c).indexOf(q) >= 0); })
       .sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
-    var seg = '<div class="seg" role="group">' + [['', 'cf_all'], ['noaccess', 'cf_noaccess'], ['never', 'cf_never'], ['off', 'cf_off']].map(function (x) {
-      return '<button type="button" data-cf="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + esc(t(x[1])) + ' (' + n(x[0]) + ')</button>';
+    var seg = '<div class="seg" role="group">' + CAP_FILTERS.map(function (x) {
+      return '<button type="button" data-cf="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + esc(t(x[1])) + ' (' + S.captains.filter(capKeep(x[0])).length + ')</button>';
     }).join('') + '</div>';
-    return '<section class="sec" id="ta-accounts"><div class="sec-h ta-sec-h"><h2>' + t('tabCaptains') + '</h2><button type="button" class="ta-btn ta-btn-sm" data-act="new-cap">+ ' + t('newCaptain') + '</button></div>' +
-      '<p class="note">' + t('capsHint') + '</p>' +
-      '<div class="controls"><input id="ta-cq" class="ctl" type="search" data-cq placeholder="' + esc(t('capSearch')) + '" value="' + esc(S.cq || '') + '" aria-label="' + esc(t('capSearch')) + '">' + seg + '<span class="count">' + esc(t('nCaptains', { n: list.length })) + '</span></div>' +
-      (list.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-caps-t"><thead><tr><th>' + t('name') + '</th><th>' + t('email') + '</th><th>' + t('colTeamsSeason') + '</th><th>' + t('colLogin') + '</th><th></th></tr></thead><tbody>' +
+    var lgs = (S.data ? S.data.leagues : []).filter(function (l) { return !leagueOff(l.slug); });
+    var lsel = '<select class="ctl" data-cqlg aria-label="' + esc(t('league')) + '"><option value="">' + esc(t('allLeaguesF')) + '</option>' + lgs.map(function (l) { return '<option value="' + esc(l.slug) + '"' + (lgf === l.slug ? ' selected' : '') + '>' + esc(l.short) + '</option>'; }).join('') + '</select>';
+    return '<p class="ta-back"><a class="lnk" href="#/config">' + t('backConfig') + '</a></p>' +
+      '<div class="sec-h ta-sec-h"><h1 class="ph">' + t('tabCaptains') + '</h1><button type="button" class="ta-btn ta-btn-sm" data-act="new-cap">+ ' + t('newCaptain') + '</button></div>' +
+      '<p class="lede">' + t('capsLede') + '</p>' +
+      '<section class="sec" id="ta-accounts"><div class="controls"><input id="ta-cq" class="ctl" type="search" data-cq placeholder="' + esc(t('capSearch')) + '" value="' + esc(S.cq || '') + '" aria-label="' + esc(t('capSearch')) + '">' + lsel + '</div>' +
+      '<div class="controls ta-capf">' + seg + '<span class="count">' + esc(t('nCaptains', { n: list.length })) + '</span></div>' +
+      (list.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-caps-t ta-capl"><thead><tr><th>' + t('name') + '</th><th>' + t('colTeamsSeason') + '</th><th class="ta-cap-login">' + t('colLogin') + '</th></tr></thead><tbody>' +
         list.map(captainRow).join('') + '</tbody></table></div>' : '<p class="empty">' + t(S.captains.length ? 'noCapsMatch' : 'noCaptains') + '</p>') + '</section>';
+  }
+  /* Configuration: a short summary of the captains, each number opening the list with that filter. */
+  function captainsSummary() {
+    var chip = function (k, label) { var n = S.captains.filter(capKeep(k)).length; return '<a class="ta-capsum-i" href="#/config/captains' + (k ? '/' + k : '') + '"><b>' + n + '</b> ' + esc(t(label)) + '</a>'; };
+    return '<section class="sec" id="ta-capsum"><div class="sec-h ta-sec-h"><h2>' + t('tabCaptains') + '</h2><span class="ta-btns"><button type="button" class="ta-btn ta-btn-sm ta-ghost" data-act="new-cap">+ ' + t('newCaptain') + '</button>' +
+      '<a class="ta-btn ta-btn-sm" href="#/config/captains">' + t('capsManage') + '</a></span></div><p class="note">' + t('capsHint') + '</p>' +
+      '<div class="ta-capsum">' + chip('', 'capsSumAll') + chip('multi', 'cf_multi') + chip('noaccess', 'cf_noaccess') + chip('never', 'cf_never') + '</div></section>';
   }
 
   /* Person and salary fields of the forms (salaries in millions). */
@@ -623,7 +639,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var teams = S.teams.filter(function (x) { return x.league === l.slug; });
     var onRoster = {}; teams.forEach(function (x) { x.roster.forEach(function (r) { onRoster[r.person_id] = 1; }); });
     var free = S.players.filter(function (p) { return !onRoster[p.id]; });
-    return head + '<p class="note">' + t('setupLink') + ' <a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + '</a> · <a class="lnk" href="#/config">' + t('accountsLink') + '</a></p>' + (l.section === 'draft' ? signupPanel(l) : '') +
+    return head + '<p class="note">' + t('setupLink') + ' <a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('tabLgSetup') + '</a> · <a class="lnk" href="#/config/captains">' + t('accountsLink') + '</a></p>' + (l.section === 'draft' ? signupPanel(l) : '') +
       '<datalist id="ta-free">' + free.map(function (p) { return '<option value="' + esc(p.name + ' · #' + p.id) + '">'; }).join('') + '</datalist>' +
       (teams.length ? '<div class="ta-teams">' + teams.map(function (tm) { return teamCard(tm, l, rule); }).join('') + '</div>' : '<p class="note">' + t('noTeamsLeague') + '</p>');
   }
@@ -664,7 +680,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var seasons = '<section class="sec"><div class="sec-h ta-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ta-btn ta-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
       (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl"><thead><tr><th>' + t('name') + '</th><th class="num">' + t('nbhpaShort') + '</th><th>' + t('status') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
     var head = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>';
-    if (!s || !S.data) return head + seasons + accountsPanel();
+    if (!s || !S.data) return head + seasons + captainsSummary();
     /* the leagues of the season: on or off (a league off is hidden from the daily work); its rules and teams are in its settings */
     var lgs = '<section class="sec"><div class="sec-h ta-sec-h"><h2>' + t('leaguesOfSeason') + '</h2></div><p class="note">' + t('leaguesHint2') + '</p>' + (S.data.sections || []).map(function (sec) {
       return '<h3 class="ta-sec-sub">' + esc(nameOf(sec)) + '</h3><ul class="ta-lgrows">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
@@ -674,7 +690,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
           '<label class="ta-switch ta-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOnShort') + '</label></li>';
       }).join('') + '</ul>';
     }).join('') + '</section>';
-    return head + '<div class="ta-cfg-top">' + seasons + lgs + '</div>' + accountsPanel() + adminsPanel();
+    return head + '<div class="ta-cfg-top">' + seasons + lgs + '</div>' + captainsSummary() + adminsPanel();
   }
   /* The admins (super admins only; a super admin is set in the SUPER_ADMINS secret and cannot be disabled or deleted here). */
   function adminsPanel() {
@@ -695,7 +711,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
    * The account and its actions; the access of every season (with the history); their player profile in the tools
    * (sex, birth, NBHPA no., lists and salaries, teams); the replacements they declared; the log of their account. */
   function viewCaptain() {
-    var back = '<p class="ta-back"><a class="lnk" href="#/config">' + t('backCaps') + '</a></p>';
+    var back = '<p class="ta-back"><a class="lnk" href="#/config/captains">' + t('backCaps') + '</a></p>';
     var x = S.cap, c = x && x.captain;
     if (!c) return back + '<p class="empty">' + t(S.capMissing ? 'capNotFound' : 'loading') + '</p>';
     var info = function (k, v) { return '<div><dt>' + esc(t(k)) + '</dt><dd>' + v + '</dd></div>'; };
@@ -874,7 +890,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       });
     });
     if (d.nbhpa && (d.nbhpa.add || d.nbhpa.update)) todo.push(row('data-games-import', d.nbhpa.add + d.nbhpa.update, esc(t('todoNbhpaRow', { a: d.nbhpa.add, u: d.nbhpa.update }))));
-    if (d.captainsNeverIn) todo.push(row('href="#/config"', d.captainsNeverIn, esc(t('todoNeverRow')), 'a'));
+    if (d.captainsNeverIn) todo.push(row('href="#/config/captains/never"', d.captainsNeverIn, esc(t('todoNeverRow')), 'a'));
     var todoP = todo.length ? '<section class="ta-panel"><h2 class="ta-ph">' + t('pTodo') + '</h2><ul class="ta-todo2">' + todo.join('') + '</ul></section>' : '';
     return head + leaguesP + (todoP ? '<div class="ta-grid2 ta-grid-wide"><div class="ta-col">' + val + '</div><div class="ta-col">' + todoP + '</div></div>' : val) +
       '<p class="ta-foot-link"><a class="lnk" href="#/audit">' + t('auditLink') + '</a></p>';
@@ -1080,7 +1096,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   TAB_ICONS.valider = '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>';
   TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
   /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
-  var navTab = function () { return { captain: 'config', person: 'players', req: 'valider' }[S.tab] || S.tab; };
+  var navTab = function () { return { captain: 'config', caps: 'config', person: 'players', req: 'valider' }[S.tab] || S.tab; };
   var pendAll = function () { return Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0); };
   function levelTabs() {
     var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
@@ -1127,7 +1143,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="ta-tools">' + (S.me && pendAll() ? '<a class="ta-pill" href="#/valider" title="' + esc(t('tabValider')) + '"><b>' + pendAll() + '</b> <span class="ta-long">' + esc(t('pillValider')) + '</span><span class="ta-short">✓</span></a>' : '') +
       acctMenu(S.me ? S.me.email : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, caps: viewCaps, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     if (!S.booting) $('#main').setAttribute('data-ready', '1');   // shared/guard.js: the page started
@@ -1285,6 +1301,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (err) { /* ignore */ } }
   });
   document.addEventListener('change', function (e) {
+    if (e.target.hasAttribute && e.target.hasAttribute('data-cqlg')) { S.cqLg = e.target.value; render(); return; }
     if (e.target.id === 'ta-season') { S.seasonId = Number(e.target.value); S.msg = null; refresh(); }
     if (e.target.hasAttribute && e.target.hasAttribute('data-league-on')) {
       api('/season-leagues', 'POST', { season_id: S.seasonId, league: e.target.getAttribute('data-league-on'), enabled: e.target.checked }).then(function (r) { done(r); });
@@ -1310,7 +1327,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (b.hasAttribute('data-home-cal')) { var hc = b.getAttribute('data-home-cal').split(':'); location.hash = hrefL(hc[0], 'cal') + '/' + hc[1]; return; }
     if (b.hasAttribute('data-home-teams')) { goScope(b.getAttribute('data-home-teams'), 'teams'); return; }
     if (b.hasAttribute('data-home-miss')) { var hm = b.getAttribute('data-home-miss').split(':'); S.plf = ''; S.pf.miss = hm[1]; location.hash = hrefS(hm[0]); return; }
-    if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config'; return; }
+    if (b.hasAttribute('data-home-accounts')) { location.hash = '#/config/captains/never'; return; }
     /* scope */
     if (b.hasAttribute('data-cf')) { S.cf = b.getAttribute('data-cf'); render(); return; }
     if (b.hasAttribute('data-season-live')) { S.seasonId = num('data-season-live'); S.msg = null; refresh(); return; }
@@ -1360,7 +1377,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (b.hasAttribute('data-revoke')) { if (window.confirm(t('confirmRevoke'))) api('/access/' + b.getAttribute('data-revoke') + '/revoke', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-disable')) { if (window.confirm(t('confirmDisable'))) api('/captains/' + b.getAttribute('data-disable') + '/disable', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-enable')) { api('/captains/' + b.getAttribute('data-enable') + '/enable', 'POST', {}).then(function (r) { done(r); }); return; }
-    if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: nm }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { if (r.ok && S.tab === 'captain') { S.flash = { kind: 'ok', text: t('deleted') }; location.hash = '#/config'; return; } done(r, t('deleted')); }); return; }
+    if (b.hasAttribute('data-delete-cap')) { if (window.confirm(t('confirmDeleteCap', { n: nm }))) api('/captains/' + b.getAttribute('data-delete-cap') + '/delete', 'POST', {}).then(function (r) { if (r.ok && S.tab === 'captain') { S.flash = { kind: 'ok', text: t('deleted') }; location.hash = '#/config/captains'; return; } done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-delete-season')) { if (window.confirm(t('confirmDeleteSeason', { n: nm }))) api('/seasons/' + b.getAttribute('data-delete-season') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
     if (b.hasAttribute('data-del-list')) { if (window.confirm(t('confirmRemoveList', { n: nm }))) api('/section-players/' + b.getAttribute('data-del-list') + '/delete', 'POST', {}).then(function (r) { done(r); }); return; }
     if (b.hasAttribute('data-del-person')) { if (window.confirm(t('confirmDeletePerson', { n: nm }))) api('/people/' + b.getAttribute('data-del-person') + '/delete', 'POST', {}).then(function (r) { done(r, t('deleted')); }); return; }
@@ -1377,6 +1394,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!p0) { S.level = 'ldhml'; S.tab = 'home'; }
     else if (p0 === 'valider') { S.level = 'ldhml'; S.tab = 'valider'; }
     else if (p0 === 'r' && Number(parts[1])) { S.level = 'ldhml'; S.tab = 'req'; if (S.reqId !== Number(parts[1])) S.req = null; S.reqId = Number(parts[1]); }
+    else if (p0 === 'config' && parts[1] === 'captains') { S.level = 'ldhml'; S.tab = 'caps'; S.cf = CAP_FILTERS.some(function (x) { return x[0] === (parts[2] || ''); }) ? parts[2] || '' : ''; }
     else if (p0 === 'config' && parts[1] === 'captain') { S.level = 'ldhml'; S.tab = 'captain'; if (S.capId !== Number(parts[2])) S.cap = null; S.capId = Number(parts[2]) || 0; }
     else if (TOP_TABS.indexOf(p0) >= 0) { S.level = 'ldhml'; S.tab = p0; }
     else if (sec) {
