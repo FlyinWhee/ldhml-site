@@ -657,20 +657,24 @@ assert.equal((await call('/api/nothing')).status, 404);
 }
 
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
-for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'admin/index.html', 'captain/index.html', 'index.html'])
+for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'admin/index.html', 'captain/index.html', 'index.html'])
   assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');
 
 // ---- the admin page in a browser (jsdom), wired to the Worker ----
 await DB.prepare('DELETE FROM login_codes').run();
 const html = await readFile(path.join(root, 'dist-tools/admin/index.html'), 'utf8');
 const scripts = { '/assets/look.js': await readFile(path.join(root, 'dist-tools/assets/look.js'), 'utf8'), '/admin/admin.js': await readFile(path.join(root, 'dist-tools/admin/admin.js'), 'utf8'),
-  '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8') };
+  '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'),
+  '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/shared/scroll.js': await readFile(path.join(root, 'dist-tools/shared/scroll.js'), 'utf8') };
 const errors = []; const vc = new VirtualConsole(); vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
 const jar = {};
 const dom = new JSDOM(html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + scripts[src] + '</script>'), {
   runScripts: 'dangerously', url: ORIGIN + '/admin/', virtualConsole: vc,
   beforeParse(w) {
     w.confirm = () => true;
+    // jsdom has no layout: a scroll position the page can read and set (shared/scroll.js)
+    let sy = 0; Object.defineProperty(w, 'scrollY', { get: () => sy, configurable: true });
+    w.scrollTo = (x, y) => { sy = y || 0; w.dispatchEvent(new w.Event('scroll')); };
     w.fetch = async (u, init = {}) => {
       const headers = { ...(init.headers || {}), Origin: ORIGIN, 'CF-Connecting-IP': '198.51.100.9' };
       if (jar.c) headers.Cookie = jar.c;
@@ -716,7 +720,13 @@ const ateams = await DB.prepare('SELECT COUNT(*) AS n FROM teams WHERE season_id
 assert.equal(d.querySelectorAll('.ta-team').length, ateams, 'one card per team of the league');
 w.location.hash = '#/config'; await wait(200);
 assert.ok(d.querySelector('#ta-capsum a[href="#/config/captains"]') && !d.querySelector('#ta-accounts'), 'Configuration: a captains summary, not the whole list');
+w.scrollTo(0, 700);   // the person scrolled down Configuration
 w.location.hash = '#/config/captains'; await wait(200);
+assert.equal(w.scrollY, 0, 'a new page opens at the top (owner, 2026-10-21), not where the old page was scrolled');
+w.history.back(); await wait(200);
+assert.ok(w.location.hash === '#/config' && w.scrollY === 700, 'Back returns to the place left on the page before');
+w.location.hash = '#/config/captains'; await wait(200);
+assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top');
 d.querySelector('[data-act="new-cap"]').click(); await wait(20);
 assert.ok(d.querySelector('#modal .ta-modal #f-cap') && d.documentElement.classList.contains('ta-modal-open'), 'New captain opens a modal');
 d.querySelector('#f-cap [name=name]').value = 'Nouvelle Capitaine'; d.querySelector('#f-cap [name=email]').value = 'cap2@example.test';
@@ -996,11 +1006,12 @@ await call('/api/admin/rules', { method: 'POST', cookie: cookie3b, body: { seaso
 const cjar = {};   // one browser: the session cookie stays across page loads
 const openCaptainPage = async () => {
   const chtml = await readFile(path.join(root, 'dist-tools/captain/index.html'), 'utf8');
-  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
+  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/scroll.js': scripts['/shared/scroll.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
   const cdom = new JSDOM(chtml.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + cscripts[src] + '</script>'), {
     runScripts: 'dangerously', url: ORIGIN + '/captain/', virtualConsole: vc,
     beforeParse(cw) {
       cw.confirm = () => true;
+      let sy = 0; Object.defineProperty(cw, 'scrollY', { get: () => sy, configurable: true }); cw.scrollTo = (x, y) => { sy = y || 0; };
       cw.fetch = async (u, init = {}) => {
         const headers = { ...(init.headers || {}), Origin: ORIGIN, 'CF-Connecting-IP': '198.51.100.10' };
         if (cjar.c) headers.Cookie = cjar.c;

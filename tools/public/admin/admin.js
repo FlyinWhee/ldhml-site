@@ -1420,10 +1420,11 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     } else S.sub = null;
   }
   window.addEventListener('hashchange', function () {
+    var y = window.LDScroll.route();   // a new page at the top; Back returns to the place left (shared/scroll.js)
     if ($('#more')) $('#more').hidden = true;
     route();
     S.msg = S.flash; S.flash = null; S.modal = null;
-    if (S.me) refresh(); else render();
+    if (S.me) refresh().then(function () { window.LDScroll.to(y); }); else { render(); window.LDScroll.to(y); }
   });
 
   /* ---------- start ---------- */

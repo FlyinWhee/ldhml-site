@@ -393,9 +393,10 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     else if (x.tagName === 'SELECT' && x.hasAttribute('data-cpf')) { S.pf[x.getAttribute('data-cpf')] = x.value; render(); }
   });
   window.addEventListener('hashchange', function () {
+    var y = window.LDScroll.route();   // a new page at the top; Back returns to the place left (shared/scroll.js)
     S.msg = S.flash; S.flash = null;
-    if (!S.me) { render(); return; }
-    if (/^#remplacement/.test(location.hash)) { route(); render(); document.documentElement.scrollTop = 0; } else refresh();
+    if (!S.me) { render(); window.LDScroll.to(y); return; }
+    if (/^#remplacement/.test(location.hash)) { route(); render(); window.LDScroll.to(y); } else refresh().then(function () { window.LDScroll.to(y); });
   });
   var refresh = function () { return load().then(render); };
   var pickTeam = function (id) { S.teamId = id; try { localStorage.setItem('ldhml-captain-team', String(id)); } catch (e) { /* ignore */ } };
