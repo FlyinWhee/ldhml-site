@@ -1,5 +1,5 @@
 {
-  "next": 240,
+  "next": 246,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -239,6 +239,12 @@
     {"id":"L0236","nid":"200565","name":"Xavier Lafond","sex":"m","pids":["596235"],"since":"Automne 2026"},
     {"id":"L0237","nid":"199371","name":"Yves Bourgeois","sex":"m","pids":["591522"],"since":"Automne 2026"},
     {"id":"L0238","nid":"150699","name":"Zachary Wolfe","sex":"m","pids":["422038"],"since":"Automne 2026"},
-    {"id":"L0239","nid":"81540","name":"Zackary Boudreau","sex":"m","pids":["475910"],"since":"Automne 2026"}
+    {"id":"L0239","nid":"81540","name":"Zackary Boudreau","sex":"m","pids":["475910"],"since":"Automne 2026"},
+    {"id":"L0240","nid":"76376","name":"André Prud'homme","sex":"m","pids":["246784"],"since":"Automne 2026"},
+    {"id":"L0241","nid":"47437","name":"David Rose-Martel","sex":"m","pids":["295740"],"since":"Automne 2026"},
+    {"id":"L0242","nid":"44328","name":"Guillaume Leblanc","sex":"m","pids":["244186"],"since":"Automne 2026"},
+    {"id":"L0243","nid":"120140","name":"Miguel Bellerose","sex":"m","pids":["325996"],"since":"Automne 2026"},
+    {"id":"L0244","nid":"147779","name":"Nathan Chateauneuf","sex":"m","pids":["415437"],"since":"Automne 2026"},
+    {"id":"L0245","nid":"60824","name":"Sabrina Beauchemin","sex":"f","pids":["244999"],"since":"Automne 2026"}
   ]
 }
