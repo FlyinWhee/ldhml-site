@@ -6,6 +6,7 @@ import path from 'node:path';
 
 globalThis.DOMParser = new JSDOM('').window.DOMParser;
 await import('../shared/parsers.js');
+await import('../shared/refresh.js');   // the refresh steps, shared with the tools (admin: Données du site public)
 
 export const { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap, weighGoals } = globalThis.LDParsers;
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,39 +17,8 @@ export async function readJson(file) {
 }
 export const loadLeagues = async () => JSON.parse(await readFile(path.join(ROOT, 'leagues.json'), 'utf8'));
 
-/** Turn raw responses of one league into the snapshot files. Returns { problems, out }.
- *  raw = { standings: object, players: html, goalies: html, schedule: html, recaps: { gameId: html } } */
-export function assemble(raw, lg, cfg, oldBox) {
-  const teams = parseStandings(typeof raw.standings === 'string' ? JSON.parse(raw.standings) : raw.standings);
-  const players = parsePlayers(raw.players);
-  const goalies = parseGoalies(raw.goalies);
-  const games = parseSchedule(raw.schedule, teams);
-
-  const problems = [];
-  if (teams.length < 2) problems.push('fewer than 2 teams');
-  if (games.length < 1) problems.push('no games');
-  if (games.some((g) => !g.id || !g.away || !g.home || !g.date)) problems.push('incomplete game rows');
-  if (players.length < 1) problems.push('no players');
-
-  const box = oldBox ?? { names: {}, games: {} };
-  let boxSaved = 0;
-  for (const [id, html] of Object.entries(raw.recaps ?? {})) {
-    try {
-      const { game, names } = parseRecap(html);
-      if (game.t.length !== 2) throw new Error('unexpected page layout');
-      box.games[id] = game;
-      Object.assign(box.names, names);
-      boxSaved++;
-    } catch (e) { console.warn(`  box score ${id} skipped: ${e.message}`); }
-  }
-  weighGoals(box, games, teams, players);
-  const meta = {
-    league: 'LDHML', category: lg.short, slug: lg.slug, name: lg.name, season: cfg.seasonName,
-    leagueId: cfg.leagueId, seasonId: cfg.seasonId, categoryId: lg.categoryId,
-    fetchedAt: new Date().toISOString(), source: 'admin.nbhpa.com'
-  };
-  return { problems, boxSaved, out: { meta, teams, games, players, goalies, box } };
-}
+/** Turn raw responses of one league into the snapshot files. Returns { problems, boxSaved, out }. In shared/refresh.js. */
+export const assemble = (raw, lg, cfg, oldBox) => globalThis.LDRefresh.assemble(raw, lg, cfg, oldBox);
 
 export async function saveLeague(slug, out) {
   const dir = path.join(DATA_DIR, slug);

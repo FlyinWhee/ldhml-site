@@ -620,6 +620,7 @@ assert.equal((await call('/api/nothing')).status, 404);
   };
   assert.equal((await dcall('/api/public/season')).data.demo, true, 'the page can tell it is the demo');
   assert.equal((await call('/api/public/season')).data.demo, false);
+  assert.notEqual((await dcall('/api/admin/refresh/publish', { method: 'POST', body: {} })).data.error, 'demo_readonly', 'the stats site refresh works in the demo (it writes GitHub, not the demo database)');
   assert.equal((await dcall('/api/admin/login/start', { method: 'POST', body: { email: 'boss@example.test' } })).data.error, 'demo_readonly', 'no email sign-in in the demo');
   assert.equal((await dcall('/api/admin/demo-login', { method: 'POST', body: { key: 'wrong-key-0123456' } })).status, 401, 'the demo key is required');
   r = await dcall('/api/admin/demo-login', { method: 'POST', body: { key: denv.DEMO_KEY } });
@@ -657,7 +658,7 @@ assert.equal((await call('/api/nothing')).status, 404);
 }
 
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
-for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'admin/index.html', 'captain/index.html', 'index.html'])
+for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'admin/refresh-run.js', 'admin/index.html', 'captain/index.html', 'index.html'])
   assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');
 
 // ---- the admin page in a browser (jsdom), wired to the Worker ----
@@ -665,9 +666,22 @@ await DB.prepare('DELETE FROM login_codes').run();
 const html = await readFile(path.join(root, 'dist-tools/admin/index.html'), 'utf8');
 const scripts = { '/assets/look.js': await readFile(path.join(root, 'dist-tools/assets/look.js'), 'utf8'), '/admin/admin.js': await readFile(path.join(root, 'dist-tools/admin/admin.js'), 'utf8'),
   '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'),
-  '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/shared/scroll.js': await readFile(path.join(root, 'dist-tools/shared/scroll.js'), 'utf8') };
+  '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/shared/scroll.js': await readFile(path.join(root, 'dist-tools/shared/scroll.js'), 'utf8'),
+  '/assets/parsers.js': await readFile(path.join(root, 'dist-tools/assets/parsers.js'), 'utf8'), '/assets/refresh.js': await readFile(path.join(root, 'dist-tools/assets/refresh.js'), 'utf8'),
+  '/admin/refresh-run.js': await readFile(path.join(root, 'dist-tools/admin/refresh-run.js'), 'utf8') };
 const errors = []; const vc = new VirtualConsole(); vc.on('jsdomError', (e) => errors.push(String(e.stack || e)));
 const jar = {};
+// Outside the Worker: raw.githubusercontent.com serves this checkout; admin.nbhpa.com is a fake league server (set per test).
+const RAWBASE = 'https://raw.githubusercontent.com/FlyinWhee/ldhml-site/';
+let nbhpa = async () => ({ ok: false, status: 404 });
+const outside = async (u, init) => {
+  if (u.startsWith(RAWBASE)) {
+    const p = u.slice(RAWBASE.length).replace(/^[0-9a-f]{40}\//, '');
+    try { const text = await readFile(path.join(root, p), 'utf8'); return { ok: true, status: 200, json: async () => JSON.parse(text), text: async () => text }; }
+    catch { return { ok: false, status: 404, json: async () => null, text: async () => '' }; }
+  }
+  return nbhpa(u, init);
+};
 const dom = new JSDOM(html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + scripts[src] + '</script>'), {
   runScripts: 'dangerously', url: ORIGIN + '/admin/', virtualConsole: vc,
   beforeParse(w) {
@@ -676,6 +690,7 @@ const dom = new JSDOM(html.replace(/<script src="([^"]+)"><\/script>/g, (m, src)
     let sy = 0; Object.defineProperty(w, 'scrollY', { get: () => sy, configurable: true });
     w.scrollTo = (x, y) => { sy = y || 0; w.dispatchEvent(new w.Event('scroll')); };
     w.fetch = async (u, init = {}) => {
+      if (/^https:\/\/(admin\.nbhpa\.com|raw\.githubusercontent\.com)\//.test(String(u))) return outside(String(u), init);
       const headers = { ...(init.headers || {}), Origin: ORIGIN, 'CF-Connecting-IP': '198.51.100.9' };
       if (jar.c) headers.Cookie = jar.c;
       const res = await worker.fetch(new Request(new URL(u, ORIGIN), { method: init.method || 'GET', headers, body: init.body }), env);
@@ -727,6 +742,117 @@ w.history.back(); await wait(200);
 assert.ok(w.location.hash === '#/config' && w.scrollY === 700, 'Back returns to the place left on the page before');
 w.location.hash = '#/config/captains'; await wait(200);
 assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top');
+
+// ---- Public site data (#/config/refresh): the stats site refresh, run in the browser, published to GitHub (owner, 2026-10-30) ----
+{
+  const SHA0 = 'a'.repeat(40), SHA1 = 'b'.repeat(40), gh = { trees: [], refs: [] };
+  const realFetch = globalThis.fetch;
+  // the Worker's fetch: the GitHub API (fake) and raw files (this checkout)
+  globalThis.fetch = async (u, init = {}) => {
+    u = String(u);
+    const ok = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
+    if (u.startsWith(RAWBASE)) { const r = await outside(u, init); return r.ok ? new Response(await r.text()) : new Response('', { status: 404 }); }
+    assert.ok(u.startsWith('https://api.github.com/repos/FlyinWhee/ldhml-site/'), 'the Worker calls GitHub only: ' + u);
+    assert.ok(!/nbhpa/.test(u), 'the Worker never fetches NBHPA');
+    assert.equal(init.headers.Authorization, 'Bearer test-token', 'GitHub calls carry the token');
+    const p = u.replace('https://api.github.com/repos/FlyinWhee/ldhml-site', ''), m = init.method || 'GET';
+    if (m === 'GET' && p === '/git/ref/heads/main') return ok({ object: { sha: SHA0 } });
+    if (m === 'GET' && p === '/git/commits/' + SHA0) return ok({ sha: SHA0, tree: { sha: 't0' } });
+    if (m === 'POST' && p === '/git/trees') { gh.trees.push(JSON.parse(init.body)); return ok({ sha: 't1' }, 201); }
+    if (m === 'POST' && p === '/git/commits') { const c = JSON.parse(init.body); assert.deepEqual(c.parents, [SHA0], 'the commit sits on the commit the browser read'); assert.ok(!/@/.test(c.message), 'no email in the commit'); return ok({ sha: SHA1 }, 201); }
+    if (m === 'PATCH' && p === '/git/refs/heads/main') { const b = JSON.parse(init.body); gh.refs.push(b); return ok({ object: { sha: b.sha } }); }
+    if (m === 'GET' && p.startsWith('/actions/runs?head_sha=' + SHA1)) return ok({ workflow_runs: [{ event: 'push', status: 'completed', conclusion: 'success', html_url: 'https://github.com/x/runs/1' }] });
+    return ok({ message: 'not found' }, 404);
+  };
+  // a fake NBHPA league (the samples of scraper/test.mjs): 2 teams, 1 played game, 1 player, 1 goalie
+  const nb = [];
+  let inflight = 0, maxInflight = 0, good = true;
+  const sv = (k, v) => ({ key: k, val: v });
+  const team = (id, name, abb, pos) => ({ pk: null, values: [sv('team_id', id), sv('team_name', name), sv('team_abb', abb), sv('team_pic', ''), sv('position', pos), sv('gp', 1), sv('wins_tot', pos === 1 ? 1 : 0), sv('losses', pos === 1 ? 0 : 1), sv('ot', 0), sv('ot_loss', 0), sv('pts', pos === 1 ? 2 : 0), sv('gf', 10), sv('ga', 7), sv('diff', 3), sv('pts_gp', '1.00')] });
+  const stats = (rows) => '<script>\n var stats_player = ' + JSON.stringify(rows) + ';\n</script>';
+  const game = '<table><tr class=" position-relative schedule_container border "><td><div class="d-none d-md-inline-block"><div class="team_name d-inline-block"><a href="https://x/equipes/204339">TOP GUN</a></div><div class="team_name d-inline-block"><a href="https://x/equipes/204208">Flintstones</a></div></div></td>' +
+    '<td><div class="game_date"> Mercredi<br> 2026-09-16 </div></td><td><div class="game_date"> 18:00 </div><div class="game_venue"> Surface(1) </div><span class="score">TOP 10, </span> <span class="score loser">FLI 7</span></td><td><a href="https://x/sommaire/9990001" title="SOMMAIRE"></a></td></tr></table>';
+  nbhpa = async (u, init = {}) => {
+    inflight++; maxInflight = Math.max(maxInflight, inflight);
+    await wait(2); nb.push({ u: u.replace('https://admin.nbhpa.com', ''), body: String(init.body || '') });
+    inflight--;
+    const okText = (t) => ({ ok: true, status: 200, json: async () => JSON.parse(t), text: async () => t });
+    const q = u.replace('https://admin.nbhpa.com', '');
+    if (q.startsWith('/table_data.php')) return okText(good ? JSON.stringify({ 0: team('204339', 'TOP GUN', 'TOP', 1), 1: team('204208', 'Flintstones', 'FLI', 2), length: 2 }) : '{}');
+    if (q.startsWith('/sites/site_stats_players.php')) return okText(stats([{ player_id: '9990001', nbhpa_player_id: '99990001', full_name: 'Zz Testeur Refresh', sex: 'm', ranking: 'H8', teams: 'TOP', mj: '1', g: '1', a: '0', p: '1', pen: '0', bg: '0' }]));
+    if (q.startsWith('/sites/site_stats_goalies.php')) return okText(stats([{ player_id: '9990002', nbhpa_player_id: '99990002', full_name: 'Zz Gardien Refresh', sex: 'f', ranking: 'H12', teams: 'FLI', mj: '1', w: '0', l: '1', t: '0', sa: '20', sv: '10', ga: '10', pct: '0.500', gaa: '10', gaat: '10', so: '0', mp: '2160', minutes_per_period: '12', periods_per_game: '3' }]));
+    if (q.startsWith('/sites/site_schedule_include.php')) return okText(good ? game : '<html></html>');
+    if (q.startsWith('/sites/site_game_recap.php')) return okText('<html></html>');   // an unreadable box score: skipped, the rest goes on
+    return { ok: false, status: 404 };
+  };
+  env.GITHUB_TOKEN = 'test-token';
+  w.LDHML_REFRESH_DELAY = 0; w.LDHML_REFRESH_POLL = 0;
+  Object.defineProperty(d, 'hidden', { configurable: true, get: () => false });
+  const lgs = season.leagues;
+  w.location.hash = '#/config'; await wait(200);
+  assert.ok(d.querySelector('#ta-rfsum a[href="#/config/refresh"]'), 'Configuration (super admin): the public site data card');
+  w.location.hash = '#/config/refresh'; await wait(300);
+  assert.equal(d.querySelectorAll('[data-rf-lg]').length, lgs.length, 'one checkbox per league, all checked');
+  assert.ok(/\d{4}|20\d\d/.test(d.querySelector('.ta-rf-lg .note').textContent), 'each league shows the date of its saved data');
+  for (const l of lgs.filter((x) => x.slug !== 'retro')) { const c = d.querySelector('[data-rf-lg="' + l.slug + '"]'); c.checked = false; c.dispatchEvent(new w.Event('change', { bubbles: true })); }
+  await wait(20);
+  d.querySelector('[data-rf-go]').click();
+  for (let i = 0; i < 100 && !d.querySelector('[data-rf-go]'); i++) await wait(30);
+  const logText = () => d.getElementById('ta-rflog').textContent;
+  assert.ok(/Le site public est à jour/.test(logText()), 'the run ends with the site up to date:\n' + logText());
+  for (const x of ['Départ : commit aaaaaaa', 'Retro : lecture de NBHPA', 'classement', 'statistiques des joueurs', 'calendrier', 'Retro : 2 équipes, 1 matchs, 1 joueurs, 1 gardiens, 0 sommaires', 'box score 9990001 skipped', 'Registre des personnes', 'Envoi de 7 fichiers', 'Publié : commit bbbbbbb'])
+    assert.ok(logText().includes(x), 'the log says: ' + x + '\n' + logText());
+  // polite and public: the same public pages as the script, one at a time, this league only
+  assert.ok(nb.length >= 4 && nb.every((c) => /^\/(table_data\.php|sites\/site_(stats_players|stats_goalies|schedule_include|game_recap)\.php)/.test(c.u)), 'only the public league pages: ' + nb.map((c) => c.u).join(' '));
+  assert.ok(!nb.some((c) => /livegame|admin\/|socket|ajax/.test(c.u)), 'never a staff path');
+  assert.equal(maxInflight, 1, 'one NBHPA request at a time');
+  const retro = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8')).leagues.find((l) => l.slug === 'retro');
+  assert.ok(nb.every((c) => !/category_id/.test(c.u + c.body) || (c.u + c.body).includes(String(retro.categoryId)) || /game_recap/.test(c.u)), 'only the league asked');
+  // the commit: the 6 files of Retro and the registry with the new people (next ids, never a changed one)
+  assert.equal(gh.trees.length, 1, 'one commit');
+  const paths = gh.trees[0].tree.map((x) => x.path).sort();
+  assert.deepEqual(paths, ['data/retro/box.json', 'data/retro/games.json', 'data/retro/goalies.json', 'data/retro/meta.json', 'data/retro/players.json', 'data/retro/teams.json', 'registry/people.json']);
+  const reg0 = JSON.parse(await readFile(path.join(root, 'registry/people.json'), 'utf8'));
+  const reg1 = JSON.parse(gh.trees[0].tree.find((x) => x.path === 'registry/people.json').content);
+  assert.equal(reg1.people.length, reg0.people.length + 2, 'two new people');
+  assert.ok(reg0.people.every((p, i) => reg1.people[i].id === p.id && reg1.people[i].nid === p.nid), 'every id stays');
+  assert.equal(reg1.people.find((p) => p.nid === '99990001').id, 'L' + String(reg0.next + 1).padStart(4, '0'), 'new ids follow "next" (in name order)');
+  assert.deepEqual(gh.refs, [{ sha: SHA1, force: false }], 'main moves forward only (never forced)');
+  assert.ok(await DB.prepare("SELECT 1 FROM audit WHERE action = 'data.publish' AND target = 'github:bbbbbbb'").first(), 'the publish is in the log');
+  // the Worker's own checks (rule 4; registry rules), and the pace between publishes
+  const files = Object.fromEntries(gh.trees[0].tree.map((x) => [x.path, x.content]));
+  let r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files } });
+  assert.equal(r.status, 429, 'one publish every 2 minutes at most');
+  await DB.prepare("UPDATE audit SET at = at - 600 WHERE action = 'data.publish'").run();
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'data/retro/games.json': '[]' } } });
+  assert.ok(r.status === 400 && r.data.problem === 'games', 'no games: refused');
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { 'data/retro/games.json': files['data/retro/games.json'] } } });
+  assert.ok(r.status === 400 && r.data.error === 'incomplete', 'a league goes with all its files');
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'site/js/1-core.js': 'x' } } });
+  assert.ok(r.status === 400 && r.data.error === 'path', 'only data/ and the registry');
+  const regGone = JSON.parse(files['registry/people.json']); regGone.people.shift();
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'registry/people.json': JSON.stringify(regGone) } } });
+  assert.ok(r.status === 400 && /^registry/.test(r.data.problem), 'a person removed from the registry: refused');
+  const regMoved = JSON.parse(files['registry/people.json']); regMoved.people[0].nid = '1';
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'registry/people.json': JSON.stringify(regMoved) } } });
+  assert.ok(r.status === 400 && /^registry\.changed/.test(r.data.problem), 'an id that changes person: refused');
+  assert.equal(gh.trees.length, 1, 'nothing refused reached GitHub');
+  // a bad answer from NBHPA: the league is refused, nothing is published
+  good = false; nb.length = 0;
+  d.querySelector('[data-rf-go]').click();
+  for (let i = 0; i < 100 && !d.querySelector('[data-rf-go]'); i++) await wait(30);
+  assert.ok(/Retro : refusé, les données en place restent/.test(logText()) && /rien à publier/.test(logText()), 'bad NBHPA answer: refused, nothing published\n' + logText());
+  assert.equal(gh.trees.length, 1, 'nothing published after a bad answer');
+  // a captain or a plain admin cannot; no token: "not set up"
+  const supers = env.SUPER_ADMINS; env.SUPER_ADMINS = 'root@example.test';
+  r = await call('/api/admin/refresh/base', { cookie: jar.c }); env.SUPER_ADMINS = supers;
+  assert.equal(r.status, 403, 'super admins only');
+  delete env.GITHUB_TOKEN;
+  r = await call('/api/admin/refresh/base', { cookie: jar.c });
+  assert.ok(r.status === 200 && r.data.configured === false && r.data.last && r.data.last.commit === SHA1, 'no token: not set up (the last publish still shows)');
+  globalThis.fetch = realFetch;
+  w.location.hash = '#/config/captains'; await wait(200);   // back where the next tests start
+}
 d.querySelector('[data-act="new-cap"]').click(); await wait(20);
 assert.ok(d.querySelector('#modal .ta-modal #f-cap') && d.documentElement.classList.contains('ta-modal-open'), 'New captain opens a modal');
 d.querySelector('#f-cap [name=name]').value = 'Nouvelle Capitaine'; d.querySelector('#f-cap [name=email]').value = 'cap2@example.test';

@@ -267,5 +267,7 @@ await mkdir(path.join(toolsOut, 'data'), { recursive: true });
 await writeFile(path.join(toolsOut, 'assets/site.css'), hubCss);                 // same tokens, badges and league logos as the site
 await writeFile(path.join(toolsOut, 'assets/look.js'), await read('shared/look.js'));
 await writeFile(path.join(toolsOut, 'assets/ranks.js'), await read('shared/ranks.js'));
+await writeFile(path.join(toolsOut, 'assets/parsers.js'), await read('shared/parsers.js'));   // the stats site refresh in the admin (Données du site public)
+await writeFile(path.join(toolsOut, 'assets/refresh.js'), await read('shared/refresh.js'));
 await writeFile(path.join(toolsOut, 'data/season.json'), JSON.stringify(seasonExport));
 console.log(`Built the home page, ${sections.length} sections (${sections.map((s) => s.path).join(', ')}) and ${leagues.length} leagues: ${leagues.map((l) => `${sectionLinks[l.lg.section].path}/${pathOf(l.lg)}`).join(', ')} (about ${(total / outDirs.length / leagues.length / 1024).toFixed(0)} KB each). ${Object.keys(people).length} people.`);

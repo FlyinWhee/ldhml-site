@@ -158,6 +158,28 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
       backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
+      rfH: 'Données du site public', rfOpen: 'Rafraîchir →', rfBack: '← Configuration',
+      rfLede: 'Rafraîchit les statistiques du site public sans script sur un ordinateur : ce navigateur lit NBHPA (les mêmes étapes que npm run fetch:force), puis les données vérifiées sont publiées sur GitHub. Le site public se reconstruit en une minute environ.',
+      rfSumHint: 'Lire NBHPA et publier les statistiques du site public (GitHub Pages), avec le journal de chaque étape.',
+      rfLast: 'Dernière publication : {at}, par {by} ({lg}).', rfNever: 'Aucune publication depuis les outils.', rfLeagues: 'Ligues à lire', rfDataOf: 'données du {d}', rfNoData: 'pas de données',
+      rfPace: 'Environ 4 requêtes par ligue, plus les sommaires de match récents ; une à la fois, 1,5 s entre chacune (environ 1 minute pour tout). Gardez cet onglet ouvert : la lecture s’arrête quand il est caché.',
+      rfGo: 'Lancer le rafraîchissement', rfStop: 'Arrêter', rfLog: 'Journal', rfOpenLink: 'ouvrir', rfSuperOnly: 'Réservé aux super admins.',
+      rf_base: 'Départ : commit {sha} de {repo} ({branch}).', rf_baseErr: 'Impossible de lire le dépôt GitHub ({error}).',
+      rf_notConfigured: 'Pas encore configuré : le Worker n’a pas le secret GITHUB_TOKEN (docs/tools.md).',
+      rf_league: '{lg} : lecture de NBHPA…', rf_step_standings: 'classement', rf_step_players: 'statistiques des joueurs', rf_step_goalies: 'statistiques des gardiens', rf_step_schedule: 'calendrier',
+      rf_step_recaps: '{n} sommaires de match à lire (nouveaux matchs et 3 derniers jours)', rf_step_recap: 'sommaire {i}/{n} : match {id} ({date})', rf_warn: '{msg}',
+      rf_leagueOk: '{lg} : {teams} équipes, {games} matchs, {players} joueurs, {goalies} gardiens, {box} sommaires.',
+      rf_refused: '{lg} : refusé, les données en place restent ({problems}).', rf_leagueErr: '{lg} : erreur ({msg}). Les données en place restent.',
+      rf_paused: 'En pause : l’onglet est caché.', rf_resumed: 'Reprise.', rf_stopped: 'Arrêté. Rien n’est publié.',
+      rf_rate: 'NBHPA demande de ralentir (429) : arrêt. Réessayez dans 5 minutes. Rien n’est publié.', rf_nothing: 'Aucune ligue lue correctement : rien à publier.',
+      rf_regErr: 'Impossible de lire le registre des personnes : rien n’est publié.', rf_regRefused: 'Registre des personnes non modifié : {problems}.',
+      rf_registry: 'Registre des personnes : {total} personnes, {added} nouvelles, {changed} mises à jour.', rf_regSame: 'Registre des personnes : {total} personnes, aucun changement.',
+      rf_publishing: 'Envoi de {n} fichiers à GitHub…', rf_pubErr: 'Publication refusée : {error}{detail}. Rien n’est publié.', rf_published: 'Publié : commit {sha}.',
+      rf_build: 'Construction du site : {status}…', rf_live: 'Le site public est à jour.', rf_buildFail: 'La construction du site a échoué : voir GitHub Actions.',
+      rf_buildLong: 'La construction prend du temps : vérifiez le site dans quelques minutes.',
+      rfSt_queued: 'en file d’attente', rfSt_in_progress: 'en cours', rfSt_waiting: 'en attente', rfSt_pending: 'en attente', rfSt_requested: 'demandée', rfSt_unknown: 'inconnue',
+      rfE_too_soon: 'une publication a eu lieu il y a moins de 2 minutes', rfE_moved: 'le dépôt a changé pendant la lecture (relancez)', rfE_check: 'un fichier n’a pas passé les vérifications',
+      rfE_not_configured: 'le secret GITHUB_TOKEN manque', rfE_github: 'GitHub a refusé', rfE_super_only: 'réservé aux super admins', rfE_demo_readonly: 'refusé par la démo',
       cf_multi: 'Plusieurs équipes', noTeamShort: 'Aucune équipe', backConfig: '← Configuration', capsManage: 'Gérer les capitaines →', capsSumAll: 'capitaines',
       capsLede: 'Tous les comptes de capitaine. L’accès se donne depuis la carte d’une équipe ; tout le reste (accès, modifier, désactiver, supprimer) se fait sur la page du capitaine.', allLeaguesF: 'Toutes les ligues',
       account: 'Compte', seasonNow: 'Saison : {n} · {st}', seasonBack: 'Revenir à la saison en cours ({n})', pLeagues: 'Les ligues', secPlayers: 'Joueurs de la section →', lcVal: 'à valider', lcNoVal: 'Rien à valider ✓', lcNoGames: 'Aucun match à venir', lcNoRules: 'Règles à définir', lgInactive: 'Inactive cette saison', lgNoCap: '{n} sans capitaine', ovAllCaps: 'toutes ont un capitaine', ovNoRules: 'aucune règle',
@@ -240,6 +262,28 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
       backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
+      rfH: 'Public site data', rfOpen: 'Refresh →', rfBack: '← Setup',
+      rfLede: 'Refreshes the public site stats without a script on a computer: this browser reads NBHPA (the same steps as npm run fetch:force), then the checked data is published to GitHub. The public site rebuilds in about a minute.',
+      rfSumHint: 'Read NBHPA and publish the public site stats (GitHub Pages), with a log of each step.',
+      rfLast: 'Last publish: {at}, by {by} ({lg}).', rfNever: 'No publish from the tools yet.', rfLeagues: 'Leagues to read', rfDataOf: 'data of {d}', rfNoData: 'no data',
+      rfPace: 'About 4 requests per league, plus the recent box scores; one at a time, 1.5 s apart (about 1 minute in all). Keep this tab open: reading pauses while it is hidden.',
+      rfGo: 'Start the refresh', rfStop: 'Stop', rfLog: 'Log', rfOpenLink: 'open', rfSuperOnly: 'Super admins only.',
+      rf_base: 'Start: commit {sha} of {repo} ({branch}).', rf_baseErr: 'Cannot read the GitHub repository ({error}).',
+      rf_notConfigured: 'Not set up yet: the Worker has no GITHUB_TOKEN secret (docs/tools.md).',
+      rf_league: '{lg}: reading NBHPA…', rf_step_standings: 'standings', rf_step_players: 'player stats', rf_step_goalies: 'goalie stats', rf_step_schedule: 'schedule',
+      rf_step_recaps: '{n} box scores to read (new games and the last 3 days)', rf_step_recap: 'box score {i}/{n}: game {id} ({date})', rf_warn: '{msg}',
+      rf_leagueOk: '{lg}: {teams} teams, {games} games, {players} players, {goalies} goalies, {box} box scores.',
+      rf_refused: '{lg}: refused, the current data stays ({problems}).', rf_leagueErr: '{lg}: error ({msg}). The current data stays.',
+      rf_paused: 'Paused: the tab is hidden.', rf_resumed: 'Resumed.', rf_stopped: 'Stopped. Nothing is published.',
+      rf_rate: 'NBHPA asks us to slow down (429): stopped. Try again in 5 minutes. Nothing is published.', rf_nothing: 'No league read correctly: nothing to publish.',
+      rf_regErr: 'Cannot read the people registry: nothing is published.', rf_regRefused: 'People registry not changed: {problems}.',
+      rf_registry: 'People registry: {total} people, {added} new, {changed} updated.', rf_regSame: 'People registry: {total} people, no change.',
+      rf_publishing: 'Sending {n} files to GitHub…', rf_pubErr: 'Publish refused: {error}{detail}. Nothing is published.', rf_published: 'Published: commit {sha}.',
+      rf_build: 'Site build: {status}…', rf_live: 'The public site is up to date.', rf_buildFail: 'The site build failed: see GitHub Actions.',
+      rf_buildLong: 'The build takes a while: check the site in a few minutes.',
+      rfSt_queued: 'queued', rfSt_in_progress: 'in progress', rfSt_waiting: 'waiting', rfSt_pending: 'pending', rfSt_requested: 'requested', rfSt_unknown: 'unknown',
+      rfE_too_soon: 'a publish ran less than 2 minutes ago', rfE_moved: 'the repository changed during the reading (start again)', rfE_check: 'a file failed the checks',
+      rfE_not_configured: 'the GITHUB_TOKEN secret is missing', rfE_github: 'GitHub refused', rfE_super_only: 'super admins only', rfE_demo_readonly: 'refused by the demo',
       cf_multi: 'Several teams', noTeamShort: 'No team', backConfig: '← Setup', capsManage: 'Manage the captains →', capsSumAll: 'captains',
       capsLede: 'Every captain account. Access is given from a team card; everything else (access, edit, disable, delete) is on the captain’s page.', allLeaguesF: 'All leagues',
       account: 'Account', seasonNow: 'Season: {n} · {st}', seasonBack: 'Back to the live season ({n})', pLeagues: 'The leagues', secPlayers: 'Section players →', lcVal: 'to validate', lcNoVal: 'Nothing to validate ✓', lcNoGames: 'No upcoming game', lcNoRules: 'Rules to set', lgInactive: 'Off this season', lgNoCap: '{n} without a captain', ovAllCaps: 'all have a captain', ovNoRules: 'no rules',
@@ -435,6 +479,64 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="controls ta-capf">' + seg + '<span class="count">' + esc(t('nCaptains', { n: list.length })) + '</span></div>' +
       (list.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-caps-t ta-capl"><thead><tr><th>' + t('name') + '</th><th>' + t('colTeamsSeason') + '</th><th class="ta-cap-login">' + t('colLogin') + '</th></tr></thead><tbody>' +
         list.map(captainRow).join('') + '</tbody></table></div>' : '<p class="empty">' + t(S.captains.length ? 'noCapsMatch' : 'noCaptains') + '</p>') + '</section>';
+  }
+  /* ---------- Public site data (#/config/refresh; super admins): the stats site refresh, run in this browser ----------
+   * The steps of npm run fetch:force (shared/refresh.js, run by admin/refresh-run.js), one commit on GitHub (src/publish.js),
+   * then the Pages build. A live log of every step, like the script's output. */
+  function refreshSummary() {
+    if (!S.me || !S.me.super) return '';
+    return '<section class="sec" id="ta-rfsum"><div class="sec-h ta-sec-h"><h2>' + t('rfH') + '</h2><a class="ta-btn ta-btn-sm" href="#/config/refresh">' + t('rfOpen') + '</a></div><p class="note">' + t('rfSumHint') + '</p></section>';
+  }
+  var ext = function (url, label) { return url ? ' <a class="lnk" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label || t('rfOpenLink')) + ' ↗</a>' : ''; };
+  function rfLine(e) {
+    var p = Object.assign({}, e.p);
+    if (e.key === 'build') p.status = t('rfSt_' + p.status);
+    if (e.key === 'pubErr') { p.error = STR[lang]['rfE_' + p.error] ? t('rfE_' + p.error) : p.error; p.detail = p.detail ? ' (' + p.detail + ')' : ''; }
+    var sub = /^(step_|warn)/.test(e.key);
+    return '<li class="ta-rf-' + e.kind + (sub ? ' ta-rf-sub' : '') + '"><time>' + esc(e.time) + '</time><span>' + esc(t('rf_' + e.key, p)) + (e.key === 'live' || e.key === 'buildFail' || e.key === 'published' || e.key === 'build' ? ext(p.url) : '') + '</span></li>';
+  }
+  function viewRefresh() {
+    var head = '<p class="ta-back"><a class="lnk" href="#/config">' + t('rfBack') + '</a></p><h1 class="ph">' + t('rfH') + '</h1><p class="lede">' + t('rfLede') + '</p>';
+    if (!S.me || !S.me.super) return head + '<p class="empty">' + t('rfSuperOnly') + '</p>';
+    var rf = S.rf, b = S.rfBase, run = !!(rf && rf.running), sel = S.rfSel || {};
+    var last = !b ? '' : b.last ? '<p class="note">' + esc(t('rfLast', { at: fmt(b.last.at), by: b.last.by || '—', lg: (b.last.leagues || []).join(', ') })) + ext(b.last.url, 'GitHub') + '</p>' : '<p class="note">' + t('rfNever') + '</p>';
+    var info = !b ? '<p class="note">' + t('loading') + '</p>' : !b.configured ? '<p class="ta-msg ta-err">' + t('rf_notConfigured') + '</p>' : '';
+    var lgs = (S.data ? S.data.leagues : []).map(function (l) {
+      var at = S.rfMeta && S.rfMeta[l.slug];
+      return '<li><label class="ta-rf-lg"><input type="checkbox" data-rf-lg="' + esc(l.slug) + '"' + (sel[l.slug] === false ? '' : ' checked') + (run ? ' disabled' : '') + '>' + leagueOnly(l, false) +
+        '<span class="note">' + esc(at ? t('rfDataOf', { d: new Date(at).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' }) }) : t('rfNoData')) + '</span></label></li>';
+    }).join('');
+    var none = S.data && S.data.leagues.every(function (l) { return sel[l.slug] === false; });
+    var btn = run ? '<button type="button" class="ta-btn ta-ghost" data-rf-stop' + (rf.ctl.stop ? ' disabled' : '') + '>' + t('rfStop') + '</button>' :
+      '<button type="button" class="ta-btn" data-rf-go' + (!b || !b.configured || none ? ' disabled' : '') + '>' + t('rfGo') + '</button>';
+    return head + '<section class="sec ta-rf">' + last + info +
+      '<fieldset class="ta-rf-lgs"><legend>' + t('rfLeagues') + '</legend><ul>' + lgs + '</ul></fieldset><p class="note">' + t('rfPace') + '</p><div class="ta-btns">' + btn + '</div>' +
+      (rf ? '<h2 class="ta-rf-h">' + t('rfLog') + '</h2><ol class="ta-rflog" id="ta-rflog" aria-live="polite">' + rf.log.map(rfLine).join('') + '</ol>' : '') + '</section>';
+  }
+  function rfStart() {
+    var leagues = S.data.leagues.filter(function (l) { return (S.rfSel || {})[l.slug] !== false; }).map(function (l) { return l.slug; });
+    var rf = S.rf = { running: true, log: [], ctl: { stop: false } };
+    var add = function (key, p, kind) {
+      var e = { key: key, p: p || {}, kind: kind || 'info', time: new Date().toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
+      rf.log.push(e);
+      var ol = S.rf === rf && $('#ta-rflog'); if (ol) ol.insertAdjacentHTML('beforeend', rfLine(e));
+    };
+    render();
+    window.LDRefreshRun({ api: api, leagues: leagues, ctl: rf.ctl, log: add }).then(function (res) { rf.result = res; }, function (e) { add('leagueErr', { lg: '—', msg: e && e.message }, 'err'); })
+      .then(function () { rf.running = false; if (S.tab === 'refresh') refresh(); });
+  }
+  // the base commit and the date of each league's saved data (GitHub, never NBHPA)
+  function loadRefreshBase() {
+    return api('/refresh/base').then(function (r) {
+      S.rfBase = r.ok ? r.data : { configured: false, last: null };
+      // without the token (not set up yet) the dates still come from the public repo (main)
+      var rawBase = r.ok && r.data.raw ? r.data.raw : 'https://raw.githubusercontent.com/' + ((r.ok && r.data.repo) || 'FlyinWhee/ldhml-site') + '/' + ((r.ok && r.data.branch) || 'main') + '/';
+      var metas = (S.data ? S.data.leagues : []).map(function (l) {
+        return fetch(rawBase + 'data/' + l.slug + '/meta.json', { cache: 'no-store' }).then(function (x) { return x.ok ? x.json() : null; }).catch(function () { return null; })
+          .then(function (m) { return [l.slug, m && m.fetchedAt]; });
+      });
+      return Promise.all(metas).then(function (list) { S.rfMeta = {}; list.forEach(function (x) { S.rfMeta[x[0]] = x[1]; }); });
+    });
   }
   /* Configuration: a short summary of the captains, each number opening the list with that filter. */
   function captainsSummary() {
@@ -680,7 +782,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var seasons = '<section class="sec"><div class="sec-h ta-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ta-btn ta-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
       (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl"><thead><tr><th>' + t('name') + '</th><th class="num">' + t('nbhpaShort') + '</th><th>' + t('status') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
     var head = '<h1 class="ph">' + t('tabSetup') + '</h1><p class="lede">' + t('configLede') + '</p>';
-    if (!s || !S.data) return head + seasons + captainsSummary();
+    if (!s || !S.data) return head + seasons + captainsSummary() + refreshSummary();
     /* the leagues of the season: on or off (a league off is hidden from the daily work); its rules and teams are in its settings */
     var lgs = '<section class="sec"><div class="sec-h ta-sec-h"><h2>' + t('leaguesOfSeason') + '</h2></div><p class="note">' + t('leaguesHint2') + '</p>' + (S.data.sections || []).map(function (sec) {
       return '<h3 class="ta-sec-sub">' + esc(nameOf(sec)) + '</h3><ul class="ta-lgrows">' + S.data.leagues.filter(function (l) { return l.section === sec.key; }).map(function (l) {
@@ -690,7 +792,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
           '<label class="ta-switch ta-ar"><input type="checkbox" data-league-on="' + esc(l.slug) + '"' + (off ? '' : ' checked') + '> ' + t('leagueOnShort') + '</label></li>';
       }).join('') + '</ul>';
     }).join('') + '</section>';
-    return head + '<div class="ta-cfg-top">' + seasons + lgs + '</div>' + captainsSummary() + adminsPanel();
+    return head + '<div class="ta-cfg-top">' + seasons + lgs + '</div>' + captainsSummary() + adminsPanel() + refreshSummary();
   }
   /* The admins (super admins only; a super admin is set in the SUPER_ADMINS secret and cannot be disabled or deleted here). */
   function adminsPanel() {
@@ -1096,7 +1198,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   TAB_ICONS.valider = '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>';
   TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
   /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
-  var navTab = function () { return { captain: 'config', caps: 'config', person: 'players', req: 'valider' }[S.tab] || S.tab; };
+  var navTab = function () { return { captain: 'config', caps: 'config', refresh: 'config', person: 'players', req: 'valider' }[S.tab] || S.tab; };
   var pendAll = function () { return Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0); };
   function levelTabs() {
     var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
@@ -1143,7 +1245,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="ta-tools">' + (S.me && pendAll() ? '<a class="ta-pill" href="#/valider" title="' + esc(t('tabValider')) + '"><b>' + pendAll() + '</b> <span class="ta-long">' + esc(t('pillValider')) + '</span><span class="ta-short">✓</span></a>' : '') +
       acctMenu(S.me ? S.me.email : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, caps: viewCaps, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, caps: viewCaps, refresh: viewRefresh, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     if (!S.booting) $('#main').setAttribute('data-ready', '1');   // shared/guard.js: the page started
@@ -1177,6 +1279,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       if (S.seasonId && S.tab === 'cal' && S.league) more.push(api('/lineups?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league) + (S.calDate ? '&date=' + S.calDate : '')).then(function (r) { S.cal = r.ok ? r.data : null; if (S.cal) S.calDate = S.cal.date; }));
       if (S.seasonId && (S.tab === 'home' || S.tab === 'overview')) more.push(api('/dashboard?season=' + S.seasonId).then(function (r) { S.dash = r.ok ? r.data : null; }));
       if (S.seasonId && (['subs', 'home', 'overview', 'valider'].indexOf(S.tab) >= 0 || (S.tab === 'teams' && S.teamId))) more.push(api('/replacements?season=' + S.seasonId).then(function (r) { S.subs = r.data.replacements || []; }));
+      if (S.tab === 'refresh' && S.me && S.me.super && !(S.rf && S.rf.running)) more.push(loadRefreshBase());
       if (S.tab === 'config' && S.me && S.me.super) more.push(api('/admins').then(function (r) { S.admins = r.ok ? r.data.admins : []; }));
       if (S.tab === 'req' && S.reqId) more.push(api('/replacements?id=' + S.reqId).then(function (r) { S.req = r.ok ? (r.data.replacements || [])[0] || null : null; S.reqMissing = !S.req; }));
       if (S.tab === 'person' && S.personId) more.push(api('/people/' + S.personId).then(function (r) { S.person = r.ok ? r.data : null; S.personMissing = !r.ok; }));
@@ -1308,6 +1411,17 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     }
   });
   document.addEventListener('click', function (e) { var mo = $('#more'); if (mo && !mo.hidden && !(e.target.closest && e.target.closest('#more,[data-act="more"]'))) { mo.hidden = true; var mb = document.querySelector('[data-act="more"]'); if (mb) mb.setAttribute('aria-expanded', 'false'); } }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-rf-go],[data-rf-stop]');
+    if (!b) return;
+    if (b.hasAttribute('data-rf-go') && !(S.rf && S.rf.running)) rfStart();
+    if (b.hasAttribute('data-rf-stop') && S.rf && S.rf.running) { S.rf.ctl.stop = true; b.disabled = true; }
+  });
+  document.addEventListener('change', function (e) {
+    var x = e.target; if (!x.hasAttribute || !x.hasAttribute('data-rf-lg')) return;
+    S.rfSel = S.rfSel || {}; S.rfSel[x.getAttribute('data-rf-lg')] = x.checked; render();
+  });
+  window.addEventListener('beforeunload', function (e) { if (S.rf && S.rf.running) { e.preventDefault(); e.returnValue = ''; } });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.modal) { S.modal = null; S.msg = null; render(); } if (e.key === 'Escape' && $('#ta-ctx')) $('#ta-ctx').open = false; });
   document.addEventListener('click', function (e) { var c = $('#ta-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ta-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
@@ -1394,6 +1508,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!p0) { S.level = 'ldhml'; S.tab = 'home'; }
     else if (p0 === 'valider') { S.level = 'ldhml'; S.tab = 'valider'; }
     else if (p0 === 'r' && Number(parts[1])) { S.level = 'ldhml'; S.tab = 'req'; if (S.reqId !== Number(parts[1])) S.req = null; S.reqId = Number(parts[1]); }
+    else if (p0 === 'config' && parts[1] === 'refresh') { S.level = 'ldhml'; S.tab = 'refresh'; }
     else if (p0 === 'config' && parts[1] === 'captains') { S.level = 'ldhml'; S.tab = 'caps'; S.cf = CAP_FILTERS.some(function (x) { return x[0] === (parts[2] || ''); }) ? parts[2] || '' : ''; }
     else if (p0 === 'config' && parts[1] === 'captain') { S.level = 'ldhml'; S.tab = 'captain'; if (S.capId !== Number(parts[2])) S.cap = null; S.capId = Number(parts[2]) || 0; }
     else if (TOP_TABS.indexOf(p0) >= 0) { S.level = 'ldhml'; S.tab = p0; }

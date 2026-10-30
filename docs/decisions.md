@@ -101,3 +101,6 @@ The first admin had function tabs (Équipes, Calendrier, Remplacements, Joueurs,
 
 ## Games read "vs", never "at" or home/away (2026-10-18)
 Every LDHML game is played at the same place (owner), so home and away mean nothing to the players. Game lines in the tools always read "<date> · <time> · vs <team>". The schedule still stores away and home (NBHPA sends them; the order may matter for score sheets).
+
+## The stats site refresh runs in the admin's browser (2026-10-30)
+The owner wants to refresh the public site without running a script. The Worker cannot read NBHPA (Cloudflare is blocked, hard rule 1), so the admin's browser does it, like the stats site already does for visitors (CORS is open). The steps are one shared file (`shared/refresh.js`) for the script and the page, so they never drift apart. The Worker holds the GitHub token and checks every file again before the commit: a browser could send anything, and the repo is public. The token is a fine-grained token on this repo only. Dropped: a GitHub token in the browser (anyone signed in could read it), a Worker cron (blocked by NBHPA).

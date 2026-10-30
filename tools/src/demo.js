@@ -1,6 +1,6 @@
 // Demo mode (DEMO=1): the tools online read only, to walk the admins through them before the domain (no email sign-in
-// yet). Every write is refused (403 demo_readonly) except signing in and out and the replacement checks (they write
-// nothing). Sign-in: the DEMO_KEY secret opens a demo admin account, or a captain picked from a list.
+// yet). Every write is refused (403 demo_readonly) except signing in and out, the replacement checks (they write
+// nothing) and the stats site refresh (src/publish.js: it writes the GitHub repo, the demo is the only tool online). Sign-in: the DEMO_KEY secret opens a demo admin account, or a captain picked from a list.
 // Run it on its own Worker and its own demo database only (wrangler.jsonc, env "demo"; docs/tools.md).
 import { json, fail, readJson, now } from './http.js';
 import { newSession, sameSecret } from './auth.js';
@@ -9,7 +9,8 @@ import { liveSeason } from './seasons.js';
 export const isDemo = (env) => env.DEMO === '1';
 export const DEMO_ADMIN = 'demo@demo.invalid';
 const OPEN = new Set(['/api/admin/demo-login', '/api/captain/demo-login', '/api/captain/demo-accounts', '/api/admin/logout', '/api/captain/logout',
-  '/api/admin/replacements/check', '/api/captain/replacements/check']);
+  '/api/admin/replacements/check', '/api/captain/replacements/check',
+  '/api/admin/refresh/publish']);   // the stats site refresh writes GitHub, not the demo database (owner, 2026-10-30)
 /** True when the demo must refuse this request (a write). */
 export const demoRefuses = (env, req, url) => isDemo(env) && req.method !== 'GET' && !OPEN.has(url.pathname);
 
