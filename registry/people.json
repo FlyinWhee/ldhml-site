@@ -1,5 +1,5 @@
 {
-  "next": 249,
+  "next": 253,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -248,6 +248,10 @@
     {"id":"L0245","nid":"60824","name":"Sabrina Beauchemin","sex":"f","pids":["244999"],"since":"Automne 2026"},
     {"id":"L0246","nid":"157023","name":"Annie-Claude Laforest","sex":"f","pids":["470430"],"since":"Automne 2026"},
     {"id":"L0247","nid":"181051","name":"Julien Garceau","sex":"m","pids":["535992"],"since":"Automne 2026"},
-    {"id":"L0248","nid":"179028","name":"Kim Gariepy","sex":"f","pids":["529929"],"since":"Automne 2026"}
+    {"id":"L0248","nid":"179028","name":"Kim Gariepy","sex":"f","pids":["529929"],"since":"Automne 2026"},
+    {"id":"L0249","nid":"89066","name":"Frédéric Chateauneuf","sex":"m","pids":["267856"],"since":"Automne 2026"},
+    {"id":"L0250","nid":"67134","name":"Julien Cardin","sex":"m","pids":["244187"],"since":"Automne 2026"},
+    {"id":"L0251","nid":"168034","name":"Léo Brazeau","sex":"m","pids":["497134"],"since":"Automne 2026"},
+    {"id":"L0252","nid":"71685","name":"Marianne Nadeau","sex":"f","pids":["639558"],"since":"Automne 2026"}
   ]
 }
