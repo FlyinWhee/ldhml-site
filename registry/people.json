@@ -1,5 +1,5 @@
 {
-  "next": 253,
+  "next": 256,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -252,6 +252,9 @@
     {"id":"L0249","nid":"89066","name":"Frédéric Chateauneuf","sex":"m","pids":["267856"],"since":"Automne 2026"},
     {"id":"L0250","nid":"67134","name":"Julien Cardin","sex":"m","pids":["244187"],"since":"Automne 2026"},
     {"id":"L0251","nid":"168034","name":"Léo Brazeau","sex":"m","pids":["497134"],"since":"Automne 2026"},
-    {"id":"L0252","nid":"71685","name":"Marianne Nadeau","sex":"f","pids":["639558"],"since":"Automne 2026"}
+    {"id":"L0252","nid":"71685","name":"Marianne Nadeau","sex":"f","pids":["639558"],"since":"Automne 2026"},
+    {"id":"L0253","nid":"44165","name":"Benoit Chevrette","sex":"m","pids":["478610"],"since":"Automne 2026"},
+    {"id":"L0254","nid":"217293","name":"CHRISTIAN BRASSARD","sex":"m","pids":["643593"],"since":"Automne 2026"},
+    {"id":"L0255","nid":"208360","name":"Emilie Fortin","sex":"f","pids":["642064"],"since":"Automne 2026"}
   ]
 }
