@@ -117,6 +117,16 @@ assert.deepEqual(rc.game.goals, [[1, '07:30', 'TOP', '296745', [], 1], [2, '10:0
 assert.deepEqual(rc.game.pens, [[2, '11:05', 'FLI', '544401', 'mineure'], [2, '01:11', 'TOP', null, 'mineure']]);
 assert.equal(rc.names['310215'], 'M. JOBIN');
 
+// A box score is read again only if it was saved less than 6 h after the game start (owner rule, 2026-11-08).
+{
+  const { boxUnsettled, startMs } = globalThis.LDParsers;
+  const g = { date: '2026-11-04', time: '19:00' };          // Montreal is UTC-5 in November
+  assert.equal(new Date(startMs(g)).toISOString(), '2026-11-05T00:00:00.000Z');
+  assert.equal(boxUnsettled(g, '2026-11-05T02:00:00.000Z'), true, 'saved 2 h after the start: read again');
+  assert.equal(boxUnsettled(g, '2026-11-05T06:00:00.000Z'), false, 'saved 6 h after the start: final');
+  assert.equal(boxUnsettled(g, '2026-11-07T12:00:00.000Z'), false, 'saved days later: final');
+  assert.equal(boxUnsettled({ date: '2026-09-16', time: '18:00' }, '2026-09-16T23:59:00.000Z'), true, 'summer time: 18:00 is 22:00 UTC');
+}
 console.log('All parser tests passed.');
 
 // ---- name normalisation ----

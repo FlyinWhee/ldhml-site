@@ -10,7 +10,7 @@ If the refresh stops, nothing breaks. The page compares its cache with the live 
 
 ## Scraper
 - `node scraper/fetch.mjs [slug ...] [--force]`. Without `--force` a league is skipped if its snapshot is younger than `MIN_AGE_MIN` (15, env override).
-- About 4 requests per league + 1 recap per game that has a score and is new or from the last 3 days. Pause `DELAY_MS` (1500) between requests. Retries up to 3 times on 5xx/429 with growing waits.
+- About 4 requests per league + 1 recap per game that has a score and is new, or whose saved box was taken less than 6 h after the start. Pause `DELAY_MS` (1500) between requests. Retries up to 3 times on 5xx/429 with growing waits.
 - User-Agent: `ldhml-stats-poc/0.2 (community stats viewer; low-volume; ...)`.
 - It refuses to overwrite a league when `assemble()` reports problems (fewer than 2 teams, no games, incomplete rows, no players). Other leagues continue; exit code 1 at the end.
 - `scraper/import-raw.mjs <file>`: build snapshots from a raw JSON saved from a browser session (`{ slug: { standings, players, goalies, schedule, recaps } }`). A fallback if the scraper cannot reach NBHPA.

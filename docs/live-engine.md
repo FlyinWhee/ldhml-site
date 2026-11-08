@@ -54,12 +54,12 @@ Rule: **the live clock decides.** `eff(g)` (1-core.js): if `LIVE.games[id].state
 Test: `site/test-live.mjs` step "1b". Never use `played(g)` alone to decide "final" in a view; use `eff()`/`liveOf()`.
 
 ## Cache-first box scores
-Box scores of finished games never change (except corrections in the first days). The build seeds `D.box.games`. The page computes the difference with the live schedule:
+Box scores of finished games never change. The league does not correct games after they are played (owner, 2026-11-08); only the first hours can move while the scorekeeper finishes the sheet. The build seeds `D.box.games`. The page computes the difference with the live schedule:
 
 - `boxNeeds(route)`: which played games this page needs. `SCOPE='main'` (default) or `route=standings`: all played games. `SCOPE='all'`: game page: that game; team: that team's games; player: games of the player's teams; home/live: games of the last game day and today. Tonight's games are always added.
-- `boxMissing(g)`: true if the game is played, not cancelled, not live, not in `BX.fresh`, and either has no box, or has a goal row shorter than 6 items (old format), or its date is on/after `meta.fetchedAt - 3 days` (corrections).
+- `boxMissing(g)`: true if the game is played, not cancelled, not live, not in `BX.fresh`, and either has no box, or has a goal row shorter than 6 items (old format), or the cache was saved less than 6 h after the game start (`LDParsers.boxUnsettled(g, meta.fetchedAt)`, the same rule as the scraper).
 - Per tick: at most 3 recap fetches (`todo.slice(0,3)`). A failure sets `BX.fail[id] = now + 2 min`.
-- `BX.total` feeds the pill `#boxload` ("Loading N game(s)..."). It hides when offline.
+- `BX.total` feeds the pill `#boxload` ("Loading N game(s)..."). It hides when offline. It counts down as each recap request ends, and `run()` redraws the pill at its start, so the pill hides even on a tick with no request (past bug: it stayed on screen after the last box score).
 - After a fetch: `D.box.games[id] = game` (final) or `LIVE.recap[id]` (live), `modelDirty` triggers `buildModel()`.
 
 ## Rendering

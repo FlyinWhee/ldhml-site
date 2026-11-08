@@ -145,9 +145,8 @@
     if (!b) return true;
     /* cached before the goal values were kept (older build) */
     if ((b.goals || []).some(function (go) { return go.length < 6; })) return true;
-    /* scores can be corrected for a few days after the game, as in the scraper */
-    var since = new Date((Date.parse(D.meta.fetchedAt) || 0) - 3 * 86400000).toISOString().slice(0, 10);
-    return g.date >= since;
+    /* a box saved in the first hours after the game may be incomplete; after that it is final (same rule as the scraper) */
+    return LDParsers.boxUnsettled(g, D.meta.fetchedAt);
   }
   function boxNeeds(r) {
     var pl = games.filter(played), id = r.id, set;
@@ -210,13 +209,15 @@
      * fetches only the difference, for the games this page needs. A finished box score never changes, so a cached one is kept. */
     var todo = boxNeeds(r).filter(function (g) { var x = BX.fail[g.id]; return !x || Date.now() >= x; });
     BX.total = todo.length;
+    /* Redraw the pill now: with nothing left to load, no step runs, and the pill must still hide. */
+    boxPill();
     if (LIVE.net !== 'offline') todo.slice(0, 3).forEach(function (g) {
       steps.push(function () {
         BX.fail[g.id] = Date.now() + 120000;
         return fetchRecap(g).then(function (c) {
           delete BX.fail[g.id]; if (!liveOf(g.id)) BX.fresh[g.id] = 1;
           if (c) LIVE.changed = true;
-        }, function () {});
+        }, function () {}).then(function () { BX.total = Math.max(0, BX.total - 1); });
       });
     });
     return steps.reduce(function (p, f) { return p.then(f).then(function () { flush(); updateFresh(); boxPill(); }); }, Promise.resolve()).then(function () {

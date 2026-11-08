@@ -11,7 +11,7 @@ Each item is a trap that already cost time. Check this list before a change.
 6. **The scraper refuses to overwrite** when parsing finds problems (`assemble().problems`). That is intended. Read the message; do not bypass it.
 7. **`fetchedAt` drives freshness.** If you change what `meta.fetchedAt` means, `boxMissing` changes too.
 8. Do not `fetch` `/livegame/<id>` (staff page). Test `test-live` fails on `livegame/`, `admin/`, `socket`, `ajax`.
-9. `fetch.mjs` always fetches recaps for new games and the last 3 days. There is no flag to skip them.
+9. `fetch.mjs` fetches recaps for new games, and for games whose saved box was taken less than 6 h after the start (`LDParsers.boxUnsettled`, also used by the page). The league does not change a game after it is played (owner, 2026-11-08). Do not widen this window to days.
 10. Times are Toronto local time. `todayStr()` uses `America/Toronto`. Do not use the visitor's time zone.
 
 ## UI

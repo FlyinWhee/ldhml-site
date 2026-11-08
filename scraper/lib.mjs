@@ -7,7 +7,7 @@ import path from 'node:path';
 globalThis.DOMParser = new JSDOM('').window.DOMParser;
 await import('../shared/parsers.js');
 
-export const { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap, weighGoals } = globalThis.LDParsers;
+export const { parseStandings, parsePlayers, parseGoalies, parseSchedule, parseRecap, weighGoals, boxUnsettled } = globalThis.LDParsers;
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DATA_DIR = path.join(ROOT, 'data');
 

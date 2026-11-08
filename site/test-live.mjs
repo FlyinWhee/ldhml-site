@@ -94,6 +94,15 @@ w.location.hash = '#standings'; await wait(20);
 w.__now += 11 * 60000; await w.LDHML_TEST.tick();
 assert.ok(w.document.querySelectorAll('.tbl tbody tr').length >= 2, 'standings kept after a bad answer');
 
+// 3b. the "Loading N game(s)" pill hides once the box scores are in (past bug: it stayed on screen)
+{
+  w.location.hash = '#home'; await wait(20);
+  const recaps = () => calls.filter((c) => c.u.startsWith('/sites/site_game_recap')).length;
+  let before = -1;
+  for (let i = 0; i < 20 && before !== recaps(); i++) { before = recaps(); await w.LDHML_TEST.tick(); }
+  assert.ok(w.document.getElementById('boxload').hidden, 'box score pill hidden when nothing is left to load');
+}
+
 // 4. politeness: no two requests closer than 300 ms, no request to staff endpoints
 for (let i = 1; i < calls.length; i++) assert.ok(calls[i].at - calls[i - 1].at >= 300, `gap between requests ${i}: ${calls[i-1].u} -> ${calls[i].u} ${calls[i].at - calls[i - 1].at}`);
 assert.ok(calls.every((c) => !/socket|admin\/|livegame\/|ajax/.test(c.u)), 'only public pages are requested');

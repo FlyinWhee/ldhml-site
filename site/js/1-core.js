@@ -303,14 +303,7 @@
   var nowMs = function () { return typeof window.LDHML_NOW === 'function' ? window.LDHML_NOW() : Date.now(); };
   var todayStr = function () { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto' }).format(new Date(nowMs())); };
   /* Epoch milliseconds of a game start. The league times are Montreal time. */
-  var startMs = function (g) {
-    var guess = Date.parse(g.date + 'T' + (g.time || '00:00') + ':00Z');
-    var parts = {};
-    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-      .formatToParts(new Date(guess)).forEach(function (p) { parts[p.type] = p.value; });
-    var local = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
-    return guess - (local - guess);
-  };
+  var startMs = LDParsers.startMs;
   var liveRec = function (id) { var x = LIVE.games[id]; return x && x.lv && (x.state === 'live' || x.state === 'over') ? x : null; };
   var liveOf = function (id) { var x = LIVE.games[id]; return x && x.state === 'live' ? x.lv : null; };
   /* eff(g): the game with the live score, when the schedule has no final score yet. */

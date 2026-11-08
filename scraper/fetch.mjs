@@ -7,7 +7,7 @@
 // About 4 requests per league, plus one per new box score, with a pause between requests.
 // If anything looks wrong, the old snapshot of that league stays in place.
 import path from 'node:path';
-import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
+import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR, boxUnsettled } from './lib.mjs';
 import { syncFromData } from './registry.mjs';
 
 const BASE = 'https://admin.nbhpa.com';
@@ -32,7 +32,7 @@ async function http(url, init = {}, tries = 3) {
 
 const FIELDS = ['team_id', 'team_name', 'team_abb', 'team_pic', 'position', 'gp', 'wins_tot', 'losses', 'ot', 'ot_loss', 'pts', 'gf', 'ga', 'diff', 'pts_gp'];
 
-async function fetchLeague(lg, cfg, oldBox) {
+async function fetchLeague(lg, cfg, oldBox, oldAt) {
   const form = (extra = {}) => new URLSearchParams({ season_id: cfg.seasonId, category_id: lg.categoryId, league_id: cfg.leagueId, ...extra });
   const post = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } };
   const q = new URLSearchParams();
@@ -49,10 +49,9 @@ async function fetchLeague(lg, cfg, oldBox) {
   raw.goalies = await (await http(`${BASE}/sites/site_stats_goalies.php?lang=fr`, { ...post, body: form() })).text(); await sleep(DELAY);
   raw.schedule = await (await http(`${BASE}/sites/site_schedule_include.php?lang=fr`, { ...post, body: form({ view: 'list' }) })).text();
 
-  // Box scores: only new games and games from the last 3 days (scores can be corrected).
+  // Box scores: only new games, and games whose saved box was taken less than 6 h after the start (LDParsers.boxUnsettled).
   const { out } = assemble(raw, lg, cfg, structuredClone(oldBox));
-  const recent = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
-  const todo = out.games.filter((g) => g.as != null && g.hs != null && !g.cancelled && (!oldBox?.games?.[g.id] || g.date >= recent));
+  const todo = out.games.filter((g) => g.as != null && g.hs != null && !g.cancelled && (!oldBox?.games?.[g.id] || boxUnsettled(g, oldAt)));
   for (const g of todo) {
     await sleep(DELAY);
     try { raw.recaps[g.id] = await (await http(`${BASE}/sites/site_game_recap.php?game_id=${g.id}&league_id=${cfg.leagueId}&lang=fr`)).text(); }
@@ -74,7 +73,7 @@ for (const lg of cfg.leagues) {
   }
   try {
     const oldBox = await readJson(path.join(DATA_DIR, lg.slug, 'box.json'));
-    const raw = await fetchLeague(lg, cfg, oldBox);
+    const raw = await fetchLeague(lg, cfg, oldBox, old?.fetchedAt);
     const { problems, boxSaved, out } = assemble(raw, lg, cfg, oldBox);
     if (problems.length) throw new Error(`refusing to overwrite data: ${problems.join('; ')}`);
     await saveLeague(lg.slug, out);

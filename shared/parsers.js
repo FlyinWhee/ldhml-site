@@ -258,5 +258,24 @@
     });
   }
 
-  root.LDParsers = { weighGoals: weighGoals, parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive, niceName: niceName };
+  /* ---------- when is a box score final? ----------
+   * Owner rule (2026-11-08): the league does not change a game after it is played. Only the first hours can still move
+   * (the scorekeeper finishes the sheet). So a box score saved at least BOX_SETTLE_MS after the game start is final and is never read again.
+   * startMs: epoch ms of a game start. League times are Montreal time (America/Toronto). */
+  var BOX_SETTLE_MS = 6 * 3600000;
+  function startMs(g) {
+    var guess = Date.parse(g.date + 'T' + (g.time || '00:00') + ':00Z');
+    var parts = {};
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Toronto', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+      .formatToParts(new Date(guess)).forEach(function (p) { parts[p.type] = p.value; });
+    var local = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
+    return guess - (local - guess);
+  }
+  /* true if a box score saved at savedAt (epoch ms or ISO text) may still change, so it must be read again */
+  function boxUnsettled(g, savedAt) {
+    var t = typeof savedAt === 'number' ? savedAt : (Date.parse(savedAt) || 0);
+    return t < startMs(g) + BOX_SETTLE_MS;
+  }
+
+  root.LDParsers = { startMs: startMs, boxUnsettled: boxUnsettled, BOX_SETTLE_MS: BOX_SETTLE_MS, weighGoals: weighGoals, parseStandings: parseStandings, parsePlayers: parsePlayers, parseGoalies: parseGoalies, parseSchedule: parseSchedule, parseRecap: parseRecap, parseLive: parseLive, niceName: niceName };
 })(typeof window !== 'undefined' ? window : globalThis);
