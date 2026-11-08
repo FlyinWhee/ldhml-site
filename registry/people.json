@@ -1,5 +1,5 @@
 {
-  "next": 256,
+  "next": 257,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -255,6 +255,7 @@
     {"id":"L0252","nid":"71685","name":"Marianne Nadeau","sex":"f","pids":["639558"],"since":"Automne 2026"},
     {"id":"L0253","nid":"44165","name":"Benoit Chevrette","sex":"m","pids":["478610"],"since":"Automne 2026"},
     {"id":"L0254","nid":"217293","name":"CHRISTIAN BRASSARD","sex":"m","pids":["643593"],"since":"Automne 2026"},
-    {"id":"L0255","nid":"208360","name":"Emilie Fortin","sex":"f","pids":["642064"],"since":"Automne 2026"}
+    {"id":"L0255","nid":"208360","name":"Emilie Fortin","sex":"f","pids":["642064"],"since":"Automne 2026"},
+    {"id":"L0256","nid":"48389","name":"Vincent Lecours","sex":"m","pids":["507326"],"since":"Automne 2026"}
   ]
 }
