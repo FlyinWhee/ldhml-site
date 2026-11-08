@@ -26,7 +26,7 @@
   },
   "observability": { "enabled": true },
   // The online demo (read only; docs/tools.md): its own Worker and its own demo database. Deploy: npx wrangler deploy -c tools/wrangler.jsonc --env demo
-  // Secrets of the demo: CODE_PEPPER and DEMO_KEY (npx wrangler secret put <NAME> -c tools/wrangler.jsonc --env demo).
+  // Secrets of the demo: CODE_PEPPER, DEMO_KEY and GITHUB_TOKEN (the stats site refresh: a fine-grained token, repo ldhml-site only, Contents read and write, Actions read) (npx wrangler secret put <NAME> -c tools/wrangler.jsonc --env demo).
   "env": {
     "demo": {
       "name": "ldhml-tools-demo",

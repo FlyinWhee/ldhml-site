@@ -55,6 +55,8 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 1. **No server-side fetching of NBHPA from the cloud.** Cloudflare blocks data-center IPs (GitHub runners,
    Workers, Worker cron). Only a browser on a normal connection, or a script on the owner's computer or
    home server, can read the data. The Pages workflow builds only. It never fetches.
+   The admin's "Données du site public" page (tools) follows this rule: the admin's browser reads NBHPA (`shared/refresh.js`, the same
+   steps as `npm run fetch:force`), and the Worker only checks the files and commits them to GitHub (`tools/src/publish.js`).
 2. **Never request staff paths.** The official live page `https://admin.nbhpa.com/livegame/<id>` is only
    *linked* (see `feedLink` in `site/js/2-views.js`). Never fetch it. `site/test-live.mjs` fails if a request goes to `livegame/`, `admin/`, `socket` or `ajax`.
 3. **Be polite.** One request at a time, with a pause. Nothing runs while `document.hidden`. A 429 pauses 5 minutes. All numbers are in `POLL` (`site/js/3-live.js`). The owner asked to keep rates low. Do not raise them without asking.
@@ -93,6 +95,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | A parser, or a field the source sends | `shared/parsers.js`, then `scraper/test.mjs` |
 | A page (table, card, layout) | `site/js/2-views.js` and `site/style.css` |
 | A number, a rule, a derived stat | `site/js/1-core.js` (`buildModel`) |
+| The data refresh steps (script and admin page) | `shared/refresh.js` (used by `scraper/fetch.mjs` and the tools; see `docs/operations.md`) |
 | Live behavior, polling | `site/js/3-live.js` (and `site/test-live.mjs`) |
 | A text (fr/en) | `STR` in `site/js/1-core.js` (entry and section pages: `STR` in `site/hub/hub.js`) |
 | Entry page, section pages, section player page | `site/hub/hub.js`, `site/hub/hub.css` |

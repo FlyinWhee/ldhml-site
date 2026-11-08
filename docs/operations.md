@@ -4,6 +4,7 @@
 1. Data refresh (cache) runs on a residential connection: `npm run fetch:force`, or `scripts/refresh.bat` (Windows), or `scripts/unraid-refresh.sh` (home server).
 2. The refresh gives our id to new people (`registry/people.json`), commits `data/` and `registry/`, and pushes to `main`.
 3. GitHub Actions (`.github/workflows/refresh.yml`, name "Refresh and publish") installs, runs `node build.mjs`, uploads `dist/` and deploys to Pages. It does not fetch data. It also runs by hand (`workflow_dispatch`).
+   Or from the tools admin, with no script: Configuration > Données du site public (below).
 4. Visitors read live data themselves; a stale cache costs only a few extra requests in their browser.
 
 If the refresh stops, nothing breaks. The page compares its cache with the live schedule and fills the gap (see `live-engine.md`).
@@ -14,6 +15,11 @@ If the refresh stops, nothing breaks. The page compares its cache with the live 
 - User-Agent: `ldhml-stats-poc/0.2 (community stats viewer; low-volume; ...)`.
 - It refuses to overwrite a league when `assemble()` reports problems (fewer than 2 teams, no games, incomplete rows, no players). Other leagues continue; exit code 1 at the end.
 - `scraper/import-raw.mjs <file>`: build snapshots from a raw JSON saved from a browser session (`{ slug: { standings, players, goalies, schedule, recaps } }`). A fallback if the scraper cannot reach NBHPA.
+
+## From the admin (Données du site public)
+The tools admin (`#/config/refresh`, super admins) runs the same refresh with no computer setup. The admin's browser reads NBHPA (same requests, 1.5 s apart, one at a time, paused while the tab is hidden, a 429 stops the run) with `shared/refresh.js`, shows a log of every step, then sends the checked files to the Worker. The Worker (`tools/src/publish.js`) checks them again and makes one commit on `main` ("Refresh data cache (<leagues>)") through the GitHub API; the push starts "Refresh and publish". The log follows the build until the site is up to date.
+- Setup: a fine-grained GitHub token (repository `ldhml-site` only; Contents: read and write; Actions: read), stored as the Worker secret `GITHUB_TOKEN` (`npx wrangler secret put GITHUB_TOKEN -c tools/wrangler.jsonc --env demo` for the demo). It expires: renew it before the date.
+- A league that fails the checks keeps its data; the others are published. If `main` changed during the reading, the publish is refused ("relancez"). At most one publish every 2 minutes.
 
 ## Windows (`scripts/refresh.bat`)
 Pulls `main`, runs `node scraper/fetch.mjs --force`, commits and pushes `data/` and `registry/`. Needs git and Node. Line endings CRLF (see `.gitattributes`).

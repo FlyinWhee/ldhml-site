@@ -127,6 +127,27 @@ assert.equal(rc.names['310215'], 'M. JOBIN');
   assert.equal(boxUnsettled(g, '2026-11-07T12:00:00.000Z'), false, 'saved days later: final');
   assert.equal(boxUnsettled({ date: '2026-09-16', time: '18:00' }, '2026-09-16T23:59:00.000Z'), true, 'summer time: 18:00 is 22:00 UTC');
 }
+// ---- the shared refresh steps (shared/refresh.js: the script and the tools admin page): which box scores are read again ----
+{
+  const tv = (k, v) => ({ key: k, val: v });
+  const st = (id, abb) => ({ values: [tv('team_id', id), tv('team_name', abb), tv('team_abb', abb), tv('position', 1), tv('gp', 1), tv('pts', 2)] });
+  const pages = { standings: { 0: st('204339', 'TOP'), 1: st('204208', 'FLI'), length: 2 }, players: statsHtml([{ player_id: '1', nbhpa_player_id: '9', full_name: 'A B', sex: 'm', teams: 'TOP', mj: '1', g: '1', a: '0', p: '1' }]) };
+  const readsRecap = async (oldAt) => {
+    const urls = [];
+    const io = { delay: 0, sleep: async () => {}, oldAt, get: async (u, init, kind) => {
+      urls.push(u);
+      if (u.includes('table_data')) return pages.standings;
+      if (u.includes('site_schedule')) return playedRow;
+      return u.includes('site_stats') ? pages.players : '<html></html>';
+    } };
+    const oldBox = { names: {}, games: { 2539180: rc.game } };
+    await globalThis.LDRefresh.fetchLeague({ slug: 'retro', categoryId: 6796 }, { leagueId: 10, seasonId: 4307 }, oldBox, io);
+    return urls.some((u) => u.includes('site_game_recap.php?game_id=2539180'));
+  };
+  assert.equal(await readsRecap('2026-09-17T12:00:00Z'), false, 'a box score saved 6 h or more after the start is final: not read again');
+  assert.equal(await readsRecap('2026-09-16T23:00:00Z'), true, 'a box score saved during the game night is read again');
+}
+
 console.log('All parser tests passed.');
 
 // ---- name normalisation ----

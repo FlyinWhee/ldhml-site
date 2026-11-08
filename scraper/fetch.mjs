@@ -7,10 +7,9 @@
 // About 4 requests per league, plus one per new box score, with a pause between requests.
 // If anything looks wrong, the old snapshot of that league stays in place.
 import path from 'node:path';
-import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR, boxUnsettled } from './lib.mjs';
+import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
 import { syncFromData } from './registry.mjs';
 
-const BASE = 'https://admin.nbhpa.com';
 const MIN_AGE_MIN = Number(process.env.MIN_AGE_MIN ?? 15);
 const DELAY = Number(process.env.DELAY_MS ?? 1500);
 const UA = 'ldhml-stats-poc/0.2 (community stats viewer; low-volume; contact: league player)';
@@ -30,35 +29,11 @@ async function http(url, init = {}, tries = 3) {
   throw new Error(`Failed: ${url}`);
 }
 
-const FIELDS = ['team_id', 'team_name', 'team_abb', 'team_pic', 'position', 'gp', 'wins_tot', 'losses', 'ot', 'ot_loss', 'pts', 'gf', 'ga', 'diff', 'pts_gp'];
-
-async function fetchLeague(lg, cfg, oldBox, oldAt) {
-  const form = (extra = {}) => new URLSearchParams({ season_id: cfg.seasonId, category_id: lg.categoryId, league_id: cfg.leagueId, ...extra });
-  const post = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } };
-  const q = new URLSearchParams();
-  q.set('order', 'pts_tiebreak DESC'); q.set('group', 'team_id'); q.set('league_id', cfg.leagueId);
-  q.set('filters[][league_id]', cfg.leagueId); q.set('filters[][season_id]', cfg.seasonId);
-  q.set('category_id', lg.categoryId); q.set('filters[][category_id]', lg.categoryId);
-  q.set('public_site', '1'); q.set('class', 'Standings');
-  FIELDS.forEach((f) => q.append('fields[]', f));
-  q.set('page', '1');
-
-  const raw = { recaps: {} };
-  raw.standings = await (await http(`${BASE}/table_data.php?${q}`)).json(); await sleep(DELAY);
-  raw.players = await (await http(`${BASE}/sites/site_stats_players.php?lang=fr`, { ...post, body: form() })).text(); await sleep(DELAY);
-  raw.goalies = await (await http(`${BASE}/sites/site_stats_goalies.php?lang=fr`, { ...post, body: form() })).text(); await sleep(DELAY);
-  raw.schedule = await (await http(`${BASE}/sites/site_schedule_include.php?lang=fr`, { ...post, body: form({ view: 'list' }) })).text();
-
-  // Box scores: only new games, and games whose saved box was taken less than 6 h after the start (LDParsers.boxUnsettled).
-  const { out } = assemble(raw, lg, cfg, structuredClone(oldBox));
-  const todo = out.games.filter((g) => g.as != null && g.hs != null && !g.cancelled && (!oldBox?.games?.[g.id] || boxUnsettled(g, oldAt)));
-  for (const g of todo) {
-    await sleep(DELAY);
-    try { raw.recaps[g.id] = await (await http(`${BASE}/sites/site_game_recap.php?game_id=${g.id}&league_id=${cfg.leagueId}&lang=fr`)).text(); }
-    catch (e) { console.warn(`  box score ${g.id} skipped: ${e.message}`); }
-  }
-  return raw;
-}
+// The request steps are in shared/refresh.js (the tools run the same steps from an admin's browser).
+const fetchLeague = (lg, cfg, oldBox, oldAt) => globalThis.LDRefresh.fetchLeague(lg, cfg, oldBox, {
+  get: async (url, init, kind) => { const r = await http(url, init); return kind === 'json' ? r.json() : r.text(); },
+  sleep, delay: DELAY, warn: (m) => console.warn(m), oldAt
+});
 
 const cfg = await loadLeagues();
 const force = process.argv.includes('--force');

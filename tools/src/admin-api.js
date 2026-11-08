@@ -9,6 +9,7 @@ import { isArchived, archiveOthers } from './seasons.js';
 import { gamesApi, nbhpaPlan } from './games.js';
 import { adminsApi, ensureSuperAdmin, isSuper } from './admins.js';
 import { isDemo, demoAdminLogin } from './demo.js';
+import { publishApi } from './publish.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -63,6 +64,9 @@ export async function adminApi(req, env, url) {
   // ---- the admins (super admins only) ----
   const admins = await adminsApi({ req, env, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail) });
   if (admins) return admins;
+  // ---- the stats site data refresh (super admins; the browser reads NBHPA, this commits to GitHub): src/publish.js ----
+  const pub = await publishApi({ req, env, url, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail) });
+  if (pub) return pub;
 
   // ---- seasons ----
   if (m === 'GET' && path === '/seasons') {
