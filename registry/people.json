@@ -1,5 +1,5 @@
 {
-  "next": 257,
+  "next": 260,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -256,6 +256,9 @@
     {"id":"L0253","nid":"44165","name":"Benoit Chevrette","sex":"m","pids":["478610"],"since":"Automne 2026"},
     {"id":"L0254","nid":"217293","name":"CHRISTIAN BRASSARD","sex":"m","pids":["643593"],"since":"Automne 2026"},
     {"id":"L0255","nid":"208360","name":"Emilie Fortin","sex":"f","pids":["642064"],"since":"Automne 2026"},
-    {"id":"L0256","nid":"48389","name":"Vincent Lecours","sex":"m","pids":["507326"],"since":"Automne 2026"}
+    {"id":"L0256","nid":"48389","name":"Vincent Lecours","sex":"m","pids":["507326"],"since":"Automne 2026"},
+    {"id":"L0257","nid":"45633","name":"David Laroche","sex":"m","pids":["1985"],"since":"Automne 2026"},
+    {"id":"L0258","nid":"200580","name":"Julien Vachon","sex":"m","pids":["417058"],"since":"Automne 2026"},
+    {"id":"L0259","nid":"83623","name":"William Goyette","sex":"m","pids":["272580"],"since":"Automne 2026"}
   ]
 }
