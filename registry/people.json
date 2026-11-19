@@ -1,5 +1,5 @@
 {
-  "next": 260,
+  "next": 265,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -259,6 +259,11 @@
     {"id":"L0256","nid":"48389","name":"Vincent Lecours","sex":"m","pids":["507326"],"since":"Automne 2026"},
     {"id":"L0257","nid":"45633","name":"David Laroche","sex":"m","pids":["1985"],"since":"Automne 2026"},
     {"id":"L0258","nid":"200580","name":"Julien Vachon","sex":"m","pids":["417058"],"since":"Automne 2026"},
-    {"id":"L0259","nid":"83623","name":"William Goyette","sex":"m","pids":["272580"],"since":"Automne 2026"}
+    {"id":"L0259","nid":"83623","name":"William Goyette","sex":"m","pids":["194724","272580"],"since":"Automne 2026"},
+    {"id":"L0260","nid":"203662","name":"Alexie Gaudet","sex":"f","pids":["605088"],"since":"Automne 2026"},
+    {"id":"L0261","nid":"136392","name":"Annie Pimparé","sex":"f","pids":["375330"],"since":"Automne 2026"},
+    {"id":"L0262","nid":"80494","name":"François Lapointe","sex":"m","pids":["244430"],"since":"Automne 2026"},
+    {"id":"L0263","nid":"118713","name":"Sonia Sauvé","sex":"f","pids":["545661"],"since":"Automne 2026"},
+    {"id":"L0264","nid":"114685","name":"Stephanie Nadeau","sex":"f","pids":["305310"],"since":"Automne 2026"}
   ]
 }
