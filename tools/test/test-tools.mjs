@@ -477,41 +477,88 @@ assert.deepEqual((await call('/api/public/season')).data.season.leagues_off, ['r
 assert.equal(await DB.prepare("SELECT salary_cap FROM season_leagues WHERE season_id = ? AND league = 'retro'").bind(seasonId).first('salary_cap'), payrollA, 'the rules stay (same row)');
 assert.equal((await call('/api/admin/season-leagues', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', enabled: true } })).status, 200, 'switched back on');
 assert.equal((await call('/api/captain/teams', { cookie: ccookie })).data.teams.length, 1);
+// ONE lineup per team and game (owner, 2026-11-20): a change merges into it (same id); every check passes = approved at once
 r = await call('/api/captain/replacements', { method: 'POST', cookie: ccookie, body: body(sub1, { approve: true }) });
-assert.equal(r.status, 201); assert.equal(r.data.status, 'pending', 'a captain cannot approve their own request'); const rqB = r.data.id;
-assert.equal((await call('/api/captain/replacements/' + rqB + '/decide', { method: 'POST', cookie: ccookie, body: { decision: 'approve' } })).status, 404, 'captains do not decide');
-assert.equal(st(await chk(body(sub3), ccookie, 'captain'), 'dup'), 'warn', 'another open request for this game names the same absent player');
+assert.equal(r.status, 200); assert.equal(r.data.id, rqA, 'the change merges into the game\'s lineup (same id: the shared link stays)');
+assert.deepEqual([r.data.status, r.data.auto, r.data.result], ['approved', true, 'ok'], 'every check passes: approved at once, no admin needed');
+assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacement_lines WHERE replacement_id = ?').bind(rqA).first('n'), 1, 'the same absent player: the line is replaced, not added');
+assert.equal((await call('/api/captain/replacements/' + rqA + '/decide', { method: 'POST', cookie: ccookie, body: { decision: 'approve' } })).status, 404, 'captains do not decide');
+assert.equal(st(await chk(body(sub3), ccookie, 'captain'), 'dup'), 'warn', 'a check (not a save) still sees the lineup on file');
 r = await call('/api/captain/replacements', { cookie: ccookie });
-assert.deepEqual(r.data.replacements.map((q) => q.id).sort(), [rqG, rqA, rqB].sort(), 'the captain sees every request of their team (also those made by the admins)');
+assert.deepEqual(r.data.replacements.map((q) => q.id).sort(), [rqG, rqA].sort(), 'the captain sees every record of their team (also those made by the admins)');
 assert.equal(r.data.replacements.find((q) => q.id === rqA).created_kind, 'admin');
-// admin: the queue, decisions
-assert.deepEqual((await call('/api/admin/replacements/pending?season=' + seasonId, { cookie })).data.counts, { retro: 2 });
+assert.deepEqual((await call('/api/admin/replacements/pending?season=' + seasonId, { cookie })).data.counts, {}, 'nothing waits for the admins');
+// a change with a problem goes back to the admins (no note needed on the lineup page)
+const lineupSave = (lines, c = ccookie, area = 'captain', extra = {}) => call('/api/' + area + '/replacements/lineup', { method: 'POST', cookie: c, body: { team_id: teamA, game_id: gameA.id, lines, ...extra } });
+r = await lineupSave([{ absent_id: absentA, sub_id: sub2, sub_pos: 's', sub_jersey: '91' }]);
+assert.deepEqual([r.status, r.data.id, r.data.status, r.data.result, r.data.auto], [200, rqA, 'pending', 'fail', false], 'over the cap: waits for an admin');
+assert.deepEqual((await call('/api/admin/replacements/pending?season=' + seasonId, { cookie })).data.counts, { retro: 1 });
 r = await call('/api/admin/replacements?season=' + seasonId, { cookie });
-const qB = r.data.replacements.find((q) => q.id === rqB);
-assert.equal(qB.created_name, 'Cap Retro'); assert.equal(qB.lines[0].sub_id, sub1); assert.equal(qB.lines[0].sub_salary, 2); assert.equal(qB.result, 'warn', 'pending requests are checked again (now a duplicate of the other one)');
-assert.equal((await call('/api/admin/replacements/' + rqB + '/decide', { method: 'POST', cookie, body: { decision: 'approve' } })).data.status, 'approved');
-assert.equal((await call('/api/admin/replacements/' + rqB + '/decide', { method: 'POST', cookie, body: { decision: 'refuse' } })).data.error, 'not_pending', 'decided once');
+const qA = r.data.replacements.find((q) => q.id === rqA);
+assert.deepEqual([qA.lines.length, qA.lines[0].sub_id, qA.lines[0].sub_salary, qA.result], [1, sub2, 5, 'fail'], 'the admin sees the lineup change and its checks');
 assert.equal((await call('/api/admin/replacements/' + rqA + '/decide', { method: 'POST', cookie, body: { decision: 'maybe' } })).status, 400);
-assert.equal((await call('/api/admin/replacements/' + rqA + '/decide', { method: 'POST', cookie, body: { decision: 'refuse', note: 'Plafond dépassé' } })).data.status, 'refused');
+assert.equal((await call('/api/admin/replacements/' + rqA + '/decide', { method: 'POST', cookie, body: { decision: 'approve' } })).data.status, 'approved');
+assert.equal((await call('/api/admin/replacements/' + rqA + '/decide', { method: 'POST', cookie, body: { decision: 'refuse' } })).data.error, 'not_pending', 'decided once');
 // the approved replacement is now busy at that time for the other team of the game
 const oppAbsent = (await DB.prepare("SELECT person_id FROM rosters WHERE team_id = ? AND pos = 's' AND removed_at IS NULL").bind(oppTeam).first('person_id'));
-c2 = await chk({ team_id: oppTeam, game_id: gameA.id, lines: [{ absent_id: oppAbsent, sub_id: sub1, sub_pos: 's' }] });
-assert.deepEqual([st(c2, 'busy'), c2.checks.find((x) => x.k === 'busy').d.req], ['fail', rqB], 'already replacing at that time (another request)');
+c2 = await chk({ team_id: oppTeam, game_id: gameA.id, lines: [{ absent_id: oppAbsent, sub_id: sub2, sub_pos: 's' }] });
+assert.deepEqual([st(c2, 'busy'), c2.checks.find((x) => x.k === 'busy').d.req], ['fail', rqA], 'already replacing at that time (another team\'s lineup)');
+// a refusal: the lineup is back to the roster; the record stays in the history
+r = await lineupSave([{ absent_id: absentA, sub_id: sub2, sub_pos: 's' }]);
+assert.equal(r.data.status, 'pending', 'the same problem, changed again: back to the admins');
+assert.equal((await call('/api/admin/replacements/' + rqA + '/decide', { method: 'POST', cookie, body: { decision: 'refuse', note: 'Plafond dépassé' } })).data.status, 'refused');
 r = await call('/api/captain/replacements', { cookie: ccookie });
 assert.equal(r.data.replacements.find((q) => q.id === rqA).decision_note, 'Plafond dépassé', 'the captain sees the decision and its note');
-assert.equal((await call('/api/captain/replacements/' + rqB + '/hide', { method: 'POST', cookie: ccookie, body: {} })).data.error, 'not_refused', 'only a refused request can be hidden');
-assert.equal((await call('/api/captain/replacements/' + rqA + '/hide', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain hides a refused request');
+assert.equal((await call('/api/captain/replacements/' + rqA + '/hide', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain hides a refused record');
 assert.ok(!(await call('/api/captain/replacements', { cookie: ccookie })).data.replacements.some((q) => q.id === rqA), 'hidden from the captain');
 assert.ok((await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.some((q) => q.id === rqA), 'still in the admin history');
+// after a refusal, the next change starts a new lineup record
+r = await lineupSave([{ absent_id: absentA, sub_id: sub1, sub_pos: 's', sub_jersey: '42' }]);
+const rqB = r.data.id;
+assert.ok(rqB !== rqA && r.data.status === 'approved', 'a new record, approved at once');
+assert.equal(await DB.prepare('SELECT sub_jersey FROM replacement_lines WHERE replacement_id = ?').bind(rqB).first('sub_jersey'), '42', 'the number the replacement wears that night');
+assert.equal((await lineupSave([{ absent_id: absentA, sub_id: sub1, sub_pos: 's', sub_jersey: 'A1' }])).status, 400, 'a number is digits');
+assert.equal((await call('/api/captain/replacements/' + rqB + '/hide', { method: 'POST', cookie: ccookie, body: {} })).data.error, 'not_refused', 'only a refused record can be hidden');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain can cancel');
-assert.equal(await DB.prepare('SELECT (SELECT COUNT(*) FROM replacements WHERE id = ?) + (SELECT COUNT(*) FROM replacement_lines WHERE replacement_id = ?) AS n').bind(rqB, rqB).first('n'), 0, 'a cancelled request is deleted, with its lines');
+assert.equal(await DB.prepare('SELECT (SELECT COUNT(*) FROM replacements WHERE id = ?) + (SELECT COUNT(*) FROM replacement_lines WHERE replacement_id = ?) AS n').bind(rqB, rqB).first('n'), 0, 'a cancelled record is deleted, with its lines');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 404, 'gone');
-assert.equal((await call('/api/admin/replacements/' + rqA + '/cancel', { method: 'POST', cookie, body: {} })).data.error, 'not_open', 'a refused request is not cancelled (it stays in the history)');
+assert.equal((await call('/api/admin/replacements/' + rqA + '/cancel', { method: 'POST', cookie, body: {} })).data.error, 'not_open', 'a refused record is not cancelled (it stays in the history)');
+// absent, not replaced (the team plays short); and a goalie is required
+{
+  const goaliesA = rosterA.filter((x) => x.pos === 'g'), goalieA = goaliesA[0], noGoalie = goaliesA.map((g) => ({ absent_id: g.person_id, sub_pos: 'g' }));
+  r = await lineupSave([{ absent_id: absentA, sub_pos: 's' }]);
+  assert.deepEqual([r.data.status, r.data.result], ['approved', 'ok'], 'an absent player with nobody instead: fine (the team plays short)');
+  assert.ok(goalieA, 'the roster has a goalie');
+  r = await lineupSave([{ absent_id: absentA, sub_pos: 's' }, ...noGoalie]);
+  assert.deepEqual([r.data.status, st(r.data, 'goalie')], ['pending', 'fail'], 'no goalie left: a problem, the admins decide');
+  r = await lineupSave([{ absent_id: absentA, sub_pos: 's' }, ...noGoalie.slice(1), { absent_id: goalieA.person_id, sub_id: sub4, sub_pos: 'g' }]);
+  assert.equal(st(r.data, 'goalie'), 'ok', 'a replacement playing goalie');
+  const recId = r.data.id;
+  r = await lineupSave([]);
+  assert.deepEqual([r.status, r.data.id], [200, null], 'no change left: the lineup is the roster again');
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE id = ?').bind(recId).first('n'), 0, 'its record goes');
+}
+// the regular numbers: pre-filled from NBHPA, set by the captain; games already played keep theirs
+{
+  r = await call('/api/captain/replacements/builder?team=' + teamA + '&game=' + gameA2.ref, { cookie: ccookie });
+  const withNb = r.data.roster.filter((x) => x.jersey_nbhpa);
+  assert.ok(withNb.length && withNb.every((x) => /^\d+$/.test(x.jersey)), 'the numbers come from the NBHPA box scores until someone sets them');
+  const pj = rosterA.find((x) => x.pos === 's').person_id;
+  assert.equal((await call('/api/captain/replacements/jersey', { method: 'POST', cookie: ccookie, body: { team_id: teamA, person_id: pj, jersey: 'x' } })).status, 400);
+  assert.equal((await call('/api/captain/replacements/jersey', { method: 'POST', cookie: ccookie, body: { team_id: oppTeam, person_id: pj, jersey: '7' } })).status, 404, 'their own team only');
+  const playedA = await DB.prepare('SELECT COUNT(*) AS n FROM games WHERE (away_team = ? OR home_team = ?) AND cancelled = 0 AND date < ?').bind(teamA, teamA, new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' })).first('n');
+  assert.equal((await call('/api/captain/replacements/jersey', { method: 'POST', cookie: ccookie, body: { team_id: teamA, person_id: pj, jersey: '77' } })).status, 200);
+  assert.equal(await DB.prepare('SELECT jersey FROM rosters WHERE team_id = ? AND person_id = ? AND removed_at IS NULL').bind(teamA, pj).first('jersey'), '77');
+  assert.ok(playedA > 0 && await DB.prepare('SELECT COUNT(DISTINCT game_ref) AS n FROM game_rosters WHERE team_id = ?').bind(teamA).first('n') === playedA, 'every game already played got its copy of the roster first');
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM game_rosters WHERE team_id = ? AND jersey = '77'").bind(teamA).first('n'), 0, 'the copies keep the old number');
+  r = await call('/api/captain/replacements/builder?team=' + teamA + '&game=' + gameA2.ref, { cookie: ccookie });
+  assert.deepEqual([r.data.roster.find((x) => x.person_id === pj).jersey, r.data.roster.find((x) => x.person_id === pj).jersey_nbhpa], ['77', false], 'the number set wins over NBHPA');
+}
 r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(sub1), game_id: undefined, game_ref: gameA2.ref, approve: true, note: 'Fait pour le capitaine' } });
 assert.equal(r.data.status, 'approved', 'an admin making the request for a captain can approve it at once');
 assert.equal((await call('/api/admin/replacements?season=' + seasonId, { cookie })).data.replacements.find((q) => q.id === r.data.id).decided_name, 'Boss');
 r = await call('/api/admin/audit', { cookie });
-for (const a of ['replacement.create', 'replacement.approve', 'replacement.refuse', 'replacement.cancel']) assert.ok(r.data.audit.some((x) => x.action === a), 'audit has ' + a);
+for (const a of ['replacement.create', 'replacement.approve', 'replacement.refuse', 'replacement.cancel', 'lineup.update', 'lineup.clear', 'roster.jersey']) assert.ok(r.data.audit.some((x) => x.action === a), 'audit has ' + a);
 assert.ok(r.data.audit.some((x) => x.action === 'replacement.create' && x.actor_kind === 'captain' && x.actor_name === 'Cap Retro'), 'audit names the captain');
 // the age rule can count in the game's year
 await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: payrollA, min_age_m: 40, min_age_f: 35, min_age_g: 30, age_on: 'year' } });
@@ -520,7 +567,7 @@ assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { s
 await call('/api/admin/rules', { method: 'POST', cookie, body: { season_id: seasonId, league: 'retro', salary_cap: payrollA, min_age_m: 40, min_age_f: 35, min_age_g: 30 } });
 // deleting a person takes their request lines (and a request left empty) with them
 await call('/api/admin/section-players', { method: 'POST', cookie, body: { season_id: seasonId, section: 'draft', person_id: outsider, salary_s: 1 } });
-r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(outsider), game_id: gameA2.id, note: 'Test' } });
+r = await call('/api/admin/replacements', { method: 'POST', cookie, body: { ...body(outsider), game_id: gamesA[2].id, note: 'Test' } });
 assert.equal(r.status, 201);
 assert.equal((await call('/api/admin/people/' + outsider + '/delete', { method: 'POST', cookie, body: {} })).status, 200);
 assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE id = ?').bind(r.data.id).first('n'), 0, 'person delete: their request goes');
@@ -1003,6 +1050,10 @@ q('[data-b-approve]').checked = false; q('[data-b-approve]').dispatchEvent(new w
 q('[data-b-form]').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
 assert.equal(w.location.hash, hL(lg, 'teams'), 'saved: back where the admin came from');
 assert.ok(d.querySelector('#main .ta-msg.ta-ok'), 'with a message');
+assert.equal(await DB.prepare('SELECT status FROM replacements ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT 1').first('status'), 'approved', 'every check passes: approved at once (the admin needs nothing more)');
+// a lineup with a problem waits for the admins: no goalie left
+assert.equal((await call('/api/admin/replacements/lineup', { method: 'POST', cookie: jar.c, body: { team_id: teamA, game_id: gameA.id, lines: (await DB.prepare("SELECT person_id FROM rosters WHERE team_id = ? AND pos = 'g' AND removed_at IS NULL").bind(teamA).all()).results.map((g) => ({ absent_id: g.person_id, sub_pos: 'g' })) } })).data.status, 'pending');
+w.location.hash = hL(lg, 'cal'); await wait(250); w.location.hash = hL(lg, 'teams'); await wait(250);
 assert.ok(/\(1\)/.test(d.querySelector('.nav a[href="' + hL(lg, 'subs') + '"]').textContent), 'the Replacements tab counts the pending request');
 assert.ok(d.querySelector('.ta-ctx-lg[href^="' + hL(lg) + '"] .ta-cnt'), 'the switcher shows the league\'s pending count');
 w.location.hash = '#/'; await wait(250);
@@ -1274,7 +1325,7 @@ assert.ok(cd.querySelectorAll('#tabbar a').length === 2 && cd.querySelector('.na
   cw.location.hash = '#equipe'; await wait(250);
 }
 assert.ok(!cd.querySelector('.bd-req .bd-req-h .tcell'), 'compact cards on the team page (no team repeated)');
-assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE created_kind = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue');
+assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM replacements WHERE COALESCE(updated_kind, created_kind) = 'captain' AND status = 'pending' AND note = 'Seule disponible ce soir'").first('n'), 1, 'the request is in the queue (last changed by the captain)');
 // a second team: now the switcher shows
 await call('/api/admin/access', { method: 'POST', cookie: cookie3b, body: { captain_id: capRetro, team_ref: oppTeam } });
 cw.close();

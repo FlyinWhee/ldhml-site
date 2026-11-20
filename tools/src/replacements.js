@@ -2,8 +2,11 @@
 // /api/admin/replacements... (an admin, for any team: they build requests for captains who are less at ease with tech).
 // Read tools/CLAUDE.md and docs/tools.md.
 //
-// One request = one game of one team, with one line per absent player (absent -> replacement, at a position).
-// The checks run while the request is built, again when it is saved, and again when an admin decides.
+// One request = THE LINEUP CHANGES of one team for one game (owner, 2026-11-20: the replacement feature becomes the
+// game-night lineup): one line per absent player (absent -> replacement at a position, with the number they wear; or
+// nobody: the team plays short). One open record per team and game: every save merges into it, its id stays (share links).
+// A lineup whose checks all pass is approved at once (auto = 1); only a problem waits for an admin.
+// The checks run while the lineup is built, again when it is saved, and again when an admin decides.
 // No rule engine: each check is coded here as a league confirms it, and reads its numbers from season_leagues.
 //   absent  the absent player is on the team's roster
 //   listed  the replacement is on the section's player list for the season
@@ -16,14 +19,16 @@
 //   salary  the salaries the cap check needs are known
 //   cap     team payroll - absent salaries + replacement salaries <= salary cap (salary of the position played)
 //   dup     no other open request of this team for this game names the same players
+//   goalie  the lineup has a goalie (a goalie of the roster who is not absent, or a replacement playing goalie)
 // Each check: { k, s: 'ok' | 'warn' | 'fail', line?: index, d?: details }. Missing data gives 'warn' (to check), never a silent pass.
 // Captains never get birth dates: the age check says only whether the minimum is met.
 import { json, fail, readJson, cleanText, now } from './http.js';
 import { cleanGuest } from './guest.js';
 import { isArchived } from './seasons.js';
 import { gameById, teamGames, teamsPlayingAt, gameLabel } from './games.js';
+import { freezePast } from './lineups.js';
 
-const MAX_LINES = 8;
+const MAX_LINES = 20;
 const OPEN = "('pending', 'approved')";
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
 const intId = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
@@ -76,26 +81,28 @@ async function resolveGame(DB, team, b) {
   return { ref: null, id: null, date, time, label: null };
 }
 
-/** Lines from a request body: [{ absent_id, sub_id | guest: { name, age, nid }, sub_pos }], each person once.
- *  null when not valid. */
-function readLines(b) {
-  if (!Array.isArray(b.lines) || !b.lines.length || b.lines.length > MAX_LINES) return null;
+/** Lines from a request body: [{ absent_id, sub_id | guest: { name, age, nid } | nothing (not replaced), sub_pos, sub_jersey }],
+ *  each person once. empty: true allows no line (the lineup back to the roster). null when not valid. */
+function readLines(b, empty) {
+  if (!Array.isArray(b.lines) || (!b.lines.length && !empty) || b.lines.length > MAX_LINES) return null;
   const lines = b.lines.map((l) => {
     const g = l && l.guest ? cleanGuest(l.guest) : null;
-    return { absent_id: intId(l && l.absent_id), sub_id: g ? null : intId(l && l.sub_id), guest: g, sub_pos: l && l.sub_pos, bad: !!(l && l.guest && !g) };
+    const jersey = l && l.sub_jersey != null && String(l.sub_jersey).trim() !== '' ? String(l.sub_jersey).trim() : null;
+    return { absent_id: intId(l && l.absent_id), sub_id: g ? null : intId(l && l.sub_id), guest: g, sub_pos: l && l.sub_pos, sub_jersey: jersey,
+      bad: !!(l && l.guest && !g) || (jersey !== null && !/^\d{1,3}$/.test(jersey)) };
   });
-  if (lines.some((l) => l.bad || !l.absent_id || (!l.sub_id && !l.guest) || !['s', 'g'].includes(l.sub_pos))) return null;
+  if (lines.some((l) => l.bad || !l.absent_id || !['s', 'g'].includes(l.sub_pos))) return null;
   lines.forEach((l) => { delete l.bad; });
   const ids = lines.flatMap((l) => [l.absent_id, l.sub_id].filter(Boolean));
   return new Set(ids).size === ids.length ? lines : null;
 }
 /** Lines as stored -> the evaluate() input. */
-const fromRows = (rows) => rows.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos,
+const fromRows = (rows) => rows.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos, sub_jersey: l.sub_jersey ?? null,
   guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null }));
 
 /** A team's active roster, with the salaries of its section's list (salary = at the roster position). */
 async function teamRoster(DB, team, section) {
-  const { results } = await DB.prepare(`SELECT r.person_id, r.pos, p.name, p.site_id, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g
+  const { results } = await DB.prepare(`SELECT r.person_id, r.pos, r.jersey, p.name, p.site_id, p.nid, p.sex, p.birth_year, p.birth_month, sp.salary_s, sp.salary_g
     FROM rosters r JOIN people p ON p.id = r.person_id
     LEFT JOIN section_players sp ON sp.season_id = r.season_id AND sp.section = ? AND sp.person_id = r.person_id
     WHERE r.team_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(section, team.id).all();
@@ -120,6 +127,33 @@ async function busyAt(DB, season, team, slot, exceptReq) {
     WHERE q.season_id = ? AND q.game_date = ? AND q.game_time = ? AND q.status IN ${OPEN} AND q.id <> ?`).bind(season.id, slot.date, slot.time, exceptReq || 0).all();
   for (const s of subs) if (!out.has(s.sub_id)) out.set(s.sub_id, { abb: s.abb, league: s.league, req: s.id });
   return out;
+}
+
+/** The open lineup record of a team for a game (pending or approved; a refused one is history): the row, or null. */
+async function openLineup(DB, team, slot) {
+  return slot.ref
+    ? DB.prepare(`SELECT * FROM replacements WHERE team_id = ? AND game_ref = ? AND status IN ${OPEN} ORDER BY id DESC LIMIT 1`).bind(team.id, slot.ref).first()
+    : DB.prepare(`SELECT * FROM replacements WHERE team_id = ? AND game_ref IS NULL AND game_date = ? AND game_time IS ? AND status IN ${OPEN} ORDER BY id DESC LIMIT 1`).bind(team.id, slot.date, slot.time).first();
+}
+/** The lineup on file for a game, for the lineup page: { id, status, auto, result, checks, note, updated_at, updated_name, lines } or null. */
+async function currentLineup(DB, team, slot) {
+  const r = await openLineup(DB, team, slot);
+  if (!r) return null;
+  const { results: ls } = await DB.prepare(`SELECT l.*, ps.name AS sub_name, ps.site_id AS sub_site, ps.sex AS sub_sex FROM replacement_lines l LEFT JOIN people ps ON ps.id = l.sub_id
+    WHERE l.replacement_id = ? ORDER BY l.id`).bind(r.id).all();
+  const who = r.updated_kind === 'admin' ? await DB.prepare('SELECT name FROM admins WHERE id = ?').bind(r.updated_by || 0).first('name')
+    : await DB.prepare('SELECT name FROM captains WHERE id = ?').bind(r.updated_by || r.created_by || 0).first('name');
+  let saved = {}; try { saved = JSON.parse(r.checks); } catch { /* old row */ }
+  return { id: r.id, status: r.status, auto: !!r.auto, result: r.result, checks: saved.checks || [], payroll: saved.payroll || null, note: r.note,
+    updated_at: r.updated_at || r.created_at, updated_kind: r.updated_kind || r.created_kind, updated_name: who || null,
+    lines: ls.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_name: l.sub_name || l.guest_name || null, sub_site: l.sub_site || null, sub_sex: l.sub_sex || l.guest_sex || null,
+      sub_pos: l.sub_pos, sub_salary: l.sub_salary, sub_jersey: l.sub_jersey, guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null })) };
+}
+/** The last NBHPA number of each person in a league (the build's season snapshot): Map site id -> number. */
+export function nbhpaNumbers(data, league) {
+  const m = new Map();
+  for (const p of (data && data.people) || []) if (p.no && p.no[league]) m.set(p.id, p.no[league]);
+  return m;
 }
 
 /** Run every check. Returns { result, checks, payroll, lines (with positions and salaries) }. */
@@ -148,6 +182,12 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   }
   lines.forEach((l, i) => {
     if (l.guest) { guestLine(l, i); return; }
+    if (!l.sub_id) {   // absent, not replaced: the team plays short (the goalie check below still applies)
+      const a = onTeam.get(l.absent_id);
+      out.push({ ...l, absent_pos: a ? a.pos : 's', absent_salary: a ? a.salary ?? null : null, sub_salary: null });
+      checks.push({ k: 'absent', s: a ? 'ok' : 'fail', line: i });
+      return;
+    }
     const a = onTeam.get(l.absent_id), p = listed.get(l.sub_id) || {};
     const absentPos = a ? a.pos : 's', subSalary = l.sub_pos === 'g' ? p.salary_g : p.salary_s;
     out.push({ ...l, absent_pos: absentPos, absent_salary: a ? a.salary ?? null : null, sub_salary: p.sp ? subSalary ?? null : null });
@@ -169,7 +209,7 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
   const missingRoster = roster.filter((r) => r.salary == null).length;
   const payroll = { before: round(before), after: round(after), cap, missing: missingRoster };
   if (cap != null) {
-    const unknownLine = out.some((l) => (onTeam.has(l.absent_id) && l.absent_salary == null) || l.sub_salary == null);
+    const unknownLine = out.some((l) => (onTeam.has(l.absent_id) && l.absent_salary == null) || ((l.sub_id || l.guest) && l.sub_salary == null));
     checks.push({ k: 'cap', s: unknownLine ? 'warn' : after > cap + 1e-9 ? 'fail' : missingRoster ? 'warn' : 'ok', d: payroll });
   }
   const others = (await DB.prepare(`SELECT q.id, l.absent_id, l.sub_id FROM replacements q JOIN replacement_lines l ON l.replacement_id = q.id
@@ -177,6 +217,10 @@ export async function evaluate(DB, data, season, team, slot, lines, exceptReq) {
     .bind(team.id, slot.date, slot.time, slot.time, exceptReq || 0).all()).results;
   const dupIds = [...new Set(others.filter((o) => lines.some((l) => l.absent_id === o.absent_id || (l.sub_id && l.sub_id === o.sub_id))).map((o) => o.id))];
   if (dupIds.length) checks.push({ k: 'dup', s: 'warn', d: { ids: dupIds } });
+  // a goalie is required (owner, 2026-11-20): one of the roster who is not absent, or a replacement playing goalie
+  const outIds = new Set(out.map((l) => l.absent_id));
+  const goalies = roster.filter((r) => r.pos === 'g' && !outIds.has(r.person_id)).length + out.filter((l) => (l.sub_id || l.guest) && l.sub_pos === 'g').length;
+  checks.push({ k: 'goalie', s: goalies ? 'ok' : 'fail', d: { n: goalies } });
   const result = checks.some((c) => c.s === 'fail') ? 'fail' : checks.some((c) => c.s === 'warn') ? 'warn' : 'ok';
   return { result, checks, payroll, lines: out };
 }
@@ -206,7 +250,9 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (!team) return fail(404, 'team');
     const season = await seasonOf(team.season_id), lg = leagueOf(data, team.league);
     const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
-    const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null }));
+    const nbNo = nbhpaNumbers(data, team.league);
+    const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null,
+      jersey: r.jersey ?? nbNo.get(r.site_id) ?? null, jersey_nbhpa: r.jersey == null && nbNo.has(r.site_id) }));
     const games = (await teamGames(DB, team)).map((g) => ({ id: g.id, date: g.date, time: g.time, venue: g.venue, court: g.court, home: g.home,
       opp: { id: g.opp.id, abb: g.opp.abb, name: g.opp.name, logo: g.opp.logo, nbhpa_team_id: g.opp.nbhpa_team_id } }));
     const out = { team: { id: team.id, season_id: team.season_id, league: team.league, name: team.name, abb: team.abb, logo: team.logo, nbhpa_team_id: team.nbhpa_team_id }, season: season && { id: season.id, name: season.name }, rules, roster, games, today: today(), candidates: null };
@@ -221,6 +267,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
       const fullRules = await DB.prepare('SELECT * FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
       const busy = await busyAt(DB, season, team, slot, 0);
       out.slot = slot;
+      out.current = await currentLineup(DB, team, slot);
       out.candidates = list.filter((p) => !(teamOf.get(p.id) && teamOf.get(p.id).team_id === team.id)).map((p) => {
         const age = (pos) => { const a = ageCheck(fullRules, p, pos, slot.date); return a ? a.s : null; };
         const tm = teamOf.get(p.id), b = busy.get(p.id);
@@ -231,30 +278,80 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     return json(out);
   }
 
-  // Check a request without saving it (the builder calls this after each change).
-  if (m === 'POST' && (path === '/replacements/check' || path === '/replacements')) {
+  // Check lines without saving them (the builder and the lineup page call this after each change).
+  //   POST /replacements          the builder: its lines MERGE into the game's lineup (a note is required when a check fails)
+  //   POST /replacements/lineup   the lineup page: the lines ARE the game's lineup (no line: back to the roster); note optional
+  if (m === 'POST' && (path === '/replacements/check' || path === '/replacements' || path === '/replacements/lineup')) {
+    const page = path === '/replacements/lineup';
     const b = await readJson(req, 16384) || {};
     const team = await teamRow(b.team_id);
     if (!team) return fail(404, 'team');
-    const season = await seasonOf(team.season_id), slot = await resolveGame(DB, team, b), lines = readLines(b);
+    const season = await seasonOf(team.season_id), slot = await resolveGame(DB, team, b), lines = readLines(b, page);
     if (!slot) return fail(400, 'game');
-    if (path === '/replacements' && await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
-    if (path === '/replacements' && (await DB.prepare('SELECT enabled FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first('enabled')) === 0) return fail(409, 'league_off');
+    if (path !== '/replacements/check' && await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
+    if (path !== '/replacements/check' && (await DB.prepare('SELECT enabled FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first('enabled')) === 0) return fail(409, 'league_off');
     if (!lines) return fail(400, 'replacement');
-    const ev = await evaluate(DB, data, season, team, slot, lines, 0);
-    if (path === '/replacements/check') return json({ result: ev.result, checks: ev.checks, payroll: ev.payroll });
+    if (path === '/replacements/check') {
+      const ev = await evaluate(DB, data, season, team, slot, lines, 0);
+      return json({ result: ev.result, checks: ev.checks, payroll: ev.payroll });
+    }
     const note = b.note ? cleanText(b.note, 1000) : null;
     if (b.note && !note) return fail(400, 'replacement');
-    if (ev.result === 'fail' && !note) return fail(400, 'note_required', { checks: ev.checks });
-    const approveNow = isAdmin && b.approve === true, t = now();
-    const r = await DB.prepare(`INSERT INTO replacements (season_id, league, team_id, game_ref, game_id, game_date, game_time, game_label, status, result, checks, note, created_at, created_kind, created_by, decided_at, decided_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(team.season_id, team.league, team.id, slot.ref, slot.id, slot.date, slot.time, slot.label,
-      approveNow ? 'approved' : 'pending', ev.result, JSON.stringify({ checks: ev.checks, payroll: ev.payroll }), note, t, actor.kind, actor.id, approveNow ? t : null, approveNow ? actor.id : null).run();
-    const id = r.meta.last_row_id;
-    await DB.batch(ev.lines.map((l) => DB.prepare('INSERT INTO replacement_lines (replacement_id, absent_id, absent_pos, absent_salary, sub_id, sub_pos, sub_salary, guest_name, guest_sex, guest_age, guest_nid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, l.absent_id, l.absent_pos, l.absent_salary, l.sub_id, l.sub_pos, l.sub_salary, l.guest ? l.guest.name : null, l.guest ? l.guest.sex : null, l.guest ? l.guest.age : null, l.guest ? l.guest.nid : null)));
-    await audit('replacement.create', 'replacement:' + id, { team: team.id, game: slot.ref || slot.date, lines: lines.length, guests: lines.filter((l) => l.guest).length, result: ev.result, status: approveNow ? 'approved' : 'pending' });
-    return json({ ok: true, id, status: approveNow ? 'approved' : 'pending', result: ev.result }, 201);
+    // every person named must exist (a deleted person, a typo): a clear 400, never a database error
+    const named = [...new Set(lines.flatMap((l) => [l.absent_id, l.sub_id].filter(Boolean)))];
+    if (named.length && (await DB.prepare(`SELECT COUNT(*) AS n FROM people WHERE id IN (${named.map(() => '?').join(',')})`).bind(...named).first('n')) !== named.length) return fail(400, 'replacement');
+    const cur = await openLineup(DB, team, slot);
+    let all = lines;
+    if (!page && cur) {   // the builder adds to the lineup: its lines replace the same absent players, the others stay
+      const old = fromRows((await DB.prepare('SELECT * FROM replacement_lines WHERE replacement_id = ? ORDER BY id').bind(cur.id).all()).results);
+      all = old.filter((o) => !lines.some((l) => l.absent_id === o.absent_id)).concat(lines);
+    }
+    if (!all.length) {   // nothing changes any more: the lineup is the roster again
+      if (cur) {
+        await DB.batch([DB.prepare('DELETE FROM replacement_lines WHERE replacement_id = ?').bind(cur.id), DB.prepare('DELETE FROM replacements WHERE id = ?').bind(cur.id)]);
+        await audit('lineup.clear', 'replacement:' + cur.id, { team: team.id, game: slot.ref || slot.date });
+      }
+      return json({ ok: true, id: null, status: null, result: null, checks: [], payroll: null });
+    }
+    const ev = await evaluate(DB, data, season, team, slot, all, cur ? cur.id : 0);
+    const keepNote = page && b.note === undefined && cur ? cur.note : note;
+    if (!page && ev.result === 'fail' && !keepNote) return fail(400, 'note_required', { checks: ev.checks });
+    const approveNow = !page && isAdmin && b.approve === true, auto = !approveNow && ev.result === 'ok', t = now();
+    const status = approveNow || auto ? 'approved' : 'pending';
+    const checksJson = JSON.stringify({ checks: ev.checks, payroll: ev.payroll });
+    let id;
+    const lineRows = (rid) => ev.lines.map((l) => DB.prepare('INSERT INTO replacement_lines (replacement_id, absent_id, absent_pos, absent_salary, sub_id, sub_pos, sub_salary, sub_jersey, guest_name, guest_sex, guest_age, guest_nid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(rid, l.absent_id, l.absent_pos, l.absent_salary, l.sub_id, l.sub_pos, l.sub_salary, l.sub_jersey ?? null, l.guest ? l.guest.name : null, l.guest ? l.guest.sex : null, l.guest ? l.guest.age : null, l.guest ? l.guest.nid : null));
+    if (cur) {   // one batch: the record and its lines change together, or not at all
+      id = cur.id;
+      await DB.batch([DB.prepare(`UPDATE replacements SET status = ?, result = ?, checks = ?, note = ?, game_label = ?, updated_at = ?, updated_kind = ?, updated_by = ?, auto = ?,
+        decided_at = ?, decided_by = ?, decision_note = NULL WHERE id = ?`).bind(status, ev.result, checksJson, keepNote, slot.label, t, actor.kind, actor.id, auto ? 1 : 0,
+        status === 'approved' ? t : null, approveNow ? actor.id : null, id), DB.prepare('DELETE FROM replacement_lines WHERE replacement_id = ?').bind(id), ...lineRows(id)]);
+    } else {
+      const r = await DB.prepare(`INSERT INTO replacements (season_id, league, team_id, game_ref, game_id, game_date, game_time, game_label, status, result, checks, note, created_at, created_kind, created_by,
+        updated_at, updated_kind, updated_by, auto, decided_at, decided_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(team.season_id, team.league, team.id, slot.ref, slot.id, slot.date, slot.time, slot.label,
+        status, ev.result, checksJson, keepNote, t, actor.kind, actor.id, t, actor.kind, actor.id, auto ? 1 : 0, status === 'approved' ? t : null, approveNow ? actor.id : null).run();
+      id = r.meta.last_row_id;
+      await DB.batch(lineRows(id));
+    }
+    await audit(cur ? 'lineup.update' : 'replacement.create', 'replacement:' + id, { team: team.id, game: slot.ref || slot.date, lines: all.length, guests: all.filter((l) => l.guest).length, result: ev.result, status, auto });
+    return json({ ok: true, id, status, auto, result: ev.result, checks: ev.checks, payroll: ev.payroll }, cur ? 200 : 201);
+  }
+
+  // A player's regular number on the team (captain of the team, or an admin). The games already played keep their copy.
+  if (m === 'POST' && path === '/replacements/jersey') {
+    const b = await readJson(req) || {};
+    const team = await teamRow(b.team_id);
+    if (!team) return fail(404, 'team');
+    if (await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
+    const j = b.jersey == null || String(b.jersey).trim() === '' ? null : String(b.jersey).trim();
+    if (j !== null && !/^\d{1,3}$/.test(j)) return fail(400, 'jersey');
+    const r = await DB.prepare('SELECT id FROM rosters WHERE team_id = ? AND person_id = ? AND removed_at IS NULL').bind(team.id, intId(b.person_id) || 0).first();
+    if (!r) return fail(404, 'roster');
+    await freezePast(DB, team.id);
+    await DB.prepare('UPDATE rosters SET jersey = ? WHERE id = ?').bind(j, r.id).run();
+    await audit('roster.jersey', 'team:' + team.id, { person: intId(b.person_id), jersey: j });
+    return json({ ok: true });
   }
 
   // Pending requests per league (admin: the count on the tab and the league buttons).

@@ -153,7 +153,7 @@ export async function gamesApi({ req, env, path, m, url, admin, audit, seasonDat
     if (!g) return fail(404, 'game');
     if (await isArchived(DB, g.season_id)) return fail(409, 'season_archived');
     if (await DB.prepare('SELECT 1 FROM replacements WHERE game_ref = ?').bind(g.id).first()) return fail(409, 'game_in_use');
-    await DB.prepare('DELETE FROM games WHERE id = ?').bind(g.id).run();
+    await DB.batch([DB.prepare('DELETE FROM game_rosters WHERE game_ref = ?').bind(g.id), DB.prepare('DELETE FROM games WHERE id = ?').bind(g.id)]);
     await audit('game.delete', 'game:' + g.id, { league: g.league, date: g.date });
     return json({ ok: true });
   }

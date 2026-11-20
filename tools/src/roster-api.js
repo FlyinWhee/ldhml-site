@@ -3,6 +3,7 @@
 // Rules: every row is per season (people excepted: one person across seasons); every change writes an audit row.
 import { json, fail, readJson, cleanText, now } from './http.js';
 import { isArchived } from './seasons.js';
+import { freezePast } from './lineups.js';
 
 const num = (v) => (v === '' || v == null ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN);
 const int = (v, lo, hi) => (v === '' || v == null ? null : Number.isInteger(Number(v)) && Number(v) >= lo && Number(v) <= hi ? Number(v) : NaN);
@@ -109,6 +110,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       DB.prepare('DELETE FROM replacement_lines WHERE absent_id = ? OR sub_id = ?').bind(id, id),
       DB.prepare('DELETE FROM replacements WHERE NOT EXISTS (SELECT 1 FROM replacement_lines l WHERE l.replacement_id = replacements.id)'),
       DB.prepare('DELETE FROM rosters WHERE person_id = ?').bind(id),
+      DB.prepare('DELETE FROM game_rosters WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM league_players WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM section_players WHERE person_id = ?').bind(id),
       DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('person:' + id),
@@ -209,6 +211,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE team_id = ?)').bind(id),
       DB.prepare('DELETE FROM replacements WHERE team_id = ?').bind(id),
       DB.prepare('DELETE FROM rosters WHERE team_id = ?').bind(id),
+      DB.prepare('DELETE FROM game_rosters WHERE team_id = ?').bind(id),
       DB.prepare('UPDATE captain_access SET team_ref = NULL WHERE team_ref = ?').bind(id),
       DB.prepare('DELETE FROM teams WHERE id = ?').bind(id)
     ]);
@@ -228,6 +231,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (!await DB.prepare('SELECT 1 FROM section_players WHERE season_id = ? AND section = ? AND person_id = ?').bind(t.season_id, lg.section, p.id).first()) return fail(400, 'not_registered');
     const on = await DB.prepare(`SELECT tm.name FROM rosters r JOIN teams tm ON tm.id = r.team_id WHERE r.season_id = ? AND r.league = ? AND r.person_id = ? AND r.removed_at IS NULL`).bind(t.season_id, t.league, p.id).first();
     if (on) return fail(409, 'already_on_roster', { team: on.name });
+    await freezePast(DB, t.id);   // the games already played keep the roster they had
     const r = await DB.prepare('INSERT INTO rosters (season_id, league, team_id, person_id, pos, added_at, added_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(t.season_id, t.league, t.id, p.id, b.pos, now(), admin.id).run();
     await DB.prepare(`INSERT INTO league_players (season_id, league, person_id, pos, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)
@@ -241,6 +245,8 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
   if (m === 'POST' && x) {
     const ro = await DB.prepare('SELECT season_id, league, person_id FROM rosters WHERE id = ?').bind(Number(x[1])).first();
     if (ro && await isArchived(DB, ro.season_id)) return fail(409, 'season_archived');
+    const rt = await DB.prepare('SELECT team_id FROM rosters WHERE id = ?').bind(Number(x[1])).first('team_id');
+    if (rt) await freezePast(DB, rt);   // the games already played keep the roster they had
     const r = await DB.prepare('UPDATE rosters SET removed_at = ?, removed_by = ? WHERE id = ? AND removed_at IS NULL').bind(now(), admin.id, Number(x[1])).run();
     if (!r.meta.changes) return fail(404, 'roster');
     // a team league: off the team = out of the league; a draft league: back in the draft pool

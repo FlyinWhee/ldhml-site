@@ -56,7 +56,7 @@
       rl_send: 'Un remplacement non conforme peut quand même être déclaré, avec une note : l’administration décide.',
       k_sex: 'Même sexe', x_sex: '{s} n’est pas du même sexe que {a} : un remplacement est toujours du même sexe.', x_sexUnknown: 'Sexe inconnu ({who}) : à vérifier.', rSex: 'sexe inconnu',
       allChecks: 'Vérifications : {ok} ✓ · {warn} à vérifier · {fail} ✗', allOk: 'Toutes les vérifications passent ({n})', back: 'Retour',
-      k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon',
+      k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon', k_goalie: 'Gardien', x_goalie: 'Aucun gardien dans l’alignement : un gardien est obligatoire.', nobody: 'personne (on joue à court)',
       x_absent: '{a} n’est pas dans l’alignement de l’équipe.', x_listed: '{s} n’est pas sur la liste des joueurs de la section cette saison. Un administrateur peut l’ajouter.',
       x_own: '{s} est déjà dans l’alignement de cette équipe.', x_busy: '{s} joue à la même heure (avec {abb}).', x_busyReq: '{s} remplace déjà à la même heure (remplacement no {req}, {abb}).',
       x_age: '{s} n’a pas l’âge minimum ({min} ans comme {pos}).', x_ageBirth: 'Date de naissance de {s} inconnue : l’âge ({min} ans) est à vérifier.',
@@ -107,7 +107,7 @@
       rl_send: 'A replacement that does not pass can still be declared, with a note: the admins decide.',
       k_sex: 'Same sex', x_sex: '{s} is not the same sex as {a}: a replacement is always the same sex.', x_sexUnknown: 'Unknown sex ({who}): to check.', rSex: 'sex unknown',
       allChecks: 'Checks: {ok} ✓ · {warn} to check · {fail} ✗', allOk: 'Every check passes ({n})', back: 'Back',
-      k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate',
+      k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate', k_goalie: 'Goalie', x_goalie: 'No goalie in the lineup: a goalie is required.', nobody: 'nobody (playing short)',
       x_absent: '{a} is not on the team’s roster.', x_listed: '{s} is not on the section’s player list this season. An admin can add them.',
       x_own: '{s} is already on this team’s roster.', x_busy: '{s} plays at the same time (with {abb}).', x_busyReq: '{s} already replaces at the same time (replacement no. {req}, {abb}).',
       x_age: '{s} does not meet the minimum age ({min} as a {pos}).', x_ageBirth: '{s}’s birth date is unknown: the age ({min}) must be checked.',
@@ -185,6 +185,7 @@
     }
     if (c.k === 'salary') return t(L, 'x_salary', { who: (d.missing || []).map(function (w) { return w === 'absent' ? v.a : v.s; }).join(', ') });
     if (c.k === 'dup') return t(L, 'x_dup', { ids: (d.ids || []).join(', ') });
+    if (c.k === 'goalie') return t(L, 'x_goalie');
     return '';
   }
   function chip(ctx, c) {
@@ -224,8 +225,9 @@
   function requestCard(q, ctx, actions, o) {
     o = o || {};
     var L = ctx.lang;
-    var names = q.lines.map(function (l) { return { a: l.absent_name, s: l.sub_name }; });
+    var names = q.lines.map(function (l) { return { a: l.absent_name, s: l.sub_name || t(L, 'nobody') }; });
     var lines = q.lines.map(function (l) {
+      if (!l.sub_id && !l.guest) return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site, l.absent_id) + ' <span class="bd-arrow" aria-hidden="true">→</span> <i class="note">' + esc(t(L, 'nobody')) + '</i></li>';
       return '<li>' + person(ctx, q.league, l.absent_name, l.absent_site, l.absent_id) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + person(ctx, q.league, l.sub_name, l.sub_site, l.sub_id) + '</b>' + (l.guest ? ' ' + guestTag(ctx, l.guest) : '') +
         ' <span class="note">' + esc(posName(ctx, l.sub_pos)) + ' · ' + esc(money(l.absent_salary)) + ' → ' + esc(money(l.sub_salary)) + '</span></li>';
     }).join('');

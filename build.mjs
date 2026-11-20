@@ -234,6 +234,15 @@ for (const out of outDirs) {
 await writeFile(path.join(root, 'dist/.nojekyll'), '');
 
 // ---- data export: the current season as one JSON file (public data only: leagues, teams, players and our ids) ----
+// The last number each NBHPA player_id wore in each league (box scores, skaters; the goalie rows have none): the tools
+// pre-fill a roster's jersey numbers from it (game-night lineups). slug -> player_id -> number.
+const lastNo = {};
+for (const { lg, data } of leagues) {
+  const dateOf = Object.fromEntries((data.games || []).map((g) => [g.id, g.date || '']));
+  const m = lastNo[lg.slug] = {};
+  for (const [gid, g] of Object.entries((data.box && data.box.games) || {}).sort((x, y) => String(dateOf[x[0]] || '').localeCompare(String(dateOf[y[0]] || ''))))
+    for (const t of g.t || []) for (const r of t.sk || []) if (r[1] !== '' && r[1] != null) m[r[0]] = String(r[1]);
+}
 // dist/api/season.json on the stats site, and /data/season.json in the tools Worker (it checks captain access against it).
 const seasonExport = {
   generatedAt: new Date().toISOString(), leagueId: cfg.leagueId, seasonId: cfg.seasonId, seasonName: cfg.seasonName, siteUrl: cfg.siteUrl,
@@ -244,7 +253,8 @@ const seasonExport = {
     games: (data.games || []).map((g) => ({ id: g.id, date: g.date, time: g.time || null, venue: g.venue || '', court: g.court || '', away: g.away, home: g.home, cancelled: !!g.cancelled })) })),
   people: Object.values(people).filter((p) => /^L\d+$/.test(p.id)).map((p) => ({ id: p.id, name: p.name, sex: p.sex, rank: p.rank,   // rank: NBHPA { s, g }
     lg: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, m.teams]))),   // teams, main team first
-    pos: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, (m.s ? 's' : '') + (m.g ? 'g' : '')]))) }))
+    pos: Object.fromEntries(Object.values(p.in).flatMap((inst) => Object.entries(inst.leagues).map(([slug, m]) => [slug, (m.s ? 's' : '') + (m.g ? 'g' : '')]))),
+    no: Object.fromEntries(Object.keys(lastNo).map((slug) => [slug, p.pids.map((pid) => lastNo[slug][pid]).filter(Boolean).pop()]).filter((x) => x[1])) }))   // the last NBHPA jersey number per league
 };
 await mkdir(path.join(root, 'dist/api'), { recursive: true });
 await writeFile(path.join(root, 'dist/api/season.json'), JSON.stringify(seasonExport));
