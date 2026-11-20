@@ -10,7 +10,9 @@ export const isDemo = (env) => env.DEMO === '1';
 export const DEMO_ADMIN = 'demo@demo.invalid';
 const OPEN = new Set(['/api/admin/demo-login', '/api/captain/demo-login', '/api/captain/demo-accounts', '/api/admin/logout', '/api/captain/logout',
   '/api/admin/replacements/check', '/api/captain/replacements/check',
-  '/api/admin/refresh/publish']);   // the stats site refresh writes GitHub, not the demo database (owner, 2026-10-30)
+  '/api/admin/refresh/publish',
+  // game-night lineups (2026-11-20): to try the lineup page; they write the demo's own database only (test data)
+  '/api/captain/replacements/lineup', '/api/admin/replacements/lineup', '/api/captain/replacements/jersey', '/api/admin/replacements/jersey']);   // the stats site refresh writes GitHub, not the demo database (owner, 2026-10-30)
 /** True when the demo must refuse this request (a write). */
 export const demoRefuses = (env, req, url) => isDemo(env) && req.method !== 'GET' && !OPEN.has(url.pathname);
 

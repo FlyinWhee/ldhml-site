@@ -749,7 +749,7 @@ assert.equal((await call('/api/nothing')).status, 404);
 }
 
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
-for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'admin/refresh-run.js', 'admin/index.html', 'captain/index.html', 'index.html'])
+for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'shared/lineup.js', 'shared/lineup.css', 'admin/refresh-run.js', 'admin/index.html', 'captain/index.html', 'index.html'])
   assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');
 
 // ---- the admin page in a browser (jsdom), wired to the Worker ----
@@ -1228,7 +1228,7 @@ await call('/api/admin/rules', { method: 'POST', cookie: cookie3b, body: { seaso
 const cjar = {};   // one browser: the session cookie stays across page loads
 const openCaptainPage = async (hash = '') => {
   const chtml = await readFile(path.join(root, 'dist-tools/captain/index.html'), 'utf8');
-  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/scroll.js': scripts['/shared/scroll.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
+  const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/scroll.js': scripts['/shared/scroll.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/shared/lineup.js': await readFile(path.join(root, 'dist-tools/shared/lineup.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
   const cdom = new JSDOM(chtml.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + cscripts[src] + '</script>'), {
     runScripts: 'dangerously', url: ORIGIN + '/captain/' + hash, virtualConsole: vc,
     beforeParse(cw) {
@@ -1262,7 +1262,7 @@ await csubmit('#f-code');
 await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
-assert.ok(cd.querySelector('[data-act="ask"]'), 'the main action is right there');
+assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]'), 'the main action is right there: the next game\'s lineup');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
@@ -1277,18 +1277,45 @@ const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toron
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA) && g.date >= todayT).length, 'one line per upcoming game; past games only with requests, folded');
 assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1, 'the next game marked');
 assert.equal(cd.querySelectorAll('.cp-kpis .cp-kpi').length, 2, 'two key numbers: the next game and the payroll');
-assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game [data-ask-game]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each upcoming game: "Déclarer…"');
+assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game a.cp-ask-g[href^="#match/"]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each game: its lineup');
 assert.ok(![...cd.querySelectorAll('.cp-game > details')].some((x) => x.open), 'every game starts folded (one line per replacement); opened on demand');
 assert.ok([...cd.querySelectorAll('.cp-game > details')].every((x) => x.querySelector('summary .cp-slim li')), 'folded, a game still shows each replacement on one line (absent → replacement)');
-cd.querySelector('.cp-tl [data-ask-game]').click(); await wait(250);
-assert.ok(cw.location.hash.indexOf('#remplacement/') === 0 && cd.querySelector('#cp-builder .bd-sp.bd-now [data-b-step="2"]'), '"Déclarer…" on a game: the builder on that game (step 2)');
-cw.location.hash = '#equipe'; await wait(250);
+{ // the lineup of a game (#match/<game>; owner, 2026-11-20): the roster present or absent, numbers, replacements; saved at each change
+  const mHref = cd.querySelector('.cp-tl a.cp-ask-g').getAttribute('href'), gRef = Number(mHref.split('/')[1]);
+  cw.location.hash = mHref; await wait(400);
+  const lq = (sel) => cd.querySelector('#cp-lineup ' + sel), rosterNow = await DB.prepare('SELECT COUNT(*) AS n FROM rosters WHERE team_id = ? AND removed_at IS NULL').bind(teamA).first('n');
+  assert.equal(cd.querySelectorAll('#cp-lineup .lu-p').length, rosterNow, 'the lineup: every player of the roster');
+  assert.ok(lq('.lu-state') && lq('.lu-no'), 'its state on top, a number per player');
+  const pid = Number(lq('.lu-p [data-lu-out]').getAttribute('data-lu-out'));
+  const lineRow = () => DB.prepare('SELECT l.sub_id, l.sub_jersey FROM replacements r JOIN replacement_lines l ON l.replacement_id = r.id WHERE r.team_id = ? AND r.game_ref = ? AND r.status IN (\'pending\', \'approved\') AND l.absent_id = ?').bind(teamA, gRef, pid).first();
+  lq('[data-lu-out="' + pid + '"]').click(); await wait(300);
+  assert.ok(lq('.lu-p.lu-out [data-lu-pick="' + pid + '"]'), 'absent: a replacement is offered');
+  assert.ok((await lineRow()) && (await lineRow()).sub_id === null, 'saved at once: absent, nobody yet (no submit)');
+  lq('[data-lu-pick="' + pid + '"]').click(); await wait(60);
+  assert.ok(lq('.lu-sheet .bd-cand') && cd.documentElement.classList.contains('lu-sheet-open'), 'the picker: the candidates, over the page');
+  const firstOk = lq('.lu-sheet .bd-cand.bd-ok') || lq('.lu-sheet .bd-cand');
+  const pickedId = Number(firstOk.getAttribute('data-lu-sub'));
+  firstOk.click(); await wait(350);
+  assert.ok(lq('.lu-sub.lu-has') && !lq('.lu-sheet'), 'the replacement is in, the picker closed');
+  assert.equal((await lineRow()).sub_id, pickedId, 'saved');
+  const sn = lq('[data-lu-subno="' + pid + '"]'); sn.value = '88'; sn.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(300);
+  assert.equal((await lineRow()).sub_jersey, '88', 'the number the replacement wears tonight');
+  assert.ok(lq('.lu-state.bd-ok, .lu-state.bd-warn, .lu-state.bd-fail'), 'the state says valid or what waits for an admin');
+  lq('[data-lu-out="' + pid + '"]').click(); await wait(300);
+  assert.ok(!(await lineRow()), 'present again: the line goes');
+  // a regular's season number
+  lq('[data-lu-noedit="' + pid + '"]').click(); await wait(30);
+  const ni = lq('[data-lu-noin="' + pid + '"]'); ni.value = '12'; lq('[data-lu-nosave="' + pid + '"]').click(); await wait(300);
+  assert.equal(await DB.prepare('SELECT jersey FROM rosters WHERE team_id = ? AND person_id = ? AND removed_at IS NULL').bind(teamA, pid).first('jersey'), '12', 'the season number, set from the lineup');
+  assert.equal(lq('[data-lu-noedit="' + pid + '"]').textContent, '12');
+  cw.location.hash = '#equipe'; await wait(250);
+}
 const nReq = cd.querySelectorAll('.bd-req').length, hideBtn = cd.querySelector('[data-hide]');
 assert.ok(hideBtn, 'a refused request can be hidden');
 hideBtn.click(); await wait(250);
 assert.equal(cd.querySelectorAll('.bd-req').length, nReq - 1, 'Masquer: the refused request leaves the page');
 
-cd.querySelector('[data-act="ask"]').click(); await wait(250);
+cw.location.hash = '#remplacement'; await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
 assert.equal(cw.location.hash, '#remplacement', 'the builder is a page of its own');
 assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');

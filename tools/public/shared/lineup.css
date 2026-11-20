@@ -1,0 +1,53 @@
+/* The game-night lineup (shared/lineup.js), captain and admin areas. Mobile first: big rows, one tap per change.
+   On top of assets/site.css, admin/admin.css and shared/builder.css (candidate cards). Prefix lu- (never ad-). */
+.lu-page { max-width: 760px; }
+.lu-head { display: grid; gap: 4px; margin-bottom: 10px; }
+.lu-head .tcell { font-size: 20px; }
+.lu-game { margin: 0; }
+/* the state of the lineup: valid, to validate (with why), saving, no change */
+.lu-state { margin: 8px 0 6px; padding: 10px 12px; border: 1px solid var(--line); border-left: 5px solid var(--muted); border-radius: 4px; background: var(--surface); }
+.lu-state p { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.lu-state.bd-ok { border-left-color: var(--good, #43a047); }
+.lu-state.bd-warn { border-left-color: var(--warn, #f0a500); }
+.lu-state.bd-fail { border-left-color: var(--bad, #e57373); }
+.lu-state.lu-busy { opacity: .75; }
+.lu-when { color: var(--muted); font-size: 13px; }
+.lu-why { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
+.lu-why .bd-fail { color: var(--bad, #e57373); }
+.lu-why .bd-warn { color: var(--warn, #f0a500); }
+.lu-why .lu-soft { color: var(--muted); list-style: circle; }
+.lu-counts { margin: 4px 0 8px; }
+/* the players */
+.lu-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lu-p { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.lu-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; min-height: 52px; }
+.lu-no { flex: none; display: grid; place-items: center; min-width: 44px; height: 40px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: 600 22px/1 var(--f-display); cursor: pointer; }
+.lu-no.lu-nb { border-style: dashed; color: var(--muted); }
+.lu-no:hover, .lu-no:focus-visible { border-color: var(--ball); }
+.lu-nm { flex: 1 1 auto; min-width: 0; display: grid; }
+.lu-nm b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-nm small { color: var(--muted); font-size: 13px; }
+.lu-tg { flex: none; min-width: 92px; height: 40px; padding: 0 12px; border: 1px solid var(--good, #43a047); border-radius: 20px; background: color-mix(in srgb, var(--good, #43a047) 16%, transparent); color: var(--ink); font: 600 15px/1 var(--f-text); cursor: pointer; }
+.lu-tg.lu-off { border-color: var(--bad, #e57373); background: color-mix(in srgb, var(--bad, #e57373) 16%, transparent); }
+.lu-out > .lu-row .lu-nm b { text-decoration: line-through; opacity: .7; }
+.lu-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 8px 10px 10px 64px; border-top: 1px dashed var(--line); }
+.lu-sub.lu-has { flex-wrap: nowrap; padding-left: 10px; border-left: 4px solid var(--good, #43a047); }
+.lu-sub.lu-has.bd-warn { border-left-color: var(--warn, #f0a500); }
+.lu-sub.lu-has.bd-fail { border-left-color: var(--bad, #e57373); }
+.lu-noin { width: 64px; min-width: 0 !important; text-align: center; font: 600 20px/1 var(--f-display); }
+.lu-noedit { display: inline-flex; gap: 6px; align-items: center; }
+.lu-note { display: grid; gap: 4px; margin-top: 12px; }
+/* the replacement picker: a side sheet on a computer, full screen on a phone */
+.lu-back { position: fixed; inset: 0; background: rgb(0 0 0 / .45); z-index: 60; }
+.lu-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); display: grid; grid-template-rows: auto 1fr; background: var(--bg); border-left: 1px solid var(--line); z-index: 61; }
+.lu-sh { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.lu-sb { overflow: auto; padding: 12px 14px 90px; display: grid; gap: 10px; align-content: start; }
+.lu-sb .bd-cands { display: grid; gap: 6px; }
+.lu-ctm { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; }
+html.lu-sheet-open { overflow: hidden; }
+@media (max-width: 600px) {
+  .lu-row { gap: 8px; padding: 8px; }
+  .lu-tg { min-width: 80px; }
+  .lu-sub { padding-left: 8px; }
+  .lu-sheet { width: 100%; border-left: 0; }
+}

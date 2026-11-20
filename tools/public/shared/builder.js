@@ -635,5 +635,7 @@
     });
   }
   window.LDBuilder = { rosterOrder: rosterOrder, state: state, mount: mount, requestCard: requestCard, checksHtml: checksHtml, lineupHtml: lineupHtml, gameHtml: gameHtml,
-    day: function (ctx, d) { return day(ctx, d); }, gameText: function (ctx, g) { return gameText(ctx, g, true); }, t: t, STR: STR };
+    day: function (ctx, d) { return day(ctx, d); }, gameText: function (ctx, g) { return gameText(ctx, g, true); }, t: t, STR: STR,
+    /* for the lineup page (shared/lineup.js): the same judging and words as the builder. b = { d, lines, ctx } */
+    groups: groups, judge: judge, explain: explain, capText: capText, person: person, teamHead: teamHead, guestTag: guestTag, money: money, posName: posName, ICON: ICON, stamp: stamp };
 })();
