@@ -692,8 +692,13 @@ assert.equal((await call('/api/nothing')).status, 404);
   assert.ok(res.status === 200 && ans.ok && !ans.devCode, 'same answer, no code in it');
   assert.equal(sent.length, 1, 'one email sent');
   assert.ok(sent[0].to === 'root@example.test' && sent[0].from.email === 'no-reply@ldhml.com' && /\d{6}/.test(sent[0].text), 'to the person, from no-reply@ldhml.com, with the code');
+  const mcode = sent[0].text.match(/: (\d{6})/)[1];
+  assert.ok(sent[0].text.includes('https://admin.ldhml.com/#connexion=' + mcode + '-root%40example.test') && sent[0].html.includes('https://admin.ldhml.com/#connexion=' + mcode), 'and a sign-in link to the admin address (text and button)');
+  await worker.fetch(new Request('https://capitaine.ldhml.com/api/captain/login/start', { method: 'POST', headers: { Origin: 'https://capitaine.ldhml.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.79' }, body: JSON.stringify({ email: 'cap-retro@example.test' }) }), penv);
+  assert.ok(sent.length < 2 || sent[1].text.includes('https://capitaine.ldhml.com/#connexion='), 'a captain gets the link to the captain address');
+  const nSent = sent.length;
   res = await worker.fetch(new Request('https://admin.ldhml.com/api/admin/login/start', { method: 'POST', headers: { Origin: 'https://admin.ldhml.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.78' }, body: JSON.stringify({ email: 'nobody@example.test' }) }), penv);
-  assert.ok(res.status === 200 && sent.length === 1, 'an unknown email: the same answer, and no email');
+  assert.ok(res.status === 200 && sent.length === nSent, 'an unknown email: the same answer, and no email');
 }
 
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
@@ -1170,11 +1175,11 @@ const cookie3b = (await call('/api/admin/login/verify', { method: 'POST', body: 
 const payNow = (await call('/api/admin/replacements/builder?team=' + teamA, { cookie: cookie3b })).data.roster.reduce((x, p) => x + (p.salary || 0), 0);
 await call('/api/admin/rules', { method: 'POST', cookie: cookie3b, body: { season_id: seasonId, league: 'retro', salary_cap: payNow, min_age_m: 40, min_age_f: 35, min_age_g: 30 } });   // the team is at the cap
 const cjar = {};   // one browser: the session cookie stays across page loads
-const openCaptainPage = async () => {
+const openCaptainPage = async (hash = '') => {
   const chtml = await readFile(path.join(root, 'dist-tools/captain/index.html'), 'utf8');
   const cscripts = { '/assets/look.js': scripts['/assets/look.js'], '/shared/scroll.js': scripts['/shared/scroll.js'], '/shared/guard.js': await readFile(path.join(root, 'dist-tools/shared/guard.js'), 'utf8'), '/assets/ranks.js': await readFile(path.join(root, 'dist-tools/assets/ranks.js'), 'utf8'), '/shared/builder.js': await readFile(path.join(root, 'dist-tools/shared/builder.js'), 'utf8'), '/captain/captain.js': await readFile(path.join(root, 'dist-tools/captain/captain.js'), 'utf8') };
   const cdom = new JSDOM(chtml.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + cscripts[src] + '</script>'), {
-    runScripts: 'dangerously', url: ORIGIN + '/captain/', virtualConsole: vc,
+    runScripts: 'dangerously', url: ORIGIN + '/captain/' + hash, virtualConsole: vc,
     beforeParse(cw) {
       cw.Date = fixClock(cw.Date);
       cw.confirm = () => true;
@@ -1196,7 +1201,13 @@ let cw = await openCaptainPage(), cd = cw.document;
 const csubmit = async (sel) => { cd.querySelector(sel).dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(100); };
 assert.ok(cd.querySelector('#f-email'), 'captain page starts at the sign-in');
 cd.querySelector('#f-email [name=email]').value = 'cap-retro@example.test'; await csubmit('#f-email');
-cd.querySelector('#f-code [name=code]').value = cd.querySelector('.ta-dev').textContent.match(/\d{6}/)[0]; await csubmit('#f-code');
+// the sign-in link of the email (owner, 2026-11-20): it opens the form filled in; one click signs in
+const linkCode = cd.querySelector('.ta-dev').textContent.match(/\d{6}/)[0];
+cw.close(); cw = await openCaptainPage('#connexion=' + linkCode + '-' + encodeURIComponent('cap-retro@example.test')); cd = cw.document;
+assert.equal(cd.querySelector('#f-code [name=code]').value, linkCode, 'the link fills in the code');
+assert.ok(/cap-retro@example\.test/.test(cd.querySelector('.lede').textContent) && /Se connecter/.test(cd.querySelector('.lede').textContent), 'it says who signs in, and what to click');
+assert.equal(cw.location.hash, '', 'the code leaves the address bar at once');
+await csubmit('#f-code');
 await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');

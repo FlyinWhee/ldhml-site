@@ -1,7 +1,7 @@
 // Admin API: /api/admin/...  Every route except sign-in needs an admin session. Every change writes an audit row.
 import { json, fail, readJson, cleanEmail, cleanText, isLocal, now } from './http.js';
 import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearCookie } from './auth.js';
-import { sendCode } from './email.js';
+import { sendCode, signInLink } from './email.js';
 import { rosterApi } from './roster-api.js';
 import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
@@ -40,7 +40,7 @@ export async function adminApi(req, env, url) {
     if (!email) return fail(400, 'email');
     await ensureSuperAdmin(env, email);   // a SUPER_ADMINS email gets its row (first sign-in, or enabled again)
     const r = await startLogin(env, 'admin', email, req.headers.get('CF-Connecting-IP'));
-    if (r.code) await sendCode(env, url, email, r.code);
+    if (r.code) await sendCode(env, url, email, r.code, signInLink(env.ADMIN_URL || url.origin + '/admin/', email, r.code));
     // Same answer whether the email is an admin or not. On a local dev server only, the code comes back for testing.
     return json({ ok: true, ...(env.DEV === '1' && isLocal(url) && r.code ? { devCode: r.code } : {}) });
   }

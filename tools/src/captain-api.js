@@ -4,7 +4,7 @@
 import { json, fail, readJson, cleanEmail, isLocal, now } from './http.js';
 import { startLogin, verifyLogin, sessionUser, endSession, sessionCookie, clearCookie } from './auth.js';
 import { isDemo, demoCaptainApi } from './demo.js';
-import { sendCode } from './email.js';
+import { sendCode, signInLink } from './email.js';
 import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
 
@@ -40,7 +40,7 @@ export async function captainApi(req, env, url) {
     const body = await readJson(req), email = body && cleanEmail(body.email);
     if (!email) return fail(400, 'email');
     const r = await startLogin(env, 'captain', email, req.headers.get('CF-Connecting-IP'));
-    if (r.code) await sendCode(env, url, email, r.code);
+    if (r.code) await sendCode(env, url, email, r.code, signInLink(env.CAPTAIN_URL || url.origin + '/captain/', email, r.code));
     return json({ ok: true, ...(env.DEV === '1' && isLocal(url) && r.code ? { devCode: r.code } : {}) });
   }
   if (m === 'POST' && path === '/login/verify') {

@@ -12,7 +12,7 @@
   var STR = {
     fr: {
       title: 'Capitaine', signIn: 'Connexion capitaine', emailLabel: 'Votre adresse courriel', sendCode: 'Recevoir un code',
-      codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.',
+      codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.', magicReady: 'Connexion de {e} : le code du courriel est déjà rempli. Cliquez sur « Se connecter ».',
       codeLabel: 'Code à 6 chiffres', verify: 'Se connecter', otherEmail: 'Utiliser une autre adresse', devCode: 'Code (développement local) : {c}',
       signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
@@ -43,7 +43,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
     },
     en: {
       title: 'Captain', signIn: 'Captain sign-in', emailLabel: 'Your email address', sendCode: 'Get a code',
-      codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.',
+      codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.', magicReady: 'Signing in {e}: the code from the email is already filled in. Click "Sign in".',
       codeLabel: '6-digit code', verify: 'Sign in', otherEmail: 'Use another address', devCode: 'Code (local development): {c}',
       signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', askTitle: 'Declare a replacement', back: '← My team',
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
@@ -123,8 +123,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
         }).join('') + '</select></label><button class="ta-btn" type="submit">' + t('demoEnter') + '</button></form>');
     var form = S.step === 'email'
       ? '<form id="f-email" class="ta-form ta-login"><label>' + t('emailLabel') + '<input class="ctl" type="email" name="email" autocomplete="email" required value="' + esc(S.email) + '"></label><button class="ta-btn" type="submit">' + t('sendCode') + '</button></form>'
-      : '<p class="lede">' + esc(t('codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ta-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
-        '<form id="f-code" class="ta-form ta-login"><label>' + t('codeLabel') + '<input class="ctl" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button class="ta-btn" type="submit">' + t('verify') + '</button></form>' +
+      : '<p class="lede">' + esc(t(S.magic ? 'magicReady' : 'codeSent', { e: S.email })) + '</p>' + (S.devCode ? '<p class="note ta-dev">' + esc(t('devCode', { c: S.devCode })) + '</p>' : '') +
+        '<form id="f-code" class="ta-form ta-login"><label>' + t('codeLabel') + '<input class="ctl" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required value="' + esc(S.magic || '') + '"></label><button class="ta-btn" type="submit">' + t('verify') + '</button></form>' +
         '<p class="note"><button type="button" class="lnk ta-linkbtn" data-act="other-email">' + t('otherEmail') + '</button></p>';
     return '<h1 class="ph">' + t('signIn') + '</h1>' + form;
   }
@@ -424,6 +424,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       return;
     }
     if (f.id === 'f-email') {
+      S.magic = '';   // a new code: the form is not the link's any more
       S.email = v('email');
       api('/login/start', 'POST', { email: S.email }).then(function (r) {
         if (!r.ok) { say('err', errMsg(r)); render(); return; }
@@ -445,7 +446,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
-    if (act === 'other-email') { S.step = 'email'; S.devCode = ''; S.msg = null; render(); return; }
+    if (act === 'other-email') { S.step = 'email'; S.devCode = ''; S.magic = ''; S.msg = null; render(); return; }
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
     if (act === 'ask') { S.msg = null; location.hash = '#remplacement'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
@@ -468,6 +469,14 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   });
 
   /* ---------- start ---------- */
+  /* The sign-in link of the email (#connexion=<code>-<email>, src/email.js): the form opens filled in, one click on
+   * "Se connecter" (never automatic: mail scanners open links and would use the single-use code). The code leaves the
+   * address bar and the history at once. */
+  var ml = /^#connexion=(\d{6})-(.+)$/.exec(location.hash);
+  if (ml) {
+    try { S.email = decodeURIComponent(ml[2]); S.step = 'code'; S.magic = ml[1]; } catch (e) { /* a broken link: the normal sign-in */ }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
   S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
