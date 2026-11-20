@@ -41,7 +41,7 @@
 .lu-back { position: fixed; inset: 0; background: rgb(0 0 0 / .45); z-index: 60; }
 .lu-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); display: grid; grid-template-rows: auto 1fr; background: var(--bg); border-left: 1px solid var(--line); z-index: 61; }
 .lu-sh { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-.lu-sb { overflow: auto; padding: 12px 14px 90px; display: grid; gap: 10px; align-content: start; }
+.lu-sb { overflow: auto; padding: 12px 14px 90px; display: grid; grid-auto-rows: max-content; gap: 10px; align-content: start; }   /* max-content: a row that clips its overflow (.seg) must not shrink */
 .lu-sb .bd-cands { display: grid; gap: 6px; }
 .lu-ctm { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; }
 html.lu-sheet-open { overflow: hidden; }

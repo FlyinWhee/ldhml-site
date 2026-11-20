@@ -149,10 +149,12 @@ async function currentLineup(DB, team, slot) {
     lines: ls.map((l) => ({ absent_id: l.absent_id, sub_id: l.sub_id, sub_name: l.sub_name || l.guest_name || null, sub_site: l.sub_site || null, sub_sex: l.sub_sex || l.guest_sex || null,
       sub_pos: l.sub_pos, sub_salary: l.sub_salary, sub_jersey: l.sub_jersey, guest: l.guest_name ? { name: l.guest_name, sex: l.guest_sex, age: l.guest_age, nid: l.guest_nid } : null })) };
 }
-/** The last NBHPA number of each person in a league (the build's season snapshot): Map site id -> number. */
-export function nbhpaNumbers(data, league) {
+/** The last NBHPA number of each person FOR ONE TEAM of a league (the build's season snapshot; a night as a replacement on
+ *  another team never counts): Map site id -> number. */
+export function nbhpaNumbers(data, league, nbTeamId) {
   const m = new Map();
-  for (const p of (data && data.people) || []) if (p.no && p.no[league]) m.set(p.id, p.no[league]);
+  if (!nbTeamId) return m;
+  for (const p of (data && data.people) || []) { const n = p.no && p.no[league] && p.no[league][nbTeamId]; if (n) m.set(p.id, n); }
   return m;
 }
 
@@ -250,7 +252,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (!team) return fail(404, 'team');
     const season = await seasonOf(team.season_id), lg = leagueOf(data, team.league);
     const rules = await DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
-    const nbNo = nbhpaNumbers(data, team.league);
+    const nbNo = nbhpaNumbers(data, team.league, team.nbhpa_team_id);
     const roster = (await teamRoster(DB, team, lg && lg.section)).map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: r.salary ?? null,
       jersey: r.jersey ?? nbNo.get(r.site_id) ?? null, jersey_nbhpa: r.jersey == null && nbNo.has(r.site_id) }));
     const games = (await teamGames(DB, team)).map((g) => ({ id: g.id, date: g.date, time: g.time, venue: g.venue, court: g.court, home: g.home,
