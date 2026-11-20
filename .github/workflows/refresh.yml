@@ -1,6 +1,8 @@
-# Build the site and publish it to GitHub Pages (on every push to main, or by hand).
+# Build the site and publish it (on every push to main, or by hand): the live site on ldhml.com (Cloudflare, live/)
+# and the dev/staging copy on GitHub Pages, with the branch previews (owner, 2026-11-20).
 # The league server challenges requests from data centers (GitHub, Cloudflare), so this job cannot fetch data.
-# Refresh the saved snapshot from your own computer: npm run fetch:force, then commit and push data/.
+# Refresh the saved snapshot from your own computer (npm run fetch:force, then commit and push data/) or from the tools
+# admin (Données du site public): both push to main, so both reach ldhml.com and Pages.
 # Visitors' browsers read the live data themselves.
 #
 # Branch previews: Pages holds ONE site, so every deploy also builds each other branch into
@@ -25,6 +27,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # the live deploy runs only when the Cloudflare secrets exist (live/CLAUDE.md)
+      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,6 +41,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node build.mjs
+      - name: Keep the main build for ldhml.com (the previews are for Pages only)
+        run: cp -r dist dist-live
       - name: Build a preview of every other branch
         run: |
           echo "## Previews" >> "$GITHUB_STEP_SUMMARY"
@@ -57,6 +64,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+      - name: Deploy the live site (ldhml.com)
+        if: env.HAS_CF == 'true'
+        run: npx --yes wrangler@4.165.0 deploy -c live/wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy:
     needs: build

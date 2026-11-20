@@ -36,7 +36,7 @@ If you change polling, rules or the live markup, update this test in the same co
 5. Open the league picker; switch league; footer link to the hub works.
 6. Game night only (real data): `#live` shows LIVE badge, clock, score, goalies, penalty box only when someone is in it; click the top of a card: goes to the game page; the game page stays LIVE (not FINAL) while play continues; a finished game goes to the collapsed section below.
 7. Network panel: requests are spaced, no `livegame/` page, nothing while the tab is in the background.
-8. After push: https://flyinwhee.github.io/ldhml-site/<section>/<league>/ loads with fresh data; the footer is empty (no "offline" line).
+8. After push: https://ldhml.com/<section>/<league>/ (and the staging copy on GitHub Pages) loads with fresh data; the footer is empty (no "offline" line).
 
 ## Writing a new test
 Copy the style of an existing file: top-level `await`, `node:assert/strict`, one JSDOM, `console.log` at the end. Add it to the `test` script in `package.json`. Prefer testing behavior (what the visitor sees) over internals.

@@ -5,3 +5,5 @@ dist-tools/
 tools/.dev.vars
 tools/.wrangler/
 .wrangler/
+dist-live/
+live/.wrangler/

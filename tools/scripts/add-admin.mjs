@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const WRANGLER = 'wrangler@4.151.1'; // same version as the npm scripts (package.json)
+const WRANGLER = 'wrangler@4.165.0'; // same version as the npm scripts (package.json)
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const remote = process.argv.includes('--remote');
 const email = String(args[0] || '').trim().toLowerCase(), name = String(args[1] || '').trim();

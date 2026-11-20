@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ADMIN_REFS } from '../src/admins.js';   // the columns that point to an admin (same list as the admin page)
 
-const WRANGLER = 'wrangler@4.151.1'; // same version as the npm scripts (package.json)
+const WRANGLER = 'wrangler@4.165.0'; // same version as the npm scripts (package.json)
 
 /** The SQL of the removal (tested in tools/test/test-tools.mjs). */
 export function removeAdminSql(email, now = Math.floor(Date.now() / 1000)) {

@@ -18,7 +18,7 @@ echo.
 set ADMIN=
 set /p ADMIN=Your email for a LOCAL admin account (press Enter to skip):
 call npm run build >nul || goto :fail
-call npx wrangler@4.151.1 d1 migrations apply ldhml-tools --local -c tools\wrangler.jsonc >nul || goto :fail
+call npx wrangler@4.165.0 d1 migrations apply ldhml-tools --local -c tools\wrangler.jsonc >nul || goto :fail
 if not "%ADMIN%"=="" (
   call node tools\scripts\add-admin.mjs %ADMIN% "Admin" >nul || goto :fail
   echo Local admin ready: %ADMIN%
@@ -27,7 +27,7 @@ echo.
 echo Opening http://localhost:8787/admin/ in a few seconds. Stop with Ctrl+C.
 start "" cmd /c "timeout /t 8 >nul & start http://localhost:8787/admin/"
 rem A fixed port: if another copy already runs, this stops with "address in use" instead of using a random port.
-call npx wrangler@4.151.1 dev -c tools\wrangler.jsonc --port 8787
+call npx wrangler@4.165.0 dev -c tools\wrangler.jsonc --port 8787
 goto :eof
 :fail
 echo.

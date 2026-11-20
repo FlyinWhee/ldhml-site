@@ -8,9 +8,22 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cfg = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8'));
 const retro = cfg.leagues.find((l) => l.slug === 'retro');
-const html = await readFile(path.join(root, 'dist', cfg.sections.find((s) => s.key === retro.section).path, retro.path || retro.slug, 'index.html'), 'utf8');
+let html = await readFile(path.join(root, 'dist', cfg.sections.find((s) => s.key === retro.section).path, retro.path || retro.slug, 'index.html'), 'utf8');
 const data = JSON.parse(await readFile(path.join(root, 'data/retro/games.json'), 'utf8'));
-const nextGame = data.find((g) => g.as == null && !g.cancelled);
+let nextGame = data.find((g) => g.as == null && !g.cancelled);
+// The season is over (no game left): replay its last game night as still to play, in the data and in the page.
+if (!nextGame) {
+  const last = data.map((g) => g.date).sort().at(-1);
+  const ids = new Set(data.filter((g) => g.date === last).map((g) => g.id));
+  for (const g of data) if (ids.has(g.id)) { g.as = null; g.hs = null; }
+  nextGame = data.find((g) => ids.has(g.id) && !g.cancelled);
+  html = html.replace(/(<script id="league-data" type="application\/json">)([\s\S]*?)(<\/script>)/, (m, open, json, close) => {
+    const d = JSON.parse(json);
+    for (const g of d.games) if (ids.has(g.id)) { g.as = null; g.hs = null; }
+    for (const id of ids) delete d.box.games[id];
+    return open + JSON.stringify(d).replace(/</g, '\\u003c') + close;   // as build.mjs safe()
+  });
+}
 const sameDay = data.filter((g) => g.date === nextGame.date);
 const gid = nextGame.id;
 

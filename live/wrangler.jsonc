@@ -1,0 +1,20 @@
+// The live stats site on ldhml.com (Cloudflare Worker with static assets). Read live/CLAUDE.md.
+// Deploy: .github/workflows/refresh.yml, on every push to main (secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID).
+// By hand: node build.mjs, copy dist/ to dist-live/, then npx wrangler deploy -c live/wrangler.jsonc
+{
+  "name": "ldhml-site",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "../dist-live",
+    "binding": "ASSETS",
+    // the Worker sees every request: www.ldhml.com must redirect even for a file that exists
+    "run_worker_first": true
+  },
+  "routes": [
+    { "pattern": "ldhml.com", "custom_domain": true },
+    { "pattern": "www.ldhml.com", "custom_domain": true }
+  ],
+  "vars": { "SITE_HOST": "ldhml.com" },
+  "observability": { "enabled": true }
+}

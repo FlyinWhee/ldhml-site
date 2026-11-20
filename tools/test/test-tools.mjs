@@ -12,6 +12,12 @@ import { makeD1, makeAssets } from './d1-shim.mjs';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ORIGIN = 'http://localhost:8787';
 const season = JSON.parse(await readFile(path.join(root, 'dist-tools/data/season.json'), 'utf8'));
+// A fixed "today" in the middle of the season (noon, Montréal), so the tests see past AND upcoming games in any month
+// (2026-11-20: the season ended and every "upcoming game" test failed). The Worker, Node and both test pages use it.
+const nights = [...new Set(season.leagues.flatMap((l) => (l.games || []).map((g) => g.date)))].sort();
+const SHIFT = Date.parse(nights[Math.floor(nights.length / 2)] + 'T17:00:00Z') - Date.now();
+const fixClock = (D) => class extends D { constructor(...a) { if (a.length) super(...a); else super(D.now() + SHIFT); } static now() { return D.now() + SHIFT; } };
+globalThis.Date = fixClock(Date);
 const DB = await makeD1(path.join(root, 'tools/migrations'));
 const env = { DB, ASSETS: makeAssets(path.join(root, 'dist-tools')), CODE_PEPPER: 'test-pepper-0123456789', DEV: '1', EMAIL_MODE: 'console', SUPER_ADMINS: 'boss@example.test, Root@example.test' };
 const quiet = console.log; console.log = () => {};   // the console email mode prints codes
@@ -657,6 +663,39 @@ assert.equal((await call('/api/nothing')).status, 404);
   for (const b of [plain, linked]) assert.ok(/class="tchip" style="--tc:[^"]+" title="Câlinours"/.test(b), 'team chip: colour and name, linked or not');
 }
 
+// ---- the real addresses (owner, 2026-11-20): admin.ldhml.com and capitaine.ldhml.com, one area each; sign-in codes by Cloudflare Email Service ----
+{
+  const sent = [];
+  const penv = { ...env, ADMIN_URL: 'https://admin.ldhml.com/', CAPTAIN_URL: 'https://capitaine.ldhml.com/', EMAIL_MODE: 'cloudflare', EMAIL_FROM: 'no-reply@ldhml.com',
+    EMAIL: { send: async (m) => { sent.push(m); return { messageId: 'm1' }; } } };
+  delete penv.DEV;
+  const get = (u) => worker.fetch(new Request(u, { redirect: 'manual' }), penv);
+  let res = await get('https://admin.ldhml.com/');
+  assert.ok(res.status === 200 && /\/admin\/admin\.js/.test(await res.text()), 'admin.ldhml.com/ is the admin page');
+  res = await get('https://capitaine.ldhml.com/');
+  assert.ok(res.status === 200 && /\/captain\/captain\.js/.test(await res.text()), 'capitaine.ldhml.com/ is the captain page');
+  res = await get('https://admin.ldhml.com/admin/');
+  assert.ok(res.status === 302 && res.headers.get('Location') === 'https://admin.ldhml.com/', 'the old /admin/ path goes to the root');
+  res = await get('https://admin.ldhml.com/captain/');
+  assert.ok(res.status === 302 && res.headers.get('Location') === 'https://capitaine.ldhml.com/', 'the captain area on the admin address goes to its own address');
+  res = await get('https://capitaine.ldhml.com/admin/');
+  assert.ok(res.status === 302 && res.headers.get('Location') === 'https://admin.ldhml.com/', 'and the other way');
+  res = await get('https://admin.ldhml.com/admin/admin.js');
+  assert.equal(res.status, 200, 'the page files still load');
+  res = await get('https://ldhml-tools-demo.example.workers.dev/');
+  assert.ok(res.status === 200 && /ta-door/.test(await res.text()), 'another address (the demo): both areas on one address, as before');
+  const pub = await (await worker.fetch(new Request('https://capitaine.ldhml.com/api/public/season'), penv)).json();
+  assert.equal(pub.urls.admin, 'https://admin.ldhml.com/', 'the captain page learns the admin address (for the request link)');
+  // the code goes by the EMAIL binding, from no-reply@ldhml.com; never back in the answer
+  res = await worker.fetch(new Request('https://admin.ldhml.com/api/admin/login/start', { method: 'POST', headers: { Origin: 'https://admin.ldhml.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.77' }, body: JSON.stringify({ email: 'root@example.test' }) }), penv);
+  const ans = await res.json();
+  assert.ok(res.status === 200 && ans.ok && !ans.devCode, 'same answer, no code in it');
+  assert.equal(sent.length, 1, 'one email sent');
+  assert.ok(sent[0].to === 'root@example.test' && sent[0].from.email === 'no-reply@ldhml.com' && /\d{6}/.test(sent[0].text), 'to the person, from no-reply@ldhml.com, with the code');
+  res = await worker.fetch(new Request('https://admin.ldhml.com/api/admin/login/start', { method: 'POST', headers: { Origin: 'https://admin.ldhml.com', 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.78' }, body: JSON.stringify({ email: 'nobody@example.test' }) }), penv);
+  assert.ok(res.status === 200 && sent.length === 1, 'an unknown email: the same answer, and no email');
+}
+
 // ad blockers hide elements named like ads (EasyList: .ad-body, .ad-msg, .ad-panel, .ad-btn...): no ad- names in the tool pages
 for (const f of ['admin/admin.js', 'admin/admin.css', 'captain/captain.js', 'captain/captain.css', 'shared/builder.js', 'shared/builder.css', 'shared/guard.js', 'shared/scroll.js', 'admin/refresh-run.js', 'admin/index.html', 'captain/index.html', 'index.html'])
   assert.ok(!/(?<![\w-])ad-[a-z0-9'"]/.test(await readFile(path.join(root, 'dist-tools', f), 'utf8')), 'no ad- class or id in ' + f + ' (ad blockers hide them)');
@@ -685,6 +724,7 @@ const outside = async (u, init) => {
 const dom = new JSDOM(html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + scripts[src] + '</script>'), {
   runScripts: 'dangerously', url: ORIGIN + '/admin/', virtualConsole: vc,
   beforeParse(w) {
+    w.Date = fixClock(w.Date);
     w.confirm = () => true;
     // jsdom has no layout: a scroll position the page can read and set (shared/scroll.js)
     let sy = 0; Object.defineProperty(w, 'scrollY', { get: () => sy, configurable: true });
@@ -1136,6 +1176,7 @@ const openCaptainPage = async () => {
   const cdom = new JSDOM(chtml.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => '<script>' + cscripts[src] + '</script>'), {
     runScripts: 'dangerously', url: ORIGIN + '/captain/', virtualConsole: vc,
     beforeParse(cw) {
+      cw.Date = fixClock(cw.Date);
       cw.confirm = () => true;
       let sy = 0; Object.defineProperty(cw, 'scrollY', { get: () => sy, configurable: true }); cw.scrollTo = (x, y) => { sy = y || 0; };
       cw.fetch = async (u, init = {}) => {

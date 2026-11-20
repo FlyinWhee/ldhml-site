@@ -41,7 +41,7 @@ The live season is chosen in the tools (admin, Configuration: make the new seaso
 Check `site/test-hub.mjs` and `test-pwa.mjs` pass (they read `leagues.json`).
 
 ## Deploy and check
-Push to `main`. Wait about a minute. Open https://flyinwhee.github.io/ldhml-site/. Pages needs "Source: GitHub Actions" in the repo settings.
+Push to `main`. Wait about a minute. "Refresh and publish" builds once and deploys twice: **https://ldhml.com/** (live, the Worker `ldhml-site` in `live/`) and https://flyinwhee.github.io/ldhml-site/ (dev/staging, with the branch previews). Pages needs "Source: GitHub Actions" in the repo settings. The live deploy needs two GitHub secrets, `CLOUDFLARE_API_TOKEN` (Cloudflare: My Profile > API Tokens > template "Edit Cloudflare Workers", account of ldhml.com) and `CLOUDFLARE_ACCOUNT_ID`; without them it is skipped (the job says so) and only Pages changes. By hand: `node build.mjs`, copy `dist/` to `dist-live/`, `npx wrangler@4.165.0 deploy -c live/wrangler.jsonc`.
 
 ## Branch previews
 Pages holds one site per repo, and each deploy replaces all of it. So the deploy (`refresh.yml`, always run from `main`) builds `main` at the root

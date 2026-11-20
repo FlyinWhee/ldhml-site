@@ -8,21 +8,31 @@
   "assets": {
     "directory": "../dist-tools",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    // the API, and the area pages: on admin.ldhml.com and capitaine.ldhml.com "/" is the area (src/worker.js areaRoute)
+    "run_worker_first": ["/api/*", "/", "/admin/", "/admin/index.html", "/captain/", "/captain/index.html"]
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "ldhml-tools",
-      // Replace with the id printed by "npx wrangler d1 create ldhml-tools" (docs/tools.md, step 2).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Created 2026-11-20 ("npx wrangler d1 create ldhml-tools"): the real tools database (admin.ldhml.com, capitaine.ldhml.com).
+      "database_id": "6eb85712-095a-4f7c-be77-c3fb6e139931",
       "migrations_dir": "migrations"
     }
   ],
+  // The real tools (owner, 2026-11-20): admin.ldhml.com and capitaine.ldhml.com, one area per address (src/worker.js).
+  "routes": [
+    { "pattern": "admin.ldhml.com", "custom_domain": true },
+    { "pattern": "capitaine.ldhml.com", "custom_domain": true }
+  ],
+  // Sign-in codes: Cloudflare Email Service (Workers Paid). The domain is onboarded in the dashboard (Email Service > Email Sending).
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["no-reply@ldhml.com"] }],
   "vars": {
-    // "console" prints sign-in codes to the log (local only, refused elsewhere). Production: "resend".
-    "EMAIL_MODE": "console",
-    "EMAIL_FROM": ""
+    // "console" prints sign-in codes to the log (local only: tools/.dev.vars sets it). Production: "cloudflare" (src/email.js).
+    "EMAIL_MODE": "cloudflare",
+    "EMAIL_FROM": "no-reply@ldhml.com",
+    "ADMIN_URL": "https://admin.ldhml.com/",
+    "CAPTAIN_URL": "https://capitaine.ldhml.com/"
   },
   "observability": { "enabled": true },
   // The online demo (read only; docs/tools.md): its own Worker and its own demo database. Deploy: npx wrangler deploy -c tools/wrangler.jsonc --env demo

@@ -21,13 +21,13 @@ rank systems later (for example a draft "salary" under a salary cap).
 
 **Phase 2 (planned, not built):** tools for league captains and admins (only these two roles), for example substitute
 requests that arrive pre-validated with all the information needed for one-step approval. Goal: fewer admin tasks,
-lean on security and permissions. **Started:** `tools/` is a Cloudflare Worker + D1 database (admin area: passwordless sign-in, captain accounts, access per season and team, audit log). Built and tested locally, not deployed yet. Read `docs/tools.md` and `tools/CLAUDE.md`.
+lean on security and permissions. **Started:** `tools/` is a Cloudflare Worker + D1 database (admin area: passwordless sign-in, captain accounts, access per season and team, audit log). Live since 2026-11-20 at https://admin.ldhml.com/ and https://capitaine.ldhml.com/ (one Worker, one area per address); the read-only demo stays at `ldhml-tools-demo.bones-feiq.workers.dev`. Read `docs/tools.md` and `tools/CLAUDE.md`.
 
 **Who it is for: data nerds.** Nobody else reads the stats of a recreational ball hockey league. Show the data in full, with its
 context, and link every piece of data to the page that has more detail about it. A league, a team or a person looks the same on every
 page of the platform (logo, colours, badge, full name). Read `docs/presentation.md` before you build or change any view.
 
-- Live site: https://flyinwhee.github.io/ldhml-site/ (GitHub Pages, repo `FlyinWhee/ldhml-site`).
+- Live site: **https://ldhml.com/** (Cloudflare Worker `ldhml-site`, folder `live/`; owner, 2026-11-20). Dev/staging: https://flyinwhee.github.io/ldhml-site/ (GitHub Pages, repo `FlyinWhee/ldhml-site`), with the branch previews. Both get the same build of `main` from one workflow.
 - The site is French by default, with an English toggle.
 - The owner is Mathieu (RevOps lead, Joliette QC). He is not a developer. Reply to him in
   Simplified Technical English (ASD-STE100): short sentences, one idea each, active voice, and flag blockers early.
@@ -104,6 +104,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 | A league look | `site/themes.mjs` |
 | How teams look on every page (colours, badges, chips) | `shared/look.js` (see `docs/presentation.md`) |
 | Add a league, a section or a new season | `leagues.json` (see `docs/operations.md`) |
+| The live site on ldhml.com (Worker, domains, deploy) | `live/` (see `live/CLAUDE.md`), `.github/workflows/refresh.yml` |
 | PWA, icons, build output | `build.mjs`, `assets/` (see `docs/build-and-pwa.md`) |
 
 ## Working method (to avoid regressions)
@@ -113,7 +114,7 @@ Open `dist/<section>/<league>/index.html` (for example `dist/draft/retro/index.h
 3. Run `npm test`. If you change behavior, add or extend a test in the same commit.
 4. For anything visual, look at it: build, open `dist/<section>/<league>/index.html` (desktop and a 400 px wide window). jsdom tests do not see layout.
 5. Commit with a clear message. For a big or risky change, push a branch first: its preview is at `/preview/<branch>/` (see `docs/operations.md`). Push to `main`. Pages deploys by itself in about a minute.
-6. After a push, check the live site: https://flyinwhee.github.io/ldhml-site/<section>/<league>/.
+6. After a push, check the live site: https://ldhml.com/<section>/<league>/ (staging: https://flyinwhee.github.io/ldhml-site/<section>/<league>/).
 
 ## The docs
 

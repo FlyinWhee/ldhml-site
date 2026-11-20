@@ -140,7 +140,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
    * Top: the team and the main action. Then four key numbers (next game, requests, payroll, roster). Then two columns:
    * the timeline (the team's games, each with its requests: the work in its context) and the roster. One column on a phone. */
   /* After a request: the link the admins open to validate it, to share in the captains' group (or copy). */
-  var shareUrl = function (id) { return location.origin + '/admin/#/r/' + id; };
+  var shareUrl = function (id) { return (S.urls && S.urls.admin ? S.urls.admin : location.origin + '/admin/') + '#/r/' + id; };   // admin.ldhml.com, or /admin/ (demo)
   function sharePanel() {
     if (!S.shared) return '';
     return '<section class="ta-panel cp-share"><h2 class="ta-ph">' + t('shareTitle') + '</h2><p class="note">' + t('shareLede') + '</p>' +
@@ -345,7 +345,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     document.documentElement.classList.toggle('ta-has-tabbar', items.length > 0);
     document.documentElement.classList.toggle('fp-open', !!(S.fpanel && S.view === 'players'));
     if (bar) bar.innerHTML = items.map(function (x) { return '<a href="' + x.href + '"' + (x.on ? ' aria-current="page"' : '') + '>' + navIcon(x.k) + '<span>' + esc(x.label) + '</span></a>'; }).join('');
-    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="/captain/"><span><b>LDHML <i>' + esc(t('title')) + '</i></b></span></a>' +
+    $('#top').innerHTML = '<div class="wrap top-in sec-top"><a class="brand" href="./"><span><b>LDHML <i>' + esc(t('title')) + '</i></b></span></a>' +
       (items.length ? '<nav class="nav" aria-label="' + esc(t('title')) + '">' + items.map(function (x) { return '<a href="' + x.href + '"' + (x.on ? ' aria-current="page"' : '') + '>' + esc(x.label) + '</a>'; }).join('') + '</nav>' : '') +
       '<div class="ta-tools">' + acctMenu(S.me ? S.me.name : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
@@ -471,7 +471,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
-    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
+    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo); S.urls = rs[2] && rs[2].urls;
     if (rs[1].ok) { S.me = rs[1].data.captain; return refresh(); }
     render();
   }).catch(function () { S.booting = false; say('err', t('e_net')); render(); });

@@ -566,8 +566,10 @@
     var intro = '<h1 class="ph">' + t('live') + '</h1><p class="lede">' + t('liveLede') + '</p>';
     if (!list.length) {
       var nx = upcomingGames[0];
-      return intro + '<p class="empty">' + t('noGameToday', { d: nx ? esc(fmtDay(nx.date)) : '-' }) + '</p>' +
-        (nx ? '<div class="sec"><div class="gms">' + games.filter(function (g) { return g.date === nx.date; }).map(function (g) { return gameBlock(g); }).join('') + '</div></div>' : '');
+      /* no game left (the season is over): say so, and show the last game night with its results */
+      var night = nx ? nx.date : games.filter(function (g) { return played(eff(g)); }).map(function (g) { return g.date; }).sort().pop();
+      return intro + '<p class="empty">' + (nx ? t('noGameToday', { d: esc(fmtDay(nx.date)) }) : t('noGameLeft', { d: night ? esc(fmtDay(night)) : '-' })) + '</p>' +
+        (night ? '<div class="sec"><div class="gms">' + games.filter(function (g) { return g.date === night; }).map(function (g) { return gameBlock(g); }).join('') + '</div></div>' : '');
     }
     /* Finished games step aside once something is still to play or on the ice. They stay one tap away. */
     var isDone = function (g) { var e = eff(g); return played(e) && !e._live; };

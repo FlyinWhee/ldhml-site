@@ -12,9 +12,12 @@ Phase 2 of the project: tools that cut admin work. Captains act on their own wit
 | Domains | Cloudflare Registrar | about $10–20 a year each |
 Budget set by the owner: under $100 a year.
 
-## Addresses (decide at deploy)
+## Addresses (live since 2026-11-20)
 The tools are a small **web app**: one Worker serves the pages (admin now, captain later) **and** their API (`/api/...`) on the same address. Same address = simple and safe cookies, no cross-site setup.
-- Tools: **`app.<domain>` (decided 2026-10-16)**, both areas: `app.<domain>/admin/`, `app.<domain>/captain/`.
+- Tools: **https://admin.ldhml.com/** and **https://capitaine.ldhml.com/** (owner, 2026-11-20; replaces "app.<domain>" of 2026-10-16). One Worker (`ldhml-tools`), one area per address: `/` shows the area, the other area's paths redirect to its address (`areaRoute` in `src/worker.js`, set by the `ADMIN_URL` and `CAPTAIN_URL` vars). Each address has its own cookies. The captain's request link opens `ADMIN_URL` (`/api/public/season` gives the pages both addresses). The demo has no such vars: both areas stay at `/admin/` and `/captain/` there.
+- Stats site: **https://ldhml.com/** (Worker `ldhml-site`, `live/`); GitHub Pages is the dev/staging copy.
+- Database of the real tools: D1 `ldhml-tools` (id `6eb85712-095a-4f7c-be77-c3fb6e139931`, created 2026-11-20). Secrets: `CODE_PEPPER` (set), `SUPER_ADMINS` and `GITHUB_TOKEN` (the owner sets them; never in git).
+- Sign-in emails: Cloudflare Email Service (`EMAIL_MODE: "cloudflare"`, binding `EMAIL`, from `no-reply@ldhml.com`). The sending domain is onboarded in the dashboard only: Email Service > Email Sending > Onboard Domain > ldhml.com (the DNS records are added by Cloudflare). Email Sending is in beta (2026-11). Local development keeps `EMAIL_MODE=console` in `tools/.dev.vars` (`tools/scripts/dev-vars.mjs` adds it).
 - `api.<domain>`: keep it for the planned **public, read-only data** (the season export and later stats queries, the "MCP-like" layer).
 - Stats site: the root or `www.<domain>` later (today GitHub Pages).
 
