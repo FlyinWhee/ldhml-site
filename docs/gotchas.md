@@ -58,3 +58,6 @@ The first `wrangler deploy` of a new Worker (`ldhml-site`, `ldhml-tools`) upload
 
 ## Tests and the calendar (2026-11-20)
 When the season ended, three tests failed: they expected a game still to play. The tools test now runs on a fixed "today" in the middle of the season (`fixClock` in `tools/test/test-tools.mjs`, for Node and both jsdom pages); `site/test-live.mjs` replays the last game night as still to play when no game is left. A test must not depend on today's date.
+
+## The demo environment inherits "routes" (2026-11-20)
+In tools/wrangler.jsonc, "routes" is inherited by env.demo. With the real custom domains at the top level, a demo deploy moved admin.ldhml.com and capitaine.ldhml.com to the demo Worker and turned its workers.dev address off (error 1042). env.demo now has "routes": [] and "workers_dev": true. Never remove them. After a config change, run the demo deploy with --dry-run first and read the warnings.

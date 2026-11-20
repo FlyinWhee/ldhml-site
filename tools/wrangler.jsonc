@@ -40,6 +40,11 @@
   "env": {
     "demo": {
       "name": "ldhml-tools-demo",
+      // never the real addresses: "routes" is inherited, and a demo deploy would take admin.ldhml.com and capitaine.ldhml.com (2026-11-20)
+      "routes": [],
+      "workers_dev": true,
+      // no email in the demo (sign-in with the demo key); no ADMIN_URL / CAPTAIN_URL: both areas on the workers.dev address
+      "send_email": [],
       "d1_databases": [
         {
           "binding": "DB",
