@@ -71,7 +71,7 @@
 /* back / next */
 .bd-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: sticky; bottom: 0; padding: 10px 0 12px; background: var(--bg); border-top: 1px solid var(--line); }
 .bd-nav .ta-btn:disabled { opacity: .45; cursor: default; }
-.ta-back { margin: 0 0 4px; }
+.ta-back { position: relative; z-index: 1; margin: 0 0 14px; }   /* the big title (.ph, line-height .9: its accents reach up) never covers the back link */
 .bd-checks { list-style: none; display: grid; gap: 6px; margin: 4px 0; }
 .bd-cl { border-top: 1px solid var(--line); padding-top: 6px; }
 .bd-cl:first-child { border-top: 0; padding-top: 0; }
