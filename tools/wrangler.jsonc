@@ -58,7 +58,8 @@
         }
       ],
       // DEMO=1: every write refused; the demo key signs in (src/demo.js). The demo admin is a super admin (a fake address).
-      "vars": { "DEMO": "1", "EMAIL_MODE": "console", "EMAIL_FROM": "", "SUPER_ADMINS": "demo@demo.invalid" }
+      // DEMO_TODAY: the demo runs on this date (src/clock.js; owner, 2026-11-20: mid-season, so captains can try upcoming games). Remove it for the real date.
+      "vars": { "DEMO": "1", "DEMO_TODAY": "2026-10-20", "EMAIL_MODE": "console", "EMAIL_FROM": "", "SUPER_ADMINS": "demo@demo.invalid" }
     }
   }
 }

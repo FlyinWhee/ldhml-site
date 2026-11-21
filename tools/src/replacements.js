@@ -30,7 +30,7 @@ import { freezePast } from './lineups.js';
 
 const MAX_LINES = 20;
 const OPEN = "('pending', 'approved')";
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+import { today } from './clock.js';
 const intId = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
 
 /** Possible age on a date, from birth year and month only: { lo, hi }. mode 'year': the age reached during that year. */

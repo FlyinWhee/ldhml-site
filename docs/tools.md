@@ -153,6 +153,7 @@ The lineup of a team for a game = its roster, minus the absent players, plus the
 ## The online demo (built 2026-10-18)
 A read-only copy of the tools online, to walk the admins through them before the domain (no email sign-in without it). Its own Worker (`ldhml-tools-demo`, at `https://ldhml-tools-demo.<account>.workers.dev`) and its own database (`ldhml-tools-demo`): the real ones are never touched. Code: `src/demo.js`; config: `env.demo` in `tools/wrangler.jsonc`.
 - `DEMO=1`: every write is refused (403 `demo_readonly`, a banner on both pages). Still allowed: the demo sign-in, sign-out, and the replacement checks (they write nothing), so the builder can be shown.
+- **Simulated date** (owner, 2026-11-20: the season was over, so a captain had no upcoming game to try): `DEMO_TODAY` (`env.demo` vars, now `2026-10-20`) makes the demo's "today" that date: upcoming games, the next game night, games played (`src/clock.js`, set per request in `worker.js`). The banner shows it (`simulated` in `/api/public/season`). The real tools ignore it. Remove it, or move it, when the demo needs the real date.
 - Sign-in: the `DEMO_KEY` secret. Admin page: the key opens the demo admin (`demo@demo.invalid`, a super admin). Captain page: the key, then a captain from the list (captains with a team this season).
 - Data: a copy of a local database with no personal data: admin emails become `admin<id>@demo.invalid`, captain emails dummy addresses, no sessions or codes. Birth dates and salaries are the seed's demo values.
 - Steps (after `npx wrangler login`):

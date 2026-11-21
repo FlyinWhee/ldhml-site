@@ -155,7 +155,7 @@
       personNotFound: 'Cette personne n’existe plus.', personWho: 'Identité', personCaptain: 'Compte de capitaine', personSeason: '{s} cette saison', personNotListed: 'Pas sur la liste de la section cette saison.',
       personAlsoIn: 'Aussi dans {s} →', personWasAbsent: 'absent, remplacé par {n}', personReplaced: 'remplace {n}', personNoSubs: 'Aucun remplacement.', personHistory: 'Historique', personOnList: 'Sur la liste',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', demoDate: ' · date simulée : {d} (pour essayer les matchs à venir)', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.',
       tabValider: 'À valider', pillValider: 'à valider', dayToday: 'ce soir', dayTomorrow: 'demain', dayPast: 'match passé',
       backValider: '← À valider', reqNotFound: 'Ce remplacement n’existe plus (annulé ou supprimé).', reqTitle: 'Remplacement no {n}', reqLeagueQueue: 'Remplacements · {l}',
       rfH: 'Données du site public', rfOpen: 'Rafraîchir →', rfBack: '← Configuration',
@@ -259,7 +259,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       personNotFound: 'This person no longer exists.', personWho: 'Identity', personCaptain: 'Captain account', personSeason: '{s} this season', personNotListed: 'Not on the section list this season.',
       personAlsoIn: 'Also in {s} →', personWasAbsent: 'absent, replaced by {n}', personReplaced: 'replaces {n}', personNoSubs: 'No replacement.', personHistory: 'History', personOnList: 'On the list',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
+      demoBanner: 'Demo · read only: changes are refused', demoDate: ' · simulated date: {d} (to try the upcoming games)', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.',
       tabValider: 'To validate', pillValider: 'to validate', dayToday: 'tonight', dayTomorrow: 'tomorrow', dayPast: 'game played',
       backValider: '← To validate', reqNotFound: 'This replacement no longer exists (cancelled or deleted).', reqTitle: 'Replacement no {n}', reqLeagueQueue: 'Replacements · {l}',
       rfH: 'Public site data', rfOpen: 'Refresh →', rfBack: '← Setup',
@@ -941,7 +941,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   /* ---------- Home: the dashboard (what needs the admins now) ----------
    * Four key numbers; the replacements to validate (soonest game first, with Valider / Refuser); the next game night of each
    * league; a to-do list where each item opens the place to fix it. The action log is a link at the bottom. */
-  var torontoToday = function () { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' }); };
+  var torontoToday = function () { return S.sim || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' }); };
   function viewHome() {
     var live = S.seasons.filter(function (x) { return x.status === 'active'; })[0];
     var warn = !S.seasons.length ? '' : !live ? '<p class="ta-msg ta-err" role="alert">' + esc(t('noLive')) + '</p>'
@@ -1000,7 +1000,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   /* ---------- À valider (#/valider): every replacement to validate, all leagues, by game night, soonest first ----------
    * The phone page of an admin on short notice: one tap from the pill in the top bar, then Valider or Refuser. */
   function viewValider() {
-    var ctx = builderCtx(), today = torontoToday(), tomorrow = new Date(Date.now() + 864e5).toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+    var ctx = builderCtx(), today = torontoToday(), tomorrow = new Date(Date.parse(today + 'T12:00:00Z') + 864e5).toISOString().slice(0, 10);
     var pending = S.subs.filter(function (q) { return q.status === 'pending'; }).sort(function (a, b) { return (a.game_date + (a.game_time || '')).localeCompare(b.game_date + (b.game_time || '')); });
     var head = '<h1 class="ph">' + t('tabValider') + (pending.length ? ' <span class="ta-hcnt">' + pending.length + '</span>' : '') + '</h1>';
     if (!pending.length) return head + '<p class="empty">' + t('noPending') + '</p>';
@@ -1224,7 +1224,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     document.documentElement.classList.toggle('ta-demo', !!on);
     if (!on) { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
-    bar.textContent = t('demoBanner');
+    bar.textContent = t('demoBanner') + (S.sim ? t('demoDate', { d: S.sim }) : '');
   }
   /* The account menu (top bar): who is signed in, the language, sign out. Rarely used: one small button, not three. */
   var ACCT_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.8-3.8 3.6-5.8 7.2-5.8s6.4 2 7.2 5.8"/></svg>';
@@ -1556,7 +1556,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
-    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo);
+    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo); S.sim = rs[2] && rs[2].simulated || null;   // the demo's simulated date (src/clock.js)
     route(); fixScope();
     if (rs[1].ok) { S.me = rs[1].data.admin; return refresh(); }
     render();

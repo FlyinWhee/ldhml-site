@@ -679,6 +679,12 @@ assert.equal((await call('/api/nothing')).status, 404);
   };
   assert.equal((await dcall('/api/public/season')).data.demo, true, 'the page can tell it is the demo');
   assert.equal((await call('/api/public/season')).data.demo, false);
+  { // the demo may run on a simulated date (owner, 2026-11-20: a season over has no upcoming game to try); never the real tools
+    const simEnv = { ...denv, DEMO_TODAY: '2026-10-20' }, sim = async (pp, e) => (await (await worker.fetch(new Request(ORIGIN + pp, { headers: { 'CF-Connecting-IP': '203.0.113.8' } }), e)).json());
+    assert.equal((await sim('/api/public/season', simEnv)).simulated, '2026-10-20', 'the demo: its simulated date, for the banner');
+    assert.equal((await sim('/api/public/season', { ...env, DEMO_TODAY: '2026-10-20' })).simulated, null, 'the real tools: never a simulated date');
+    assert.equal((await dcall('/api/public/season')).data.simulated, null, 'the demo without DEMO_TODAY: the real date');
+  }
   assert.notEqual((await dcall('/api/admin/refresh/publish', { method: 'POST', body: {} })).data.error, 'demo_readonly', 'the stats site refresh works in the demo (it writes GitHub, not the demo database)');
   assert.equal((await dcall('/api/admin/login/start', { method: 'POST', body: { email: 'boss@example.test' } })).data.error, 'demo_readonly', 'no email sign-in in the demo');
   assert.equal((await dcall('/api/admin/demo-login', { method: 'POST', body: { key: 'wrong-key-0123456' } })).status, 401, 'the demo key is required');

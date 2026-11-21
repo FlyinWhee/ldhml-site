@@ -32,7 +32,7 @@ async function frozenOf(DB, gameIds, section) {
   return out;
 }
 
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+import { today } from './clock.js';
 const round = (v) => Math.round(v * 100) / 100;
 const OPEN = "('pending', 'approved')";
 const sectionOf = (data, league) => ((data && data.leagues.find((l) => l.slug === league)) || {}).section || '';

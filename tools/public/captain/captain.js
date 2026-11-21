@@ -31,7 +31,7 @@
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
       older: 'Remplacements passés ({n})', season: 'Saison {s}',
 demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on peut tout voir, rien ne se modifie.', demoKey: 'Clé de démo', demoEnter: 'Entrer',
-      demoBanner: 'Démo · lecture seule : les changements sont refusés', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer', account: 'Compte',
+      demoBanner: 'Démo · lecture seule : les changements sont refusés', demoDate: ' · date simulée : {d} (pour essayer les matchs à venir)', e_demo_readonly: 'Démo : les changements sont désactivés.', e_demo_key: 'Clé de démo invalide.', demoPick: 'Capitaine (démo)', loading: 'Chargement…', close: 'Fermer', account: 'Compte',
       playersTitle: 'Joueurs de la section', playersLede: 'Tous les joueurs de la liste cette saison, pour trouver un remplaçant : leur rang NBHPA, leur salaire, leurs équipes. Les noms ouvrent leurs statistiques.',
       backTeam: '← Mon équipe', findPlayer: 'Trouver un remplaçant : les joueurs de la section →', filterName: 'Filtrer par nom', fAll: 'Tous', fAllPos: 'Toutes positions',
       stAll: 'Tous', stFree: 'Sans équipe', stSub: 'Remplaçants', stTeam: 'Avec équipe', teamsCol: 'Équipes', stPoolChip: 'inscrit, sans équipe', stSubChip: 'Remplaçant',
@@ -62,7 +62,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
       older: 'Past replacements ({n})', season: '{s} season',
 demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, nothing can be changed.', demoKey: 'Demo key', demoEnter: 'Enter',
-      demoBanner: 'Demo · read only: changes are refused', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close', account: 'Account',
+      demoBanner: 'Demo · read only: changes are refused', demoDate: ' · simulated date: {d} (to try the upcoming games)', e_demo_readonly: 'Demo: changes are turned off.', e_demo_key: 'Invalid demo key.', demoPick: 'Captain (demo)', loading: 'Loading…', close: 'Close', account: 'Account',
       playersTitle: 'Section players', playersLede: 'Every player on the list this season, to find a replacement: their NBHPA rank, salary and teams. Names open their stats.',
       backTeam: '← My team', findPlayer: 'Find a replacement: the section players →', filterName: 'Filter by name', fAll: 'All', fAllPos: 'All positions',
       stAll: 'All', stFree: 'No team', stSub: 'Replacements', stTeam: 'With a team', teamsCol: 'Teams', stPoolChip: 'signed up, no team', stSubChip: 'Replacement',
@@ -335,7 +335,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     document.documentElement.classList.toggle('ta-demo', !!on);
     if (!on) { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.id = 'ta-demobar'; bar.className = 'ta-demobar'; bar.setAttribute('role', 'status'); document.body.appendChild(bar); }
-    bar.textContent = t('demoBanner');
+    bar.textContent = t('demoBanner') + (S.sim ? t('demoDate', { d: S.sim }) : '');
   }
   /* The account menu (top bar): who is signed in, the language, sign out. Rarely used: one small button, not three. */
   var ACCT_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.8-3.8 3.6-5.8 7.2-5.8s6.4 2 7.2 5.8"/></svg>';
@@ -501,7 +501,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   S.booting = true; render();   // "Chargement…" at once, not a blank page
   Promise.all([fetch('/data/season.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }), api('/me'),
     fetch('/api/public/season').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (rs) {
-    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo); S.urls = rs[2] && rs[2].urls;
+    S.booting = false; S.data = rs[0]; S.demoMode = !!(rs[2] && rs[2].demo); S.sim = rs[2] && rs[2].simulated || null; S.urls = rs[2] && rs[2].urls;
     if (rs[1].ok) { S.me = rs[1].data.captain; return refresh(); }
     render();
   }).catch(function () { S.booting = false; say('err', t('e_net')); render(); });

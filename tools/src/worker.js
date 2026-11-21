@@ -9,6 +9,7 @@ import { captainApi } from './captain-api.js';
 import { json } from './http.js';
 import { liveSeason } from './seasons.js';
 import { isDemo, demoRefuses } from './demo.js';
+import { setToday, simulated } from './clock.js';
 
 /* One area per address (owner, 2026-11-20): ADMIN_URL (https://admin.ldhml.com/) serves the admin at its root, CAPTAIN_URL
  * (https://capitaine.ldhml.com/) the captain area. "/" shows the area's page (same files: /admin/..., /captain/...); the
@@ -33,6 +34,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/')) return areaRoute(req, env, url) || env.ASSETS.fetch(req);
+    setToday(isDemo(env) ? env.DEMO_TODAY : null);   // the online demo may run on a simulated date (src/clock.js); never the real tools
     try {
       if (!sameOrigin(req, url)) return fail(403, 'origin');
       if (demoRefuses(env, req, url)) return fail(403, 'demo_readonly');   // the online demo is read only (src/demo.js)
@@ -42,7 +44,7 @@ export default {
       if (req.method === 'GET' && url.pathname === '/api/public/season') {
         const s = await liveSeason(env.DB);
         const off = s ? (await env.DB.prepare('SELECT league FROM season_leagues WHERE season_id = ? AND enabled = 0').bind(s.id).all()).results.map((r) => r.league) : [];
-        return json({ season: s ? { key: s.key, name: s.name, nbhpa_season_id: s.nbhpa_season_id, leagues_off: off } : null, demo: isDemo(env),
+        return json({ season: s ? { key: s.key, name: s.name, nbhpa_season_id: s.nbhpa_season_id, leagues_off: off } : null, demo: isDemo(env), simulated: simulated(),
           urls: { admin: env.ADMIN_URL || null, captain: env.CAPTAIN_URL || null } }, 200, { 'Access-Control-Allow-Origin': '*' });
       }
       return fail(404, 'not_found');

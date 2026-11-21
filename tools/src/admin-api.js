@@ -10,6 +10,7 @@ import { gamesApi, nbhpaPlan } from './games.js';
 import { adminsApi, ensureSuperAdmin, isSuper } from './admins.js';
 import { isDemo, demoAdminLogin } from './demo.js';
 import { publishApi } from './publish.js';
+import { today as todayIs } from './clock.js';
 
 const audit = (env, admin, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -275,7 +276,7 @@ export async function adminApi(req, env, url) {
     const neverIn = await DB.prepare(`SELECT COUNT(*) AS n FROM captains c WHERE c.disabled_at IS NULL AND c.last_login_at IS NULL
       AND EXISTS (SELECT 1 FROM captain_access a WHERE a.captain_id = c.id AND a.season_id = ? AND a.revoked_at IS NULL)`).bind(sid).first('n');
     // the next game night of each league (our schedule), and what an NBHPA import would bring
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+    const today = todayIs();
     const { results: nights } = await DB.prepare(`SELECT g.league, g.date, COUNT(*) AS games FROM games g WHERE g.season_id = ? AND g.cancelled = 0
       AND g.date = (SELECT MIN(x.date) FROM games x WHERE x.season_id = g.season_id AND x.league = g.league AND x.cancelled = 0 AND x.date >= ?) GROUP BY g.league, g.date ORDER BY g.date`).bind(sid, today).all();
     const gamesN = await DB.prepare('SELECT COUNT(*) AS n FROM games WHERE season_id = ?').bind(sid).first('n');
