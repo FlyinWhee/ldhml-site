@@ -51,3 +51,13 @@ html.lu-sheet-open { overflow: hidden; }
   .lu-sub { padding-left: 8px; }
   .lu-sheet { width: 100%; border-left: 0; }
 }
+/* the picker: who is replaced, the search first, then the filters (owner, 2026-11-20) */
+.lu-who { display: grid; min-width: 0; }
+.lu-who small { color: var(--muted); font-size: 13px; }
+.lu-fbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lu-fl { display: flex; flex-wrap: wrap; gap: 6px; }
+.lu-chip { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); font: 500 14px/1 var(--f-text); cursor: pointer; }
+.lu-chip[aria-pressed="true"] { border-color: var(--ball); background: color-mix(in srgb, var(--ball) 18%, transparent); }
+.lu-nob { margin: 6px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.lu-nob [aria-pressed="true"] { border-color: var(--ball); }
+.lu-sub.lu-none { justify-content: space-between; }

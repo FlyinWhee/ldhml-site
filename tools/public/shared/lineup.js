@@ -26,7 +26,9 @@
       stNone: 'Alignement régulier : aucun changement.', stOk: 'Alignement valide, confirmé automatiquement.', stAdmin: 'Alignement approuvé par un admin.',
       stPending: 'À valider par un admin', stSaving: 'Enregistrement…', stErr: 'Pas enregistré : {e}', changed: 'Modifié {d}{by}', byWho: ' par {n}',
       dupNo: 'Numéro {no} en double : {names}.', noNoYet: 'Sans numéro : {names}.', note: 'Note pour l’admin (optionnel)', notePh: 'Ex. : seul disponible ce soir',
-      counts: '{s} joueurs · {g} gardien(s)', loading: 'Chargement…', rules: 'Règles', back: '← Mon équipe', played: 'Match joué', goalieTag: 'G'
+      counts: '{s} joueurs · {g} gardien(s)', loading: 'Chargement…', rules: 'Règles', back: '← Mon équipe', played: 'Match joué', goalieTag: 'G',
+      nobodyBtn: 'Personne : on joue à court', salary: 'salaire {v}', noSalary: 'sans salaire', maxSub: 'remplaçant jusqu’à {v}', overCap: 'plafond déjà dépassé',
+      fOk: 'Admissibles seulement', fFree: 'Sans équipe', typeName: 'Tapez le nom du remplaçant.', scout: 'Chercher des options : les joueurs de la section →', nRes: '{n} joueurs', more: '… et {n} autres : précisez la recherche.'
     },
     en: {
       title: 'Lineup', present: 'In', absent: 'Out', addSub: '+ Replacement', short: 'or play short', change: 'Change', none: 'Nobody',
@@ -38,12 +40,14 @@
       stNone: 'Regular lineup: no change.', stOk: 'Valid lineup, confirmed automatically.', stAdmin: 'Lineup approved by an admin.',
       stPending: 'To be validated by an admin', stSaving: 'Saving…', stErr: 'Not saved: {e}', changed: 'Changed {d}{by}', byWho: ' by {n}',
       dupNo: 'Number {no} twice: {names}.', noNoYet: 'No number: {names}.', note: 'Note for the admin (optional)', notePh: 'E.g.: the only one free tonight',
-      counts: '{s} players · {g} goalie(s)', loading: 'Loading…', rules: 'Rules', back: '← My team', played: 'Game played', goalieTag: 'G'
+      counts: '{s} players · {g} goalie(s)', loading: 'Loading…', rules: 'Rules', back: '← My team', played: 'Game played', goalieTag: 'G',
+      nobodyBtn: 'Nobody: we play short', salary: 'salary {v}', noSalary: 'no salary', maxSub: 'replacement up to {v}', overCap: 'cap already exceeded',
+      fOk: 'Eligible only', fFree: 'No team', typeName: 'Type the replacement’s name.', scout: 'Look for options: the section’s players →', nRes: '{n} players', more: '… and {n} more: narrow the search.'
     }
   };
   var t = function (ctx, k, v) { var s = (STR[ctx.lang] || STR.fr)[k]; if (s == null) s = k; Object.keys(v || {}).forEach(function (n) { s = s.split('{' + n + '}').join(v[n]); }); return s; };
 
-  function state(o) { return { teamId: o.teamId, gameRef: o.gameRef, d: null, lines: [], note: '', saved: null, saving: 0, err: '', pick: null, q: '', open: {}, edit: null, guest: null, el: null, ctx: null, seq: 0 }; }
+  function state(o) { return { teamId: o.teamId, gameRef: o.gameRef, d: null, lines: [], note: '', saved: null, saving: 0, err: '', pick: null, q: '', f: {}, open: {}, edit: null, guest: null, el: null, ctx: null, seq: 0 }; }
 
   /* ---------- data ---------- */
   function load(st) {
@@ -138,27 +142,44 @@
         (j.why.length ? ' · ' + B().ICON[j.s] + ' ' + esc(j.why.join(', ')) : '') + '</small></span>' +
         '<button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'change')) + '</button></div>';
     } else {
-      sub = '<div class="lu-sub"><button type="button" class="ta-btn ta-btn-sm" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'addSub')) + '</button><span class="note">' + esc(t(ctx, 'short')) + '</span></div>';
+      sub = '<div class="lu-sub lu-none"><span class="note">' + esc(t(ctx, 'nobodyBtn')) + '</span><button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'addSub')) + '</button></div>';
     }
     return '<li class="lu-p lu-out">' + head + sub + '</li>';
   }
-  /* The replacement picker: a sheet over the page (full screen on a phone). Same sex only; eligible first. */
+  /* What a replacement may cost on this line: cap - (payroll - every absent salary + the other lines' replacements); null without a cap. */
+  function budget(st, line) {
+    var cap = st.d.rules && st.d.rules.salary_cap != null ? st.d.rules.salary_cap : null;
+    if (cap == null) return null;
+    var pay = 0;
+    st.d.roster.forEach(function (r) { pay += r.salary || 0; });
+    st.lines.forEach(function (l) { pay -= rosterOf(st, l.absent_id).salary || 0; var c = l !== line && l.sub_id && candOf(st, l.sub_id); if (c) pay += (l.sub_pos === 'g' ? c.salary_g : c.salary_s) || 0; });
+    return cap - pay;
+  }
+  /* The replacement picker: a sheet over the page (full screen on a phone). Search first (owner, 2026-11-20: the captain
+     usually knows who comes already); filters narrow the list; scouting for options is its own page (ctx.scoutHref).
+     Same sex only; eligible first. */
   function picker(st) {
     var ctx = st.ctx, l = lineOf(st, st.pick), r = rosterOf(st, st.pick);
     if (!l) return '';
-    var g = B().groups(bview(st), l), q = st.q, card = function (x) {
+    var g = B().groups(bview(st), l), q = st.q, f = st.f, card = function (x) {
       var c = x.c, j = x.j, tm = c.team ? '<span class="lu-ctm">' + window.LDLook.crest({ abb: c.team.abb }, st.d.team.league, 'sm') + esc(c.team.abb) + '</span>' : '<span class="lu-ctm note">' + esc(t(ctx, 'noTeam')) + '</span>';
       return '<button type="button" class="bd-cand bd-' + j.s + (l.sub_id === c.id ? ' bd-on' : '') + '" data-lu-sub="' + c.id + '"><span class="bd-cn"><b>' + esc(c.name) + '</b>' + tm + '</span>' +
         '<span class="bd-cs">' + esc(j.sal == null ? '—' : B().money(j.sal)) + '</span>' + (j.why.length ? '<span class="bd-cw">' + B().ICON[j.s] + ' ' + esc(j.why.join(', ')) + '</span>' : '<span class="bd-cw bd-ok">✓ ' + esc(t(ctx, 'fits')) + '</span>') + '</button>';
     };
+    // who is replaced: sex, position, salary, and what the replacement may cost
+    var bud = budget(st, l), who = [r.sex ? t(ctx, r.sex === 'f' ? 'sexF' : 'sexM') : null, B().posName(ctx, r.pos),
+      r.salary != null ? t(ctx, 'salary', { v: B().money(r.salary) }) : t(ctx, 'noSalary'),
+      bud == null ? null : bud < 0 ? t(ctx, 'overCap') : t(ctx, 'maxSub', { v: B().money(bud) })].filter(Boolean).join(' · ');
+    var chips = '<div class="lu-fl" role="group">' + [['ok', 'fOk'], ['free', 'fFree']].map(function (x) {
+      return '<button type="button" class="lu-chip" data-lu-f="' + x[0] + '" aria-pressed="' + !!f[x[0]] + '">' + esc(t(ctx, x[1])) + '</button>'; }).join('') + '</div>';
     var list;
-    if (q) {
-      var all = g.ok.concat(g.warn, g.fail).filter(function (x) { return fold(x.c.name).indexOf(fold(q)) >= 0; }).slice(0, 20);
-      list = all.length ? '<div class="bd-cands">' + all.map(card).join('') + '</div>' : '<p class="note">' + esc(B().t(ctx.lang, 'noMatchGuest')) + '</p>';
+    if (q || f.ok || f.free) {
+      var all = (f.ok ? g.ok : g.ok.concat(g.warn, g.fail)).filter(function (x) { return (!q || fold(x.c.name).indexOf(fold(q)) >= 0) && (!f.free || !x.c.team); });
+      var shown = all.slice(0, 30);
+      list = all.length ? '<p class="note">' + esc(t(ctx, 'nRes', { n: all.length })) + '</p><div class="bd-cands">' + shown.map(card).join('') + '</div>' +
+        (all.length > shown.length ? '<p class="note">' + esc(t(ctx, 'more', { n: all.length - shown.length })) + '</p>' : '') : '<p class="note">' + esc(B().t(ctx.lang, 'noMatchGuest')) + '</p>';
     } else {
-      list = '<p class="bd-sub-h">' + esc(t(ctx, 'eligible')) + '</p>' + (g.ok.length ? '<div class="bd-cands">' + g.ok.map(card).join('') + '</div>' : '<p class="note">' + esc(t(ctx, 'noneOk')) + '</p>') +
-        (g.warn.length ? '<details class="bd-other"><summary>' + esc(t(ctx, 'toCheck', { n: g.warn.length })) + '</summary><div class="bd-cands">' + g.warn.map(card).join('') + '</div></details>' : '') +
-        (g.fail.length ? '<details class="bd-other"><summary>' + esc(t(ctx, 'notOk', { n: g.fail.length })) + '</summary><div class="bd-cands">' + g.fail.map(card).join('') + '</div></details>' : '');
+      list = '<p class="note">' + esc(t(ctx, 'typeName')) + '</p>' + (ctx.scoutHref ? '<p><a class="lnk" href="' + esc(ctx.scoutHref) + '">' + esc(t(ctx, 'scout')) + '</a></p>' : '');
     }
     var gs = st.guest;
     var guest = gs ? '<fieldset class="bd-guest"><legend>' + esc(t(ctx, 'guest')) + '</legend>' + (gs.err ? '<p class="ta-msg ta-err" role="alert">' + esc(t(ctx, 'guestErr')) + '</p>' : '') +
@@ -167,11 +188,11 @@
       '<div class="ta-pair"><label>' + esc(t(ctx, 'guestAge')) + '<input class="ctl" data-lu-gf="age" inputmode="numeric" maxlength="3" value="' + esc(gs.age) + '"></label><label>' + esc(t(ctx, 'guestNid')) + '<input class="ctl" data-lu-gf="nid" inputmode="numeric" maxlength="12" value="' + esc(gs.nid) + '"></label></div>' +
       '<p><button type="button" class="ta-btn ta-btn-sm" data-lu-guse>' + esc(t(ctx, 'guestUse')) + '</button></p></fieldset>' : '<p><button type="button" class="lnk ta-linkbtn" data-lu-gopen>' + esc(t(ctx, 'guest')) + '</button></p>';
     return '<div class="lu-back" data-lu-close></div><div class="lu-sheet" role="dialog" aria-modal="true" aria-label="' + esc(t(ctx, 'pickTitle', { n: r.name })) + '">' +
-      '<div class="lu-sh"><b>' + esc(t(ctx, 'pickTitle', { n: r.name })) + '</b><button type="button" class="fp-x" data-lu-close aria-label="' + esc(t(ctx, 'close')) + '">×</button></div>' +
-      '<div class="lu-sb"><div class="seg" role="group" aria-label="' + esc(t(ctx, 'pos')) + '">' + ['s', 'g'].map(function (k) { return '<button type="button" data-lu-pos="' + k + '" aria-pressed="' + (l.sub_pos === k) + '">' + esc(B().posName(ctx, k)) + '</button>'; }).join('') + '</div>' +
-      '<input class="ctl bd-search" type="search" data-lu-q value="' + esc(q) + '" placeholder="' + esc(t(ctx, 'search')) + '" aria-label="' + esc(t(ctx, 'search')) + '">' +
-      ((l.sub_id || l.guest) ? '<p><button type="button" class="lnk ta-linkbtn" data-lu-nobody>' + esc(t(ctx, 'none')) + ' (' + esc(t(ctx, 'short')) + ')</button></p>' : '') +
-      list + guest + '</div></div>';
+      '<div class="lu-sh"><span class="lu-who"><b>' + esc(t(ctx, 'pickTitle', { n: r.name })) + '</b><small>' + esc(who) + '</small></span><button type="button" class="fp-x" data-lu-close aria-label="' + esc(t(ctx, 'close')) + '">×</button></div>' +
+      '<div class="lu-sb"><input class="ctl bd-search" type="search" data-lu-q value="' + esc(q) + '" placeholder="' + esc(t(ctx, 'search')) + '" aria-label="' + esc(t(ctx, 'search')) + '" autocomplete="off">' +
+      '<div class="lu-fbar"><div class="seg" role="group" aria-label="' + esc(t(ctx, 'pos')) + '">' + ['s', 'g'].map(function (k) { return '<button type="button" data-lu-pos="' + k + '" aria-pressed="' + (l.sub_pos === k) + '">' + esc(B().posName(ctx, k)) + '</button>'; }).join('') + '</div>' + chips + '</div>' +
+      list + guest +
+      '<p class="lu-nob"><button type="button" class="ta-btn ta-ghost ta-btn-sm" data-lu-nobody' + (!l.sub_id && !l.guest ? ' aria-pressed="true"' : '') + '>' + esc(t(ctx, 'nobodyBtn')) + '</button></p></div></div>';
   }
   function html(st) {
     var ctx = st.ctx, d = st.d;
@@ -199,16 +220,17 @@
     if (el.__lu) return;
     el.__lu = true;
     el.addEventListener('click', function (e) {
-      var st = el.__st, x = e.target.closest && e.target.closest('[data-lu-out],[data-lu-pick],[data-lu-sub],[data-lu-pos],[data-lu-close],[data-lu-nobody],[data-lu-noedit],[data-lu-nosave],[data-lu-gopen],[data-lu-gsex],[data-lu-guse]');
+      var st = el.__st, x = e.target.closest && e.target.closest('[data-lu-out],[data-lu-pick],[data-lu-f],[data-lu-sub],[data-lu-pos],[data-lu-close],[data-lu-nobody],[data-lu-noedit],[data-lu-nosave],[data-lu-gopen],[data-lu-gsex],[data-lu-guse]');
       if (!st || !x) return;
       var num = function (a) { return Number(x.getAttribute(a)); };
       if (x.hasAttribute('data-lu-out')) {   // present <-> absent (an absent player starts with nobody, at their position)
         var pid = num('data-lu-out'), l = lineOf(st, pid);
         if (l) st.lines = st.lines.filter(function (y) { return y !== l; });
-        else st.lines.push({ absent_id: pid, sub_id: null, guest: null, sub_pos: rosterOf(st, pid).pos || 's', sub_jersey: '' });
-        save(st); return;
+        else { st.lines.push({ absent_id: pid, sub_id: null, guest: null, sub_pos: rosterOf(st, pid).pos || 's', sub_jersey: '' }); openPick(st, pid); }
+        save(st); if (!l) focusQ(el); return;
       }
-      if (x.hasAttribute('data-lu-pick')) { st.pick = num('data-lu-pick'); st.q = ''; st.guest = null; draw(st); var qi = el.querySelector('[data-lu-q]'); if (qi && window.matchMedia && window.matchMedia('(min-width: 700px)').matches) qi.focus(); return; }
+      if (x.hasAttribute('data-lu-pick')) { openPick(st, num('data-lu-pick')); draw(st); focusQ(el); return; }
+      if (x.hasAttribute('data-lu-f')) { var fk = x.getAttribute('data-lu-f'); st.f[fk] = !st.f[fk]; draw(st); return; }
       if (x.hasAttribute('data-lu-close')) { st.pick = null; draw(st); return; }
       var cur = st.pick != null && lineOf(st, st.pick);
       if (x.hasAttribute('data-lu-pos') && cur) { cur.sub_pos = x.getAttribute('data-lu-pos'); if (cur.sub_id || cur.guest) save(st); else draw(st); return; }
@@ -247,6 +269,9 @@
       if (e.key === 'Enter' && e.target.hasAttribute && e.target.hasAttribute('data-lu-noin') && !e.target.hasAttribute('data-lu-subno')) { e.preventDefault(); saveNumber(st, Number(e.target.getAttribute('data-lu-noin'))); }
     });
   }
+  /* The picker opens on a search (the keyboard comes up: the captain types the name they already have). */
+  function openPick(st, pid) { st.pick = pid; st.q = ''; st.f = {}; st.guest = null; }
+  function focusQ(el) { var qi = el.querySelector('[data-lu-q]'); if (qi) qi.focus(); }
   /* A regular's season number (the team's roster): saved for the season; the games already played keep their own copy. */
   function saveNumber(st, pid) {
     var inp = st.el.querySelector('[data-lu-noin="' + pid + '"]'), v = inp ? inp.value.replace(/\D/g, '').slice(0, 3) : '';

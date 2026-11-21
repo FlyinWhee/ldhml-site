@@ -94,7 +94,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var ctx = function () {
     return { lang: lang, data: S.data, api: api,
       onSaved: function (res) { S.flash = { kind: 'ok', text: t('sent') }; S.shared = res && res.status === 'pending' ? res.id : null; S.sub = null; location.hash = '#equipe'; },
-      onCancel: function () { S.sub = null; location.hash = '#equipe'; } };
+      onCancel: function () { S.sub = null; location.hash = '#equipe'; }, scoutHref: '#joueurs' };
   };
 
   /* Team identity like the stats site: crest, full name (link to the team page), league badge. */
