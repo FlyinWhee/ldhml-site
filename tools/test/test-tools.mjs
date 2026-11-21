@@ -483,7 +483,7 @@ assert.equal(r.status, 200); assert.equal(r.data.id, rqA, 'the change merges int
 assert.deepEqual([r.data.status, r.data.auto, r.data.result], ['approved', true, 'ok'], 'every check passes: approved at once, no admin needed');
 assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM replacement_lines WHERE replacement_id = ?').bind(rqA).first('n'), 1, 'the same absent player: the line is replaced, not added');
 assert.equal((await call('/api/captain/replacements/' + rqA + '/decide', { method: 'POST', cookie: ccookie, body: { decision: 'approve' } })).status, 404, 'captains do not decide');
-assert.equal(st(await chk(body(sub3), ccookie, 'captain'), 'dup'), 'warn', 'a check (not a save) still sees the lineup on file');
+assert.equal(st(await chk(body(sub3), ccookie, 'captain'), 'dup'), undefined, 'a check of lines for this game: they go into its lineup, so the lineup on file is not "another" request');
 r = await call('/api/captain/replacements', { cookie: ccookie });
 assert.deepEqual(r.data.replacements.map((q) => q.id).sort(), [rqG, rqA].sort(), 'the captain sees every record of their team (also those made by the admins)');
 assert.equal(r.data.replacements.find((q) => q.id === rqA).created_kind, 'admin');
@@ -517,6 +517,12 @@ r = await lineupSave([{ absent_id: absentA, sub_id: sub1, sub_pos: 's', sub_jers
 const rqB = r.data.id;
 assert.ok(rqB !== rqA && r.data.status === 'approved', 'a new record, approved at once');
 assert.equal(await DB.prepare('SELECT sub_jersey FROM replacement_lines WHERE replacement_id = ?').bind(rqB).first('sub_jersey'), '42', 'the number the replacement wears that night');
+{ // the builder checks the game's own lineup again: it is not "another" request, and its replacement is not busy elsewhere
+  const own = await chk({ team_id: teamA, game_id: gameA.id, replace: true, lines: [{ absent_id: absentA, sub_id: sub1, sub_pos: 's' }] });
+  assert.ok(!own.checks.some((x) => x.k === 'dup') && st(own, 'busy') !== 'fail', 'its own lineup: no duplicate, not busy');
+  const bd = (await call('/api/captain/replacements/builder?team=' + teamA + '&game=' + gameA.ref, { cookie: ccookie })).data;
+  assert.ok(!(bd.candidates.find((c) => c.id === sub1) || {}).busy, 'the builder: a replacement of this lineup is not busy');
+}
 assert.equal((await lineupSave([{ absent_id: absentA, sub_id: sub1, sub_pos: 's', sub_jersey: 'A1' }])).status, 400, 'a number is digits');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/hide', { method: 'POST', cookie: ccookie, body: {} })).data.error, 'not_refused', 'only a refused record can be hidden');
 assert.equal((await call('/api/captain/replacements/' + rqB + '/cancel', { method: 'POST', cookie: ccookie, body: {} })).status, 200, 'the captain can cancel');
@@ -1022,6 +1028,12 @@ assert.ok(!q('.bd-rmodal'), 'closed');
 assert.ok(q('[data-b-step="3"]').disabled, 'later steps wait');
 await pickGame(d, '#ta-builder', w.Event, gameA2.ref);
 assert.ok(q('.bd-sp.bd-now [data-b-step="2"]'), 'a game chosen: on to step 2');
+{ // the game's lineup is loaded into the builder (owner, 2026-11-20: going back through the guided flow works with the current state)
+  const cur = (await DB.prepare("SELECT l.absent_id FROM replacements r JOIN replacement_lines l ON l.replacement_id = r.id WHERE r.team_id = ? AND r.game_ref = ? AND r.status IN ('pending', 'approved')").bind(teamA, gameA2.ref).all()).results;
+  assert.ok(cur.length && q('.bd-loaded'), 'a game with changes: the builder says they are loaded');
+  assert.ok(cur.every((x) => q('[data-b-absent="' + x.absent_id + '"]').classList.contains('bd-on')), 'its absent players are already marked');
+  if (q('[data-b-absent="' + absentA + '"]').classList.contains('bd-on')) { q('[data-b-absent="' + absentA + '"]').click(); await wait(80); }
+}
 q('[data-b-absent="' + absentA + '"]').click(); await wait(80);
 assert.ok(q('[data-b-absent="' + absentA + '"]').classList.contains('bd-on'), 'tap a player: absent');
 q('.bd-nav [data-b-step="3"]').click(); await wait(60);
@@ -1262,7 +1274,7 @@ await csubmit('#f-code');
 await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
-assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]'), 'the main action is right there: the next game\'s lineup');
+assert.ok(cd.querySelector('.cp-ask [data-act="ask"]') && cd.querySelector('.cp-ask a.ta-ghost[href^="#match/"]'), 'the main action is right there: declare (guided); the next game\'s lineup beside it');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
@@ -1277,12 +1289,14 @@ const todayT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Toron
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.games.filter((g) => !g.cancelled && (g.away === nbA || g.home === nbA) && g.date >= todayT).length, 'one line per upcoming game; past games only with requests, folded');
 assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1, 'the next game marked');
 assert.equal(cd.querySelectorAll('.cp-kpis .cp-kpi').length, 2, 'two key numbers: the next game and the payroll');
-assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game a.cp-ask-g[href^="#match/"]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each game: its lineup');
+assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game a.cp-lu-g[href^="#match/"]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each game: its lineup');
+assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game [data-ask-game]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each upcoming game: "Remplacement…" (the guided builder)');
 assert.ok(![...cd.querySelectorAll('.cp-game > details')].some((x) => x.open), 'every game starts folded (one line per replacement); opened on demand');
 assert.ok([...cd.querySelectorAll('.cp-game > details')].every((x) => x.querySelector('summary .cp-slim li')), 'folded, a game still shows each replacement on one line (absent → replacement)');
 { // the lineup of a game (#match/<game>; owner, 2026-11-20): the roster present or absent, numbers, replacements; saved at each change
-  const mHref = cd.querySelector('.cp-tl a.cp-ask-g').getAttribute('href'), gRef = Number(mHref.split('/')[1]);
+  const mHref = cd.querySelector('.cp-tl a.cp-lu-g').getAttribute('href'), gRef = Number(mHref.split('/')[1]);
   cw.location.hash = mHref; await wait(400);
+  assert.ok(cd.querySelector('#main [data-ask-game="' + gRef + '"]'), 'the lineup page: the guided builder for this game, one tap away');
   const lq = (sel) => cd.querySelector('#cp-lineup ' + sel), rosterNow = await DB.prepare('SELECT COUNT(*) AS n FROM rosters WHERE team_id = ? AND removed_at IS NULL').bind(teamA).first('n');
   assert.equal(cd.querySelectorAll('#cp-lineup .lu-p').length, rosterNow, 'the lineup: every player of the roster');
   assert.ok(lq('.lu-state') && lq('.lu-no'), 'its state on top, a number per player');
@@ -1305,7 +1319,7 @@ assert.ok([...cd.querySelectorAll('.cp-game > details')].every((x) => x.querySel
   const firstOk = lq('.lu-sheet .bd-cand.bd-ok') || lq('.lu-sheet .bd-cand');
   const pickedId = Number(firstOk.getAttribute('data-lu-sub'));
   firstOk.click(); await wait(350);
-  assert.ok(lq('.lu-sub.lu-has') && !lq('.lu-sheet'), 'the replacement is in, the picker closed');
+  assert.ok(lq('.lu-p.lu-has [data-lu-subno="' + pid + '"]') && !lq('.lu-sheet') && !lq('.lu-p.lu-has + .lu-sub'), 'the replacement is in, on one line (no line under), the picker closed');
   assert.equal((await lineRow()).sub_id, pickedId, 'saved');
   const sn = lq('[data-lu-subno="' + pid + '"]'); sn.value = '88'; sn.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(300);
   assert.equal((await lineRow()).sub_jersey, '88', 'the number the replacement wears tonight');
@@ -1324,18 +1338,23 @@ assert.ok(hideBtn, 'a refused request can be hidden');
 hideBtn.click(); await wait(250);
 assert.equal(cd.querySelectorAll('.bd-req').length, nReq - 1, 'Masquer: the refused request leaves the page');
 
-cw.location.hash = '#remplacement'; await wait(250);
+cd.querySelector('[data-act="ask"]').click(); await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
 assert.equal(cw.location.hash, '#remplacement', 'the builder is a page of its own');
 assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');
 await pickGame(cd, '#cp-builder', cw.Event, gameA.ref);
+for (const on of [...cd.querySelectorAll('#cp-builder [data-b-absent].bd-on')]) { on.click(); await wait(60); }   // loaded from the game's lineup: start from the regular lineup
 cq('[data-b-absent="' + absentA + '"]').click(); await wait(80);
 cq('.bd-nav [data-b-step="3"]').click(); await wait(60);
+cq('[data-b-none="' + absentA + '"]').click(); await wait(60);
+assert.ok(cq('.bd-nobody') && !cq('[data-b-jersey]') && !cq('.bd-nav [data-b-step="4"]').disabled, 'step 3: "Personne : on joue à court" completes the line (no number)');
+cq('[data-b-unpick="' + absentA + '"]').click(); await wait(60);
 const csq = cq('[data-b-q="' + absentA + '"]'); csq.value = (await DB.prepare('SELECT name FROM people WHERE id = ?').bind(sub2).first('name'));
 csq.dispatchEvent(new cw.Event('input', { bubbles: true })); await wait(40);
 const c2card = cq('[data-b-pick="' + absentA + ':' + sub2 + '"]');
 assert.ok(c2card && c2card.classList.contains('bd-fail') && /plafond/.test(c2card.textContent), 'the search finds anyone of the same sex, with the reason they do not fit');
 c2card.click(); await wait(200);
+{ const ji = cq('[data-b-jersey="' + absentA + '"]'); assert.ok(ji, 'a replacement chosen: the number tonight, right there'); ji.value = '77'; ji.dispatchEvent(new cw.Event('change', { bubbles: true })); await wait(30); }
 cq('.bd-nav [data-b-step="4"]').click(); await wait(150);
 assert.ok(cq('.bd-verdict .bd-res.bd-fail') && cq('.bd-issues .bd-fail') && !cq('[data-b-approve]'), 'step 4: the failing check in words; no approve box for a captain');
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(150);
@@ -1343,6 +1362,8 @@ assert.ok(cq('.ta-msg.ta-err'), 'failing without a note: refused, the builder st
 const cnote = cq('[data-b-note]'); cnote.value = 'Seule disponible ce soir'; cnote.dispatchEvent(new cw.Event('input', { bubbles: true }));
 cq('[data-b-form]').dispatchEvent(new cw.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
 assert.ok(cw.location.hash === '#equipe' && cd.querySelector('#main .ta-msg.ta-ok') && cd.querySelector('.cp-team'), 'sent: back on the team page, confirmation shown');
+assert.deepEqual((await DB.prepare("SELECT l.absent_id FROM replacements r JOIN replacement_lines l ON l.replacement_id = r.id WHERE r.team_id = ? AND r.game_ref = ? AND r.status IN ('pending', 'approved')").bind(teamA, gameA.ref).all()).results.map((x) => x.absent_id), [absentA], 'the builder holds the whole lineup: an absent player unmarked there is in again');
+assert.equal(await DB.prepare("SELECT l.sub_jersey FROM replacements r JOIN replacement_lines l ON l.replacement_id = r.id WHERE r.team_id = ? AND r.game_ref = ? AND l.absent_id = ? AND r.status IN ('pending', 'approved')").bind(teamA, gameA.ref, absentA).first('sub_jersey'), '77', 'the number tonight, saved with the line');
 assert.ok(/\/admin\/#\/r\/\d+$/.test(cd.getElementById('cp-share-url').value) && cd.querySelector('[data-share-copy]'), 'sent: the link for the admins, to share or copy');
 assert.ok([...cd.querySelectorAll('.cp-link .cp-link-url')].some((i) => i.value.indexOf('/admin/#/r/') > 0) && cd.querySelector('.cp-link [data-share-copy]'), 'each pending request: its link shown, with copy');
 assert.ok(cd.querySelectorAll('#tabbar a').length === 2 && cd.querySelector('.nav a[href="#joueurs"]'), 'captain nav: Mon équipe, Joueurs');

@@ -2,7 +2,9 @@
  * Straight to the point: after sign-in the captain lands on their team (most captains have one). A team switcher shows
  * only for a captain with several teams (the last one chosen is remembered in this browser). No sections, no setup.
  * The replacement builder (its own page: #remplacement) and the request cards are shared with the admin area (shared/builder.js).
- * A game's lineup (#match/<game>, shared/lineup.js; owner, 2026-11-20): the replacements live in the lineup of the game. */
+ * A game's lineup (#match/<game>, shared/lineup.js; owner, 2026-11-20): the replacements live in the lineup of the game.
+ * Declaring stays the guided builder (owner, 2026-11-20: "the guided version felt better"); the lineup page is for quick edits
+ * (numbers, change or remove a replacement), and the builder lands on it after sending. */
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -15,11 +17,11 @@
       title: 'Capitaine', signIn: 'Connexion capitaine', emailLabel: 'Votre adresse courriel', sendCode: 'Recevoir un code',
       codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.', magicReady: 'Connexion de {e} : le code du courriel est déjà rempli. Cliquez sur « Se connecter ».',
       codeLabel: 'Code à 6 chiffres', verify: 'Se connecter', otherEmail: 'Utiliser une autre adresse', devCode: 'Code (développement local) : {c}',
-      signOut: 'Déconnexion', lang: 'English', ask: 'Alignement du prochain match', lineupTitle: 'Alignement', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
+      signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', seeLineup: 'Alignement du prochain match', lineupTitle: 'Alignement', guided: 'Gérer les remplacements (guidé)', confirmed: 'Remplacement confirmé : l’alignement est valide.', cleared: 'Plus aucun changement : l’alignement redevient régulier.', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'vs',
-      st_pending: 'À valider', st_approved: 'Validé', st_refused: 'Refusé', langShort: 'EN', askGame: 'Alignement', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
+      st_pending: 'À valider', st_approved: 'Validé', st_refused: 'Refusé', langShort: 'EN', askGame: 'Remplacement…', lineupGame: 'Alignement', gPend: '{n} à valider', gSt_approved: '{n} validé(s)', gSt_pending: '{n} à valider', gSt_refused: '{n} refusé(s)',
       sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
@@ -46,11 +48,11 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       title: 'Captain', signIn: 'Captain sign-in', emailLabel: 'Your email address', sendCode: 'Get a code',
       codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.', magicReady: 'Signing in {e}: the code from the email is already filled in. Click "Sign in".',
       codeLabel: '6-digit code', verify: 'Sign in', otherEmail: 'Use another address', devCode: 'Code (local development): {c}',
-      signOut: 'Sign out', lang: 'Français', ask: 'Next game’s lineup', lineupTitle: 'Lineup', askTitle: 'Declare a replacement', back: '← My team',
+      signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', seeLineup: 'Next game’s lineup', lineupTitle: 'Lineup', guided: 'Manage replacements (guided)', confirmed: 'Replacement confirmed: the lineup is valid.', cleared: 'No change any more: the lineup is the regular one again.', askTitle: 'Declare a replacement', back: '← My team',
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs',
-      st_pending: 'To validate', st_approved: 'Validated', st_refused: 'Refused', langShort: 'FR', askGame: 'Lineup', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
+      st_pending: 'To validate', st_approved: 'Validated', st_refused: 'Refused', langShort: 'FR', askGame: 'Replacement…', lineupGame: 'Lineup', gPend: '{n} to validate', gSt_approved: '{n} validated', gSt_pending: '{n} to validate', gSt_refused: '{n} refused',
       sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
@@ -93,7 +95,11 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var home = function (l) { return ((S.data && S.data.siteUrl) || '/') + l.sectionPath + '/' + l.path + '/'; };
   var ctx = function () {
     return { lang: lang, data: S.data, api: api,
-      onSaved: function (res) { S.flash = { kind: 'ok', text: t('sent') }; S.shared = res && res.status === 'pending' ? res.id : null; S.sub = null; location.hash = '#equipe'; },
+      onSaved: function (res) {   // back to the team page: its replacements (the lineup page is one tap away)
+        var text = t(!res || !res.id ? 'cleared' : res.status === 'approved' ? 'confirmed' : 'sent');
+        S.shared = res && res.status === 'pending' ? res.id : null; S.sub = null;
+        S.flash = { kind: 'ok', text: text }; location.hash = '#equipe';
+      },
       onCancel: function () { S.sub = null; location.hash = '#equipe'; }, scoutHref: '#joueurs' };
   };
 
@@ -172,7 +178,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!tm) return '<h1 class="ph">' + t('title') + '</h1><p class="lede">' + t('noTeams') + '</p>';
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
-      (nextGame() ? '<p class="cp-ask"><a class="ta-btn" href="#match/' + nextGame().game.id + '">' + t('ask') + '</a></p>' : '') + '</div>';
+      '<p class="cp-ask"><button type="button" class="ta-btn" data-act="ask">' + t('ask') + '</button>' + (nextGame() ? ' <a class="ta-btn ta-ghost" href="#match/' + nextGame().game.id + '">' + t('seeLineup') + '</a>' : '') + '</p></div>';
     return switcher() + sharePanel() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
   var nextGame = function () { return S.games.filter(function (g) { return g.game.date >= S.today; })[0]; };
@@ -230,7 +236,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       var n = { approved: 0, pending: 0, refused: 0 }; r.reqs.forEach(function (q) { n[q.status] = (n[q.status] || 0) + 1; });
       var chips = ['approved', 'pending', 'refused'].filter(function (k) { return n[k]; }).map(function (k) { return '<span class="cp-st cp-st-' + k + '">' + esc(t('gSt_' + k, { n: n[k] })) + '</span>'; }).join('');
       var sum = changed ? '<p class="note cp-gsum">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</p>' : '';
-      var ask = r.x ? '<a class="ta-btn ta-btn-sm cp-ask-g' + (upcoming ? '' : ' ta-ghost') + '" href="#match/' + esc(r.x.game.id) + '">' + t('askGame') + '</a>' : '';
+      var ask = r.x ? '<span class="cp-gacts">' + (upcoming ? '<button type="button" class="ta-btn ta-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '') +
+        '<a class="ta-btn ta-btn-sm ta-ghost cp-lu-g" href="#match/' + esc(r.x.game.id) + '">' + t('lineupGame') + '</a></span>' : '';
       var line = '<span class="cp-gt"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</span><span class="cp-gchips">' + chips + '</span>' + ask;
       if (!r.reqs.length) return '<li class="cp-game' + (next ? ' cp-nextg' : '') + '"><div class="cp-gl">' + line + '</div></li>';
       /* folded, the game still shows each replacement on one line: absent → replacement, with a status dot */
@@ -314,7 +321,9 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   }
   /* A game's lineup (#match/<game>): the roster, present or absent, numbers, replacements; saved at each change. */
   function viewMatch() {
-    return '<p class="ta-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('lineupTitle') + '</h1><div class="lu-page" id="cp-lineup"></div>';
+    var g = S.lu && S.games.filter(function (x) { return String(x.game.id) === String(S.lu.gameRef); })[0];
+    return '<p class="ta-back"><a class="lnk" href="#equipe">' + t('back') + '</a></p><h1 class="ph">' + t('lineupTitle') + '</h1>' +
+      (g && g.game.date >= S.today ? '<p class="cp-ask"><button type="button" class="ta-btn" data-ask-game="' + esc(g.game.id) + '">' + t('guided') + '</button></p>' : '') + '<div class="lu-page" id="cp-lineup"></div>';
   }
   /* The builder page (#remplacement[/<game id>]): the team, then the guided steps (a game chosen beforehand starts at step 2). */
   function viewAsk() {
@@ -460,7 +469,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (act === 'lang') { lang = lang === 'fr' ? 'en' : 'fr'; try { localStorage.setItem('ldhml-lang', lang); } catch (err) { /* ignore */ } render(); return; }
     if (act === 'other-email') { S.step = 'email'; S.devCode = ''; S.magic = ''; S.msg = null; render(); return; }
     if (act === 'logout') { api('/logout', 'POST', {}).then(function () { S.me = null; S.step = 'email'; S.msg = null; S.sub = null; render(); }); return; }
-    if (act === 'ask') { S.msg = null; location.hash = nextGame() ? '#match/' + nextGame().game.id : '#remplacement'; return; }
+    if (act === 'ask') { S.msg = null; location.hash = '#remplacement'; return; }
     if (b.hasAttribute('data-team')) { pickTeam(Number(b.getAttribute('data-team'))); S.msg = null; refresh(); return; }
     if (b.hasAttribute('data-ask-game')) { e.preventDefault(); S.msg = null; location.hash = '#remplacement/' + b.getAttribute('data-ask-game'); return; }
     if (b.hasAttribute('data-fpanel') || b.hasAttribute('data-fpanel-close')) { S.fpanel = b.hasAttribute('data-fpanel'); render(); var fo = S.fpanel ? document.querySelector('#fpanel button, #fpanel select') : document.querySelector('[data-fpanel]'); if (fo) fo.focus(); return; }

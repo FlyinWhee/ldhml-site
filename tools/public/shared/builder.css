@@ -164,3 +164,9 @@
 }
 .bd-req, .bd-line, .bd-sum, .ld-team, .ld-game { min-width: 0; }
 .bd-lines li, .ld-list li { overflow-wrap: anywhere; }
+/* the lineup in the builder (owner, 2026-11-20): loaded when the game has changes; nobody (play short); the number tonight */
+.bd-loaded { margin: 0 0 8px; }
+.bd-setacts { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 14px; margin: 8px 0 0; }
+.bd-jersey { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.bd-jersey .ctl { width: 64px; min-width: 0; text-align: center; font: 600 20px/1 var(--f-display); }
+.bd-nobody { border-style: dashed; }

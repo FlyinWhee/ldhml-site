@@ -4,7 +4,7 @@
  *
  *   var b = LDBuilder.state({ area: 'captain' | 'admin', teamId, teams })   teams: choices [{ id, name, abb }] (admin) or null
  *   LDBuilder.mount(el, b, ctx)   renders into el and keeps its state in b, so the page can re-render around it (mount again)
- *       ctx = { lang, data (season.json), api(path, method, body) -> Promise<{ ok, status, data }>, onSaved(result), onCancel() }
+ *       ctx = { lang, data (season.json), api(path, method, body) -> Promise<{ ok, status, data }>, onSaved(result, sent body), onCancel() }
  *       The builder is a page of its own in both areas (not a modal: it needs the room).
  *   LDBuilder.requestCard(q, ctx, actionsHtml, o)   one request (queue, history), compact: the problems in words,
  *       every check in a fold. o = { team: show the team (false on the captain's own team page), game: show the game (false under
@@ -56,7 +56,7 @@
       rl_send: 'Un remplacement non conforme peut quand même être déclaré, avec une note : l’administration décide.',
       k_sex: 'Même sexe', x_sex: '{s} n’est pas du même sexe que {a} : un remplacement est toujours du même sexe.', x_sexUnknown: 'Sexe inconnu ({who}) : à vérifier.', rSex: 'sexe inconnu',
       allChecks: 'Vérifications : {ok} ✓ · {warn} à vérifier · {fail} ✗', allOk: 'Toutes les vérifications passent ({n})', back: 'Retour',
-      k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon', k_goalie: 'Gardien', x_goalie: 'Aucun gardien dans l’alignement : un gardien est obligatoire.', nobody: 'personne (on joue à court)',
+      k_absent: 'Alignement', k_listed: 'Liste des joueurs', k_own: 'Pas déjà dans l’équipe', k_busy: 'Libre à cette heure', k_age: 'Âge {min}+', k_age0: 'Âge', k_salary: 'Salaires', k_cap: 'Plafond', k_dup: 'Doublon', k_goalie: 'Gardien', x_goalie: 'Aucun gardien dans l’alignement : un gardien est obligatoire.', nobody: 'personne (on joue à court)', nobodyOpt: 'Personne : on joue à court', nobodySet: 'Personne : l’équipe joue à court', subNo: 'Numéro ce soir', loadedCur: 'Ce match a déjà des changements : ils sont chargés. Modifiez-les ici.', backRegular: 'Plus aucun changement : l’alignement redevient régulier.',
       x_absent: '{a} n’est pas dans l’alignement de l’équipe.', x_listed: '{s} n’est pas sur la liste des joueurs de la section cette saison. Un administrateur peut l’ajouter.',
       x_own: '{s} est déjà dans l’alignement de cette équipe.', x_busy: '{s} joue à la même heure (avec {abb}).', x_busyReq: '{s} remplace déjà à la même heure (remplacement no {req}, {abb}).',
       x_age: '{s} n’a pas l’âge minimum ({min} ans comme {pos}).', x_ageBirth: 'Date de naissance de {s} inconnue : l’âge ({min} ans) est à vérifier.',
@@ -107,7 +107,7 @@
       rl_send: 'A replacement that does not pass can still be declared, with a note: the admins decide.',
       k_sex: 'Same sex', x_sex: '{s} is not the same sex as {a}: a replacement is always the same sex.', x_sexUnknown: 'Unknown sex ({who}): to check.', rSex: 'sex unknown',
       allChecks: 'Checks: {ok} ✓ · {warn} to check · {fail} ✗', allOk: 'Every check passes ({n})', back: 'Back',
-      k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate', k_goalie: 'Goalie', x_goalie: 'No goalie in the lineup: a goalie is required.', nobody: 'nobody (playing short)',
+      k_absent: 'Roster', k_listed: 'Player list', k_own: 'Not already on the team', k_busy: 'Free at that time', k_age: 'Age {min}+', k_age0: 'Age', k_salary: 'Salaries', k_cap: 'Cap', k_dup: 'Duplicate', k_goalie: 'Goalie', x_goalie: 'No goalie in the lineup: a goalie is required.', nobody: 'nobody (playing short)', nobodyOpt: 'Nobody: we play short', nobodySet: 'Nobody: the team plays short', subNo: 'Number tonight', loadedCur: 'This game already has changes: they are loaded. Change them here.', backRegular: 'No change any more: the lineup is the regular one again.',
       x_absent: '{a} is not on the team’s roster.', x_listed: '{s} is not on the section’s player list this season. An admin can add them.',
       x_own: '{s} is already on this team’s roster.', x_busy: '{s} plays at the same time (with {abb}).', x_busyReq: '{s} already replaces at the same time (replacement no. {req}, {abb}).',
       x_age: '{s} does not meet the minimum age ({min} as a {pos}).', x_ageBirth: '{s}’s birth date is unknown: the age ({min}) must be checked.',
@@ -257,7 +257,7 @@
   function state(o) {
     return { area: o.area || 'captain', teamId: o.teamId || null, teams: o.teams || null, d: null, loading: false, slot: o.slot || '', date: '', time: '',
       lines: [], note: '', approve: o.area === 'admin', check: null, msg: null, seq: 0, cseq: 0, saving: false, el: null, ctx: null,
-      step: o.slot ? 2 : 1, q: {}, more: {}, league: o.league || null, gopen: {}, gform: {}, gerr: {} };
+      step: o.slot ? 2 : 1, curFor: null, hadCur: false, q: {}, more: {}, league: o.league || null, gopen: {}, gform: {}, gerr: {} };
   }
   var slotQuery = function (b) {
     if (b.slot && b.slot !== 'manual') return '&game=' + encodeURIComponent(b.slot);
@@ -265,10 +265,10 @@
     return '';
   };
   var slotReady = function (b) { return !!slotQuery(b); };
-  var complete = function (b) { return b.lines.filter(function (l) { return l.sub_id || l.guest; }); };
+  var complete = function (b) { return b.lines.filter(function (l) { return l.sub_id || l.guest || l.none; }); };
   var errText = function (b, r) { return t(b.ctx.lang, 'e_' + ((r.data && r.data.error) || 'server')); };
   /* The furthest step the request can be at now. */
-  var reach = function (b) { return !slotReady(b) || !b.d || !b.d.candidates ? 1 : !b.lines.length ? 2 : complete(b).length < b.lines.length ? 3 : 4; };
+  var reach = function (b) { return !slotReady(b) || !b.d || !b.d.candidates ? 1 : !b.lines.length ? (b.hadCur ? 4 : 2) : complete(b).length < b.lines.length ? 3 : 4; };
 
   function load(b) {
     if (!b.teamId) { draw(b); return; }
@@ -279,6 +279,12 @@
       if (!r.ok) { b.msg = errText(b, r); b.d = null; draw(b); return; }
       b.d = r.data;
       var on = {}; (b.d.roster || []).forEach(function (p) { on[p.person_id] = 1; });
+      var ck = b.teamId + slotQuery(b);
+      if (b.curFor !== ck) {
+        b.curFor = ck; b.hadCur = !!(r.data.current && r.data.current.lines.length);
+        if (b.hadCur) b.lines = r.data.current.lines.map(function (l) { return { absent_id: l.absent_id, sub_id: l.sub_id || null, guest: l.guest || null, sub_pos: l.sub_pos, sub_jersey: l.sub_jersey || '', none: !l.sub_id && !l.guest }; });
+        if (b.hadCur && !b.note) b.note = r.data.current.note || '';
+      }
       b.lines = b.lines.filter(function (l) { return on[l.absent_id]; });
       if (b.step > reach(b)) b.step = reach(b);
       draw(b); check(b);
@@ -286,7 +292,7 @@
   }
   function check(b) {
     var lines = complete(b);
-    if (!slotReady(b) || !lines.length) { b.check = null; draw(b); return; }
+    if (!slotReady(b) || !lines.length) { b.check = lines.length || !b.hadCur ? null : { result: 'ok', checks: [], payroll: null, empty: true }; draw(b); return; }
     var seq = ++b.cseq;
     b.ctx.api('/replacements/check', 'POST', body(b)).then(function (r) {
       if (seq !== b.cseq) return;
@@ -296,7 +302,12 @@
     });
   }
   function body(b) {
-    var o = { team_id: b.teamId, lines: complete(b).map(function (l) { return l.guest ? { absent_id: l.absent_id, guest: l.guest, sub_pos: l.sub_pos } : { absent_id: l.absent_id, sub_id: l.sub_id, sub_pos: l.sub_pos }; }) };
+    var o = { team_id: b.teamId, lines: complete(b).map(function (l) {
+      var x = { absent_id: l.absent_id, sub_pos: l.sub_pos, sub_jersey: l.none ? null : (l.sub_jersey || null) };
+      if (l.guest) x.guest = l.guest; else if (l.sub_id) x.sub_id = l.sub_id;
+      return x;
+    }) };
+    if (b.slot && b.slot !== 'manual') o.replace = true;   // a game: the builder holds the whole lineup (loaded at the start)
     if (b.slot && b.slot !== 'manual') o.game_ref = Number(b.slot); else { o.game_date = b.date; o.game_time = b.time || null; }
     return o;
   }
@@ -387,11 +398,11 @@
   function step2(b) {
     var L = b.ctx.lang, d = b.d;
     if (!d.roster.length) return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'emptyRoster')) + '</p>' + nav(b, 1, 0);
-    return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2><p class="note">' + esc(t(L, 'q2hint')) + '</p><div class="bd-tiles">' + rosterOrder(d.roster, function (p) { return p.salary; }).map(function (p) {
+    return '<h2 class="bd-q">' + esc(t(L, 'q2')) + '</h2>' + (b.hadCur ? '<p class="ta-msg ta-ok bd-loaded">' + esc(t(L, 'loadedCur')) + '</p>' : '') + '<p class="note">' + esc(t(L, 'q2hint')) + '</p><div class="bd-tiles">' + rosterOrder(d.roster, function (p) { return p.salary; }).map(function (p) {
       var on = b.lines.some(function (l) { return l.absent_id === p.person_id; });
       return '<button type="button" class="bd-tile' + (on ? ' bd-on' : '') + '" data-b-absent="' + p.person_id + '" data-b-key="abs-' + p.person_id + '" aria-pressed="' + on + '">' +
         '<span class="bd-tick" aria-hidden="true">' + (on ? '✓' : '') + '</span><span><b>' + esc(p.name) + '</b><small>' + esc((p.sex ? t(L, p.sex === 'f' ? 'sxF' : 'sxM') + ' · ' : '') + posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></span></button>';
-    }).join('') + '</div>' + nav(b, 1, b.lines.length ? 3 : 0, b.lines.length ? t(L, 'nextN', { n: b.lines.length }) : '');
+    }).join('') + '</div>' + nav(b, 1, b.lines.length ? 3 : b.hadCur ? 4 : 0, b.lines.length ? t(L, 'nextN', { n: b.lines.length }) : '');
   }
   function candCard(b, line, x, chosen) {
     var c = x.c, j = x.j, L = b.ctx.lang;
@@ -402,20 +413,21 @@
   }
   function lineBlock(b, line) {
     var L = b.ctx.lang, p = rosterOf(b, line.absent_id), g = groups(b, line), key = line.absent_id;
-    var head = '<div class="bd-lh"><h3>' + esc(t(L, 'replaceX', { n: p.name })) + ' <small>' + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></h3>' +
+    var head = '<div class="bd-lh"><h3>' + esc(t(L, 'replaceX', { n: p.name })) + ' <small>' + (p.sex ? esc(t(L, p.sex === 'f' ? 'sexF' : 'sexM')) + ' · ' : '') + esc(posName(b.ctx, p.pos)) + ' · ' + esc(money(p.salary)) + '</small></h3>' +
       '<div class="seg bd-pos" role="group" aria-label="' + esc(t(L, 'subPos')) + '">' + ['s', 'g'].map(function (k) {
         return '<button type="button" data-b-pos="' + key + ':' + k + '" aria-pressed="' + (line.sub_pos === k) + '">' + esc(posName(b.ctx, k)) + '</button>'; }).join('') + '</div></div>';
     var cap = b.d.rules && b.d.rules.salary_cap != null;
     var bud = cap ? '<p class="note">' + esc(t(L, 'budget', { v: money(budget(b, line)) })) + '</p>' : '';
+    var jersey = '<label class="bd-jersey">' + esc(t(L, 'subNo')) + '<input class="ctl" data-b-jersey="' + key + '" data-b-key="j-' + key + '" inputmode="numeric" maxlength="3" value="' + esc(line.sub_jersey || '') + '" placeholder="#"></label>';
+    var setActs = function () { return '<p class="bd-setacts">' + (line.none ? '' : jersey) + '<button type="button" class="lnk ta-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></p>'; };
+    if (line.none) return '<section class="bd-line bd-set">' + head + '<div class="bd-cand bd-on bd-nobody"><span class="bd-cn"><b>' + esc(t(L, 'nobodySet')) + '</b></span></div>' + setActs() + '</section>';
     if (line.guest) {
       return '<section class="bd-line bd-set bd-gset">' + head + '<div class="bd-cand bd-fail bd-on"><span class="bd-cn"><b>' + esc(line.guest.name) + '</b></span><span class="bd-cs">—</span>' +
-        '<span class="bd-cw">✗ ' + esc(t(L, 'guestNoList')) + ' · ' + guestTag(b.ctx, line.guest) + '</span></div>' +
-        '<button type="button" class="lnk ta-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
+        '<span class="bd-cw">✗ ' + esc(t(L, 'guestNoList')) + ' · ' + guestTag(b.ctx, line.guest) + '</span></div>' + setActs() + '</section>';
     }
     if (line.sub_id) {
       var c = candOf(b, line.sub_id);
-      return '<section class="bd-line bd-set">' + head + (c ? candCard(b, line, { c: c, j: judge(b, c, line) }, true) : '') +
-        '<button type="button" class="lnk ta-linkbtn" data-b-unpick="' + key + '">' + esc(t(L, 'change')) + '</button></section>';
+      return '<section class="bd-line bd-set">' + head + (c ? candCard(b, line, { c: c, j: judge(b, c, line) }, true) : '') + setActs() + '</section>';
     }
     var q = b.q[key] || '', list;
     if (q) {
@@ -428,6 +440,7 @@
         (g.warn.length ? '<details class="bd-other"><summary>' + esc(t(L, 'toCheck', { n: g.warn.length })) + '</summary><div class="bd-cands">' + g.warn.map(function (x) { return candCard(b, line, x); }).join('') + '</div></details>' : '');
     }
     if (!b.gopen[key]) list += '<p><button type="button" class="lnk ta-linkbtn bd-guestbtn" data-b-guest-open="' + key + '">+ ' + esc(t(L, 'guestBtn')) + '</button></p>';
+    list += '<p><button type="button" class="ta-btn ta-ghost ta-btn-sm" data-b-none="' + key + '">' + esc(t(L, 'nobodyOpt')) + '</button></p>';
     return '<section class="bd-line">' + head + bud + guestBlock(b, line, p) +
       '<input class="ctl bd-search" type="search" data-b-q="' + key + '" data-b-key="q-' + key + '" value="' + esc(q) + '" placeholder="' + esc(t(L, 'search')) + '" aria-label="' + esc(t(L, 'search')) + '">' + list + '</section>';
   }
@@ -455,14 +468,16 @@
   }
   function step4(b) {
     var L = b.ctx.lang, d = b.d, c = b.check, lines = complete(b);
-    var names = lines.map(function (l) { return { a: rosterOf(b, l.absent_id).name, s: l.guest ? l.guest.name : (candOf(b, l.sub_id) || {}).name }; });
-    var sums = lines.map(function (l) { var x = candOf(b, l.sub_id) || {}; return { absent_salary: rosterOf(b, l.absent_id).salary, sub_salary: l.guest ? null : l.sub_pos === 'g' ? x.salary_g : x.salary_s }; });
+    var names = lines.map(function (l) { return { a: rosterOf(b, l.absent_id).name, s: l.none ? t(L, 'nobody') : l.guest ? l.guest.name : (candOf(b, l.sub_id) || {}).name }; });
+    var sums = lines.map(function (l) { var x = candOf(b, l.sub_id) || {}; return { absent_salary: rosterOf(b, l.absent_id).salary, sub_salary: l.guest || l.none ? null : l.sub_pos === 'g' ? x.salary_g : x.salary_s }; });
     var summary = '<div class="bd-sum"><p><b>' + esc(slotText(b)) + '</b>' + (b.slot !== 'manual' ? ' · ' + esc(gameText(b.ctx, d.games.filter(function (g) { return String(g.id) === String(b.slot); })[0] || {}).split(' · ').slice(2).join(' · ')) : '') + '</p>' +
       '<ul class="bd-lines">' + lines.map(function (l, i) {
-        return '<li>' + esc(names[i].a) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + esc(names[i].s) + '</b>' + (l.guest ? ' ' + guestTag(b.ctx, l.guest) : '') + ' <span class="note">' + esc(posName(b.ctx, l.sub_pos)) + ' · ' + esc(money(sums[i].absent_salary)) + ' → ' + esc(money(sums[i].sub_salary)) + '</span></li>';
-      }).join('') + '</ul></div>';
+        return '<li>' + esc(names[i].a) + ' <span class="bd-arrow" aria-hidden="true">→</span> <b>' + (l.sub_jersey && !l.none ? '#' + esc(l.sub_jersey) + ' ' : '') + esc(names[i].s) + '</b>' + (l.guest ? ' ' + guestTag(b.ctx, l.guest) : '') +
+          (l.none ? '' : ' <span class="note">' + esc(posName(b.ctx, l.sub_pos)) + ' · ' + esc(money(sums[i].absent_salary)) + ' → ' + esc(money(sums[i].sub_salary)) + '</span>') + '</li>';
+      }).join('') + '</ul>' + (!lines.length ? '<p class="note">' + esc(t(L, 'backRegular')) + '</p>' : '') + '</div>';
     var checks = '';
     if (!c) checks = '<p class="note">' + esc(t(L, 'loading')) + '</p>';
+    else if (c.empty) checks = '';
     else {
       var outSum = 0, inSum = 0; sums.forEach(function (x) { outSum += x.absent_salary || 0; inSum += x.sub_salary || 0; });
       var issues = c.checks.filter(function (x) { return x.s !== 'ok'; }).map(function (x) {
@@ -536,7 +551,7 @@
     if (el.__ldbBound) return;
     el.__ldbBound = true;
     el.addEventListener('click', function (e) {
-      var b = el.__ldb, x = e.target.closest && e.target.closest('[data-b-rules],[data-b-rules-close],[data-b-guest-open],[data-b-guest-close],[data-b-guest-save],[data-b-gsex],[data-b-team],[data-b-game],[data-b-absent],[data-b-pick],[data-b-unpick],[data-b-pos],[data-b-more],[data-b-step],[data-b-cancel]');
+      var b = el.__ldb, x = e.target.closest && e.target.closest('[data-b-rules],[data-b-rules-close],[data-b-guest-open],[data-b-guest-close],[data-b-guest-save],[data-b-gsex],[data-b-team],[data-b-game],[data-b-absent],[data-b-pick],[data-b-unpick],[data-b-none],[data-b-pos],[data-b-more],[data-b-step],[data-b-cancel]');
       if (!x || x.disabled) return;
       var v = function (a) { return x.getAttribute(a); }, ln = function (id) { return b.lines.filter(function (l) { return l.absent_id === Number(id); })[0]; };
       if (x.hasAttribute('data-b-cancel')) { if (b.ctx.onCancel) b.ctx.onCancel(); return; }
@@ -551,8 +566,9 @@
         else b.lines.push({ absent_id: pid, sub_id: null, sub_pos: rosterOf(b, pid).pos || 's' });
         draw(b); check(b); return;
       }
-      if (x.hasAttribute('data-b-pick')) { var pk = v('data-b-pick').split(':'); ln(pk[0]).sub_id = Number(pk[1]); b.q[pk[0]] = ''; draw(b); check(b); return; }
-      if (x.hasAttribute('data-b-unpick')) { var ul = ln(v('data-b-unpick')); ul.sub_id = null; ul.guest = null; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-pick')) { var pk = v('data-b-pick').split(':'), pl = ln(pk[0]); pl.sub_id = Number(pk[1]); pl.none = false; b.q[pk[0]] = ''; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-unpick')) { var ul = ln(v('data-b-unpick')); ul.sub_id = null; ul.guest = null; ul.none = false; draw(b); check(b); return; }
+      if (x.hasAttribute('data-b-none')) { var nl = ln(v('data-b-none')); nl.sub_id = null; nl.guest = null; nl.none = true; nl.sub_jersey = ''; draw(b); check(b); return; }
       if (x.hasAttribute('data-b-guest-open')) { var gopen = v('data-b-guest-open'); b.gopen[gopen] = true; draw(b); var nf = el.querySelector('[data-b-key="gf-' + gopen + '-name"]'); if (nf) nf.focus(); return; }
       if (x.hasAttribute('data-b-guest-close')) { b.gopen[v('data-b-guest-close')] = false; b.gerr[v('data-b-guest-close')] = false; draw(b); return; }
       if (x.hasAttribute('data-b-gsex')) { var gs = v('data-b-gsex').split(':'); b.gform[gs[0]].sex = gs[1]; draw(b); return; }
@@ -560,7 +576,7 @@
         var gk = v('data-b-guest-save'), gf = b.gform[gk], age = String(gf.age).trim(), nid = String(gf.nid).trim();
         var okG = gf.name.trim() && (gf.sex === 'm' || gf.sex === 'f') && (!age || (/^\d+$/.test(age) && +age >= 10 && +age <= 120)) && (!nid || /^\d{1,12}$/.test(nid));
         if (!okG) { b.gerr[gk] = true; draw(b); return; }
-        var gl = ln(gk); gl.guest = { name: gf.name.trim(), sex: gf.sex, age: age ? Number(age) : null, nid: nid || null }; gl.sub_id = null;
+        var gl = ln(gk); gl.guest = { name: gf.name.trim(), sex: gf.sex, age: age ? Number(age) : null, nid: nid || null }; gl.sub_id = null; gl.none = false;
         b.gopen[gk] = false; b.gerr[gk] = false; draw(b); check(b); return;
       }
       if (x.hasAttribute('data-b-pos')) { var pp = v('data-b-pos').split(':'); ln(pp[0]).sub_pos = pp[1] === 'g' ? 'g' : 's'; draw(b); check(b); return; }
@@ -572,6 +588,7 @@
       if (x.hasAttribute('data-b-slot')) { b.slot = x.value; b.check = null; b.msg = null; if (b.slot && b.slot !== 'manual') { b.step = 2; load(b); } else { if (b.d) b.d.candidates = null; draw(b); } return; }
       if (x.hasAttribute('data-b-date') || x.hasAttribute('data-b-time')) { b.date = el.querySelector('[data-b-date]').value; b.time = el.querySelector('[data-b-time]').value; if (slotReady(b)) load(b); return; }
       if (x.hasAttribute('data-b-approve')) b.approve = x.checked;
+      if (x.hasAttribute('data-b-jersey')) { var jl = b.lines.filter(function (l) { return l.absent_id === Number(x.getAttribute('data-b-jersey')); })[0]; if (jl) { jl.sub_jersey = x.value.replace(/\D/g, '').slice(0, 3); draw(b); } }
     });
     el.addEventListener('input', function (e) {
       var b = el.__ldb, x = e.target;
@@ -587,7 +604,7 @@
       b.saving = true; b.msg = null; draw(b);
       b.ctx.api('/replacements', 'POST', o).then(function (r) {
         b.saving = false;
-        if (r.ok) { b.ctx.onSaved(r.data); return; }
+        if (r.ok) { b.ctx.onSaved(r.data, o); return; }
         b.msg = errText(b, r); draw(b);
       });
     });

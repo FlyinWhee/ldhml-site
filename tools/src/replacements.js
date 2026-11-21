@@ -267,7 +267,8 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
         WHERE r.season_id = ? AND r.league = ? AND r.removed_at IS NULL`).bind(team.season_id, team.league).all();
       const teamOf = new Map(ros.map((r) => [r.person_id, r]));
       const fullRules = await DB.prepare('SELECT * FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first();
-      const busy = await busyAt(DB, season, team, slot, 0);
+      const own = await openLineup(DB, team, slot);   // this game's own lineup never makes its players busy
+      const busy = await busyAt(DB, season, team, slot, own ? own.id : 0);
       out.slot = slot;
       out.current = await currentLineup(DB, team, slot);
       out.candidates = list.filter((p) => !(teamOf.get(p.id) && teamOf.get(p.id).team_id === team.id)).map((p) => {
@@ -288,13 +289,15 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     const b = await readJson(req, 16384) || {};
     const team = await teamRow(b.team_id);
     if (!team) return fail(404, 'team');
-    const season = await seasonOf(team.season_id), slot = await resolveGame(DB, team, b), lines = readLines(b, page);
+    const whole = page || b.replace === true;   // the lineup page, or the builder loaded with the current lineup: the lines ARE the lineup
+    const season = await seasonOf(team.season_id), slot = await resolveGame(DB, team, b), lines = readLines(b, whole);
     if (!slot) return fail(400, 'game');
     if (path !== '/replacements/check' && await isArchived(DB, team.season_id)) return fail(409, 'season_archived');
     if (path !== '/replacements/check' && (await DB.prepare('SELECT enabled FROM season_leagues WHERE season_id = ? AND league = ?').bind(team.season_id, team.league).first('enabled')) === 0) return fail(409, 'league_off');
     if (!lines) return fail(400, 'replacement');
     if (path === '/replacements/check') {
-      const ev = await evaluate(DB, data, season, team, slot, lines, 0);
+      const own = await openLineup(DB, team, slot);   // the lines will go into this lineup: it is not "another" request
+      const ev = await evaluate(DB, data, season, team, slot, lines, own ? own.id : 0);
       return json({ result: ev.result, checks: ev.checks, payroll: ev.payroll });
     }
     const note = b.note ? cleanText(b.note, 1000) : null;
@@ -304,7 +307,7 @@ export async function replacementApi({ req, env, path, m, url, actor, teamIds, a
     if (named.length && (await DB.prepare(`SELECT COUNT(*) AS n FROM people WHERE id IN (${named.map(() => '?').join(',')})`).bind(...named).first('n')) !== named.length) return fail(400, 'replacement');
     const cur = await openLineup(DB, team, slot);
     let all = lines;
-    if (!page && cur) {   // the builder adds to the lineup: its lines replace the same absent players, the others stay
+    if (!whole && cur) {   // the builder adds to the lineup: its lines replace the same absent players, the others stay
       const old = fromRows((await DB.prepare('SELECT * FROM replacement_lines WHERE replacement_id = ? ORDER BY id').bind(cur.id).all()).results);
       all = old.filter((o) => !lines.some((l) => l.absent_id === o.absent_id)).concat(lines);
     }

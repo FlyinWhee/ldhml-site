@@ -27,7 +27,7 @@
       stPending: 'À valider par un admin', stSaving: 'Enregistrement…', stErr: 'Pas enregistré : {e}', changed: 'Modifié {d}{by}', byWho: ' par {n}',
       dupNo: 'Numéro {no} en double : {names}.', noNoYet: 'Sans numéro : {names}.', note: 'Note pour l’admin (optionnel)', notePh: 'Ex. : seul disponible ce soir',
       counts: '{s} joueurs · {g} gardien(s)', loading: 'Chargement…', rules: 'Règles', back: '← Mon équipe', played: 'Match joué', goalieTag: 'G',
-      nobodyBtn: 'Personne : on joue à court', salary: 'salaire {v}', noSalary: 'sans salaire', maxSub: 'remplaçant jusqu’à {v}', overCap: 'plafond déjà dépassé',
+      nobodyBtn: 'Personne : on joue à court', backIn: 'Remettre présent', salary: 'salaire {v}', noSalary: 'sans salaire', maxSub: 'remplaçant jusqu’à {v}', overCap: 'plafond déjà dépassé',
       fOk: 'Admissibles seulement', fFree: 'Sans équipe', typeName: 'Tapez le nom du remplaçant.', scout: 'Chercher des options : les joueurs de la section →', nRes: '{n} joueurs', more: '… et {n} autres : précisez la recherche.'
     },
     en: {
@@ -41,7 +41,7 @@
       stPending: 'To be validated by an admin', stSaving: 'Saving…', stErr: 'Not saved: {e}', changed: 'Changed {d}{by}', byWho: ' by {n}',
       dupNo: 'Number {no} twice: {names}.', noNoYet: 'No number: {names}.', note: 'Note for the admin (optional)', notePh: 'E.g.: the only one free tonight',
       counts: '{s} players · {g} goalie(s)', loading: 'Loading…', rules: 'Rules', back: '← My team', played: 'Game played', goalieTag: 'G',
-      nobodyBtn: 'Nobody: we play short', salary: 'salary {v}', noSalary: 'no salary', maxSub: 'replacement up to {v}', overCap: 'cap already exceeded',
+      nobodyBtn: 'Nobody: we play short', backIn: 'Put back in', salary: 'salary {v}', noSalary: 'no salary', maxSub: 'replacement up to {v}', overCap: 'cap already exceeded',
       fOk: 'Eligible only', fFree: 'No team', typeName: 'Type the replacement’s name.', scout: 'Look for options: the section’s players →', nRes: '{n} players', more: '… and {n} more: narrow the search.'
     }
   };
@@ -128,23 +128,22 @@
     }
     return '<button type="button" class="lu-no' + (r.jersey_nbhpa ? ' lu-nb' : '') + '" data-lu-noedit="' + r.person_id + '" title="' + esc(t(ctx, 'noTitle') + (r.jersey_nbhpa ? ' (' + t(ctx, 'noNb') + ')' : '')) + '">' + esc(r.jersey || '#') + '</button>';
   }
+  /* One line per player (owner, 2026-11-20: dense like the team page's "absent → replacement"). Present: number, name, toggle.
+     Absent with a replacement: the replacement's number tonight, "replacement ← absent", why it waits; tap the names to change.
+     Absent with nobody: the absent player struck, "nobody (we play short)", + Replacement. The pill puts the player back in. */
   function playerRow(st, r) {
     var ctx = st.ctx, l = lineOf(st, r.person_id), out = !!l, lg = st.d.team.league;
     var pos = B().posName(ctx, r.pos) + (r.sex ? ' · ' + B().t(ctx.lang, r.sex === 'f' ? 'sxF' : 'sxM') : '');
-    var head = '<div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + B().person(ctx, lg, r.name, r.site_id, r.person_id) + '</b><small>' + esc(pos) + '</small></span>' +
-      '<button type="button" class="lu-tg' + (out ? ' lu-off' : '') + '" data-lu-out="' + r.person_id + '" aria-pressed="' + out + '">' + esc(t(ctx, out ? 'absent' : 'present')) + '</button></div>';
-    if (!out) return '<li class="lu-p">' + head + '</li>';
-    var sub;
+    var tg = '<button type="button" class="lu-tg' + (out ? ' lu-off' : '') + '" data-lu-out="' + r.person_id + '" aria-pressed="' + out + '" title="' + esc(t(ctx, out ? 'backIn' : 'present')) + '">' + esc(t(ctx, out ? 'absent' : 'present')) + '</button>';
+    if (!out) return '<li class="lu-p"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + B().person(ctx, lg, r.name, r.site_id, r.person_id) + '</b><small>' + esc(pos) + '</small></span>' + tg + '</div></li>';
     if (l.sub_id || l.guest) {
       var c = l.sub_id && candOf(st, l.sub_id), j = c ? B().judge(bview(st), c, l) : { s: l.guest ? 'fail' : 'ok', why: [] };
-      sub = '<div class="lu-sub lu-has bd-' + j.s + '"><input class="ctl lu-noin lu-subno" data-lu-subno="' + r.person_id + '" inputmode="numeric" maxlength="3" value="' + esc(l.sub_jersey || '') + '" placeholder="' + esc(t(ctx, 'subNoPh')) + '" aria-label="' + esc(t(ctx, 'subNo')) + '">' +
-        '<span class="lu-nm"><b>' + (l.guest ? esc(l.guest.name) + ' ' + B().guestTag(ctx, l.guest) : B().person(ctx, lg, subName(st, l), c && c.site_id, l.sub_id)) + '</b><small>' + esc(B().posName(ctx, l.sub_pos)) +
-        (j.why.length ? ' · ' + B().ICON[j.s] + ' ' + esc(j.why.join(', ')) : '') + '</small></span>' +
-        '<button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'change')) + '</button></div>';
-    } else {
-      sub = '<div class="lu-sub lu-none"><span class="note">' + esc(t(ctx, 'nobodyBtn')) + '</span><button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'addSub')) + '</button></div>';
+      return '<li class="lu-p lu-out lu-has bd-' + j.s + '"><div class="lu-row"><input class="ctl lu-noin lu-subno" data-lu-subno="' + r.person_id + '" inputmode="numeric" maxlength="3" value="' + esc(l.sub_jersey || '') + '" placeholder="' + esc(t(ctx, 'subNoPh')) + '" aria-label="' + esc(t(ctx, 'subNo')) + '">' +
+        '<button type="button" class="lu-nm lu-pickrow" data-lu-pick="' + r.person_id + '" title="' + esc(t(ctx, 'change')) + '"><b>' + esc(l.guest ? l.guest.name : subName(st, l)) + ' <span class="lu-r">R</span></b>' +
+        '<small><span aria-hidden="true">↔</span> <s>' + esc(r.name) + '</s> · ' + esc(B().posName(ctx, l.sub_pos)) + (j.why.length ? ' · ' + B().ICON[j.s] + ' ' + esc(j.why.join(', ')) : '') + '</small></button>' + tg + '</div></li>';
     }
-    return '<li class="lu-p lu-out">' + head + sub + '</li>';
+    return '<li class="lu-p lu-out"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + B().person(ctx, lg, r.name, r.site_id, r.person_id) + '</b><small>' + esc(t(ctx, 'nobodyBtn')) +
+      ' · <button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'addSub')) + '</button></small></span>' + tg + '</div></li>';
   }
   /* What a replacement may cost on this line: cap - (payroll - every absent salary + the other lines' replacements); null without a cap. */
   function budget(st, line) {

@@ -135,3 +135,10 @@
 .cp-players td.cp-pl-teams .lgbs { display: flex; flex-wrap: wrap; gap: 4px; }
 .cp-players td { vertical-align: middle; }
 @media (max-width: 600px) { .cp-players .cp-m-only { display: flex; } .cp-players .cp-pl-teams { display: none; } .cp-players td { vertical-align: top; } }
+/* declare (guided) first; the lineup (quick edits) beside it (owner, 2026-11-20) */
+.cp-ask { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-ask .ta-ghost { min-height: 44px; font-size: 16px; padding: 0 16px; }
+#main .lu-page { margin-top: 10px; }
+.cp-gacts { display: inline-flex; gap: 6px; flex: none; }
+.cp-lu-g { min-height: 30px; padding: 0 10px; font-size: 14px; }
+@media (max-width: 600px) { .cp-gacts { margin-left: auto; } }
