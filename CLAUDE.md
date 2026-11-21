@@ -63,7 +63,7 @@ leagues.json + site/* + shared/parsers.js + assets/ ---- build.mjs ---> dist/ (s
 4. **A bad answer never replaces good data.** Check the shape of a response before you store it (both in the scraper and in the browser).
 5. **No `cphjoliette.com` links or wording** anywhere on the site. The site is not tied to one team.
 6. **No player photos.** Team logos are fine. (Photos are a permission risk.)
-7. **Every team name and player name is a link** (`#team-<id>`, `#player-<id>`). Use the helpers in `1-core.js`; do not write plain names.
+7. **Every team name and player name is a link** (`#team-<id>`, `#player-<id>`). Use the helpers in `1-core.js`; do not write plain names. **Exception: an editing flow** (owner, 2026-11-20): in the tools' replacement builder and game lineup page, names are plain text (a link there only takes people out of the flow).
    A team is shown with its badge and colour and its full name (or its code chip in a dense table), always from `shared/look.js` through the helpers.
    A summary page links to the page with the full data (for example a section profile links to the person's page in each league). See `docs/presentation.md`.
    A player link uses **our id** (`L0001`), never an NBHPA `player_id`. Box scores hold `player_id` values: map them with `U()` (or pass them to `pLink`, which does it).

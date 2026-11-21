@@ -236,8 +236,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       var n = { approved: 0, pending: 0, refused: 0 }; r.reqs.forEach(function (q) { n[q.status] = (n[q.status] || 0) + 1; });
       var chips = ['approved', 'pending', 'refused'].filter(function (k) { return n[k]; }).map(function (k) { return '<span class="cp-st cp-st-' + k + '">' + esc(t('gSt_' + k, { n: n[k] })) + '</span>'; }).join('');
       var sum = changed ? '<p class="note cp-gsum">' + esc(t('gSum', lu.counts) + ' · ' + (lu.payroll.cap != null ? t('gPay', { a: money(lu.payroll.after), c: money(lu.payroll.cap) }) : t('gPayNoCap', { a: money(lu.payroll.after) }))) + '</p>' : '';
-      var ask = r.x ? '<span class="cp-gacts">' + (upcoming ? '<button type="button" class="ta-btn ta-btn-sm cp-ask-g" data-ask-game="' + esc(r.x.game.id) + '">' + t('askGame') + '</button>' : '') +
-        '<a class="ta-btn ta-btn-sm ta-ghost cp-lu-g" href="#match/' + esc(r.x.game.id) + '">' + t('lineupGame') + '</a></span>' : '';
+      // one button per game, its lineup (owner, 2026-11-20); declaring is from there ("Gérer les remplacements")
+      var ask = r.x ? '<span class="cp-gacts"><a class="ta-btn ta-btn-sm cp-lu-g' + (upcoming ? '' : ' ta-ghost') + '" href="#match/' + esc(r.x.game.id) + '">' + t('lineupGame') + '</a></span>' : '';
       var line = '<span class="cp-gt"><b>' + esc(r.x ? gameLine(tm, r.x) : r.label) + '</b>' + (next ? ' <span class="cp-tag">' + t('nextTag') + '</span>' : '') + '</span><span class="cp-gchips">' + chips + '</span>' + ask;
       if (!r.reqs.length) return '<li class="cp-game' + (next ? ' cp-nextg' : '') + '"><div class="cp-gl">' + line + '</div></li>';
       /* folded, the game still shows each replacement on one line: absent → replacement, with a status dot */

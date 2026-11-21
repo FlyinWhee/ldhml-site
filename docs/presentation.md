@@ -47,7 +47,7 @@ All team visuals come from `shared/look.js` (`LDLook`). It is inlined into every
 - Show thresholds next to the list ("min. 2 GP").
 
 ## Checklist for a new view
-1. Every team, person, league, game and date is a link to its most detailed page.
+1. Every team, person, league, game and date is a link to its most detailed page. **Exception: an editing flow** (owner, 2026-11-20): in the tools' replacement builder and game lineup page, names are plain text (a link there only takes people out of the flow).
 2. Teams use `LDLook` (through the helpers above): colour, badge, full name or chip.
 3. Leagues show their logo and themed name.
 4. Numbers are tabular, the labels have a long form in `title`, both in `fr` and `en`.

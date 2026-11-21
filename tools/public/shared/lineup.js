@@ -128,21 +128,22 @@
     }
     return '<button type="button" class="lu-no' + (r.jersey_nbhpa ? ' lu-nb' : '') + '" data-lu-noedit="' + r.person_id + '" title="' + esc(t(ctx, 'noTitle') + (r.jersey_nbhpa ? ' (' + t(ctx, 'noNb') + ')' : '')) + '">' + esc(r.jersey || '#') + '</button>';
   }
-  /* One line per player (owner, 2026-11-20: dense like the team page's "absent → replacement"). Present: number, name, toggle.
+  /* Names are plain text here, not links (owner, 2026-11-20: a link to the stats only takes the captain out of the flow).
+     One line per player (owner, 2026-11-20: dense like the team page's "absent → replacement"). Present: number, name, toggle.
      Absent with a replacement: the replacement's number tonight, "replacement ← absent", why it waits; tap the names to change.
      Absent with nobody: the absent player struck, "nobody (we play short)", + Replacement. The pill puts the player back in. */
   function playerRow(st, r) {
     var ctx = st.ctx, l = lineOf(st, r.person_id), out = !!l, lg = st.d.team.league;
     var pos = B().posName(ctx, r.pos) + (r.sex ? ' · ' + B().t(ctx.lang, r.sex === 'f' ? 'sxF' : 'sxM') : '');
     var tg = '<button type="button" class="lu-tg' + (out ? ' lu-off' : '') + '" data-lu-out="' + r.person_id + '" aria-pressed="' + out + '" title="' + esc(t(ctx, out ? 'backIn' : 'present')) + '">' + esc(t(ctx, out ? 'absent' : 'present')) + '</button>';
-    if (!out) return '<li class="lu-p"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + B().person(ctx, lg, r.name, r.site_id, r.person_id) + '</b><small>' + esc(pos) + '</small></span>' + tg + '</div></li>';
+    if (!out) return '<li class="lu-p"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + esc(r.name) + '</b><small>' + esc(pos) + '</small></span>' + tg + '</div></li>';
     if (l.sub_id || l.guest) {
       var c = l.sub_id && candOf(st, l.sub_id), j = c ? B().judge(bview(st), c, l) : { s: l.guest ? 'fail' : 'ok', why: [] };
       return '<li class="lu-p lu-out lu-has bd-' + j.s + '"><div class="lu-row"><input class="ctl lu-noin lu-subno" data-lu-subno="' + r.person_id + '" inputmode="numeric" maxlength="3" value="' + esc(l.sub_jersey || '') + '" placeholder="' + esc(t(ctx, 'subNoPh')) + '" aria-label="' + esc(t(ctx, 'subNo')) + '">' +
         '<button type="button" class="lu-nm lu-pickrow" data-lu-pick="' + r.person_id + '" title="' + esc(t(ctx, 'change')) + '"><b>' + esc(l.guest ? l.guest.name : subName(st, l)) + ' <span class="lu-r">R</span></b>' +
         '<small><span aria-hidden="true">↔</span> <s>' + esc(r.name) + '</s> · ' + esc(B().posName(ctx, l.sub_pos)) + (j.why.length ? ' · ' + B().ICON[j.s] + ' ' + esc(j.why.join(', ')) : '') + '</small></button>' + tg + '</div></li>';
     }
-    return '<li class="lu-p lu-out"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + B().person(ctx, lg, r.name, r.site_id, r.person_id) + '</b><small>' + esc(t(ctx, 'nobodyBtn')) +
+    return '<li class="lu-p lu-out"><div class="lu-row">' + numberBtn(st, r) + '<span class="lu-nm"><b>' + esc(r.name) + '</b><small>' + esc(t(ctx, 'nobodyBtn')) +
       ' · <button type="button" class="lnk ta-linkbtn" data-lu-pick="' + r.person_id + '">' + esc(t(ctx, 'addSub')) + '</button></small></span>' + tg + '</div></li>';
   }
   /* What a replacement may cost on this line: cap - (payroll - every absent salary + the other lines' replacements); null without a cap. */
@@ -198,7 +199,7 @@
     if (!d) return '<p class="note">' + esc(t(ctx, 'loading')) + '</p>';
     if (d.failed) return '<p class="ta-msg ta-err">' + esc(st.err) + '</p>';
     var g = (d.games || []).filter(function (x) { return String(x.id) === String(st.gameRef); })[0];
-    var head = '<div class="lu-head">' + B().teamHead(ctx, d.team, d.team.league) + (g ? '<p class="lu-game"><b>' + esc(B().gameText(ctx, g)) + '</b>' + (g.venue ? ' <span class="note">' + esc(g.venue + (g.court ? ' ' + g.court : '')) + '</span>' : '') +
+    var head = '<div class="lu-head">' + B().teamHead(ctx, d.team, d.team.league, true) + (g ? '<p class="lu-game"><b>' + esc(B().gameText(ctx, g)) + '</b>' + (g.venue ? ' <span class="note">' + esc(g.venue + (g.court ? ' ' + g.court : '')) + '</span>' : '') +
       (g.date < d.today ? ' <span class="cp-tag">' + esc(t(ctx, 'played')) + '</span>' : '') + '</p>' : '') + '</div>';
     var list = B().rosterOrder(d.roster, function (r) { return r.salary; }).map(function (r) { return playerRow(st, r); }).join('');
     var nS = 0, nG = 0;

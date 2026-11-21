@@ -133,11 +133,12 @@
   /* ---------- look: leagues, teams, people, games (like the stats site) ---------- */
   var leagueOf = function (ctx, slug) { return ctx.data && ctx.data.leagues.filter(function (l) { return l.slug === slug; })[0]; };
   var home = function (ctx, l) { return ((ctx.data && ctx.data.siteUrl) || '/') + l.sectionPath + '/' + l.path + '/'; };
-  function teamHead(ctx, team, league) {
+  /* plain: no link (an editing flow: the builder, the lineup page; owner, 2026-11-20: a link there only takes people out of the flow). */
+  function teamHead(ctx, team, league, plain) {
     var l = leagueOf(ctx, league) || { slug: league, teams: [] };
     var dt = (l.teams || []).filter(function (x) { return x.id === team.nbhpa_team_id; })[0] || {};
     if (team.logo) dt = { logo: team.logo };
-    var href = ctx.teamHref ? ctx.teamHref(team, league) : team.nbhpa_team_id && l.path ? home(ctx, l) + '#team-' + team.nbhpa_team_id : '';   // ctx.teamHref: the admin's own team page
+    var href = plain ? '' : ctx.teamHref ? ctx.teamHref(team, league) : team.nbhpa_team_id && l.path ? home(ctx, l) + '#team-' + team.nbhpa_team_id : '';   // ctx.teamHref: the admin's own team page
     var name = href ? '<a class="tl strong" href="' + esc(href) + '">' + esc(team.name) + '</a>' : '<b>' + esc(team.name) + '</b>';
     return '<span class="tcell">' + window.LDLook.crest({ abb: team.abb, logo: dt.logo }, league, 'sm') + name + '</span>';
   }
@@ -512,7 +513,7 @@
     }
     if (!b.teamId) return h;
     if (!d) return h + (b.loading ? '<p class="note">' + esc(t(L, 'loading')) + '</p>' : '');
-    h += '<div class="bd-top"><p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league) +
+    h += '<div class="bd-top"><p class="bd-team">' + teamHead(b.ctx, d.team, d.team.league, true) +
       (b.teams && b.teams.length > 1 ? ' <button type="button" class="lnk ta-linkbtn" data-b-team="">' + esc(t(L, 'changeTeam')) + '</button>' : '') + '</p>' +
       '<span class="bd-topacts"><button type="button" class="lnk ta-linkbtn" data-b-rules data-b-key="rules">' + esc(t(L, 'rulesLink')) + '</button>' +
       '<button type="button" class="lnk ta-linkbtn" data-b-cancel>' + esc(t(L, 'cancel')) + '</button></span></div>' + stepper(b);

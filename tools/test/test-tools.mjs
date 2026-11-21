@@ -1296,13 +1296,14 @@ assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, retro.
 assert.ok(cd.querySelectorAll('.cp-nextg').length <= 1, 'the next game marked');
 assert.equal(cd.querySelectorAll('.cp-kpis .cp-kpi').length, 2, 'two key numbers: the next game and the payroll');
 assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game a.cp-lu-g[href^="#match/"]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each game: its lineup');
-assert.equal(cd.querySelectorAll('.cp-tl > .cp-games > .cp-game [data-ask-game]').length, cd.querySelectorAll('.cp-tl > .cp-games > .cp-game').length, 'each upcoming game: "Remplacement…" (the guided builder)');
+assert.ok(!cd.querySelector('.cp-tl [data-ask-game]'), 'one button per game, its lineup (owner, 2026-11-20): declaring is from the lineup page');
 assert.ok(![...cd.querySelectorAll('.cp-game > details')].some((x) => x.open), 'every game starts folded (one line per replacement); opened on demand');
 assert.ok([...cd.querySelectorAll('.cp-game > details')].every((x) => x.querySelector('summary .cp-slim li')), 'folded, a game still shows each replacement on one line (absent → replacement)');
 { // the lineup of a game (#match/<game>; owner, 2026-11-20): the roster present or absent, numbers, replacements; saved at each change
   const mHref = cd.querySelector('.cp-tl a.cp-lu-g').getAttribute('href'), gRef = Number(mHref.split('/')[1]);
   cw.location.hash = mHref; await wait(400);
   assert.ok(cd.querySelector('#main [data-ask-game="' + gRef + '"]'), 'the lineup page: the guided builder for this game, one tap away');
+  assert.ok(!cd.querySelector('#cp-lineup a'), 'the lineup page: no link out of the flow (names are plain text; owner, 2026-11-20)');
   const lq = (sel) => cd.querySelector('#cp-lineup ' + sel), rosterNow = await DB.prepare('SELECT COUNT(*) AS n FROM rosters WHERE team_id = ? AND removed_at IS NULL').bind(teamA).first('n');
   assert.equal(cd.querySelectorAll('#cp-lineup .lu-p').length, rosterNow, 'the lineup: every player of the roster');
   assert.ok(lq('.lu-state') && lq('.lu-no'), 'its state on top, a number per player');
