@@ -17,7 +17,7 @@
       title: 'Capitaine', signIn: 'Connexion capitaine', emailLabel: 'Votre adresse courriel', sendCode: 'Recevoir un code',
       codeSent: 'Si cette adresse a un compte de capitaine, un code vient d’être envoyé à {e}. Il expire dans 10 minutes.', magicReady: 'Connexion de {e} : le code du courriel est déjà rempli. Cliquez sur « Se connecter ».',
       codeLabel: 'Code à 6 chiffres', verify: 'Se connecter', otherEmail: 'Utiliser une autre adresse', devCode: 'Code (développement local) : {c}',
-      signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', seeLineup: 'Alignement du prochain match', lineupTitle: 'Alignement', guided: 'Gérer les remplacements (guidé)', confirmed: 'Remplacement confirmé : l’alignement est valide.', cleared: 'Plus aucun changement : l’alignement redevient régulier.', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
+      signOut: 'Déconnexion', lang: 'English', ask: 'Déclarer un remplacement', seeLineup: 'Alignement du prochain match', lineupTitle: 'Alignement', guided: 'Gérer les remplacements', confirmed: 'Remplacement confirmé : l’alignement est valide.', cleared: 'Plus aucun changement : l’alignement redevient régulier.', askTitle: 'Déclarer un remplacement', back: '← Mon équipe',
       kNext: 'Prochain match', kReqs: 'À valider', kPay: 'Masse salariale', kRoster: 'Alignement', kPending: '{n} à valider', kApprovedUp: '{n} validé(s) à venir',
       kNoReq: 'Aucun remplacement ouvert', kNoGame: 'Aucun match à venir', kRegular: 'alignement régulier', kCounts: '{s} joueurs · {g} gardien(s)', kCapLeft: 'reste {v} sous le plafond',
       kOver: 'au-dessus du plafond de {v}', vsT: 'vs',
@@ -48,7 +48,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       title: 'Captain', signIn: 'Captain sign-in', emailLabel: 'Your email address', sendCode: 'Get a code',
       codeSent: 'If this address has a captain account, a code was just sent to {e}. It expires in 10 minutes.', magicReady: 'Signing in {e}: the code from the email is already filled in. Click "Sign in".',
       codeLabel: '6-digit code', verify: 'Sign in', otherEmail: 'Use another address', devCode: 'Code (local development): {c}',
-      signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', seeLineup: 'Next game’s lineup', lineupTitle: 'Lineup', guided: 'Manage replacements (guided)', confirmed: 'Replacement confirmed: the lineup is valid.', cleared: 'No change any more: the lineup is the regular one again.', askTitle: 'Declare a replacement', back: '← My team',
+      signOut: 'Sign out', lang: 'Français', ask: 'Declare a replacement', seeLineup: 'Next game’s lineup', lineupTitle: 'Lineup', guided: 'Manage replacements', confirmed: 'Replacement confirmed: the lineup is valid.', cleared: 'No change any more: the lineup is the regular one again.', askTitle: 'Declare a replacement', back: '← My team',
       kNext: 'Next game', kReqs: 'To validate', kPay: 'Payroll', kRoster: 'Roster', kPending: '{n} to validate', kApprovedUp: '{n} validated, upcoming',
       kNoReq: 'No open replacement', kNoGame: 'No upcoming game', kRegular: 'regular roster', kCounts: '{s} skaters · {g} goalie(s)', kCapLeft: '{v} left under the cap',
       kOver: 'over the cap by {v}', vsT: 'vs',
@@ -178,7 +178,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (!tm) return '<h1 class="ph">' + t('title') + '</h1><p class="lede">' + t('noTeams') + '</p>';
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
-      '<p class="cp-ask"><button type="button" class="ta-btn" data-act="ask">' + t('ask') + '</button>' + (nextGame() ? ' <a class="ta-btn ta-ghost" href="#match/' + nextGame().game.id + '">' + t('seeLineup') + '</a>' : '') + '</p></div>';
+      (nextGame() ? '<p class="cp-ask"><a class="ta-btn" href="#match/' + nextGame().game.id + '">' + t('seeLineup') + '</a></p>' : '') + '</div>';   // one main action: the next game's lineup (owner, 2026-11-20)
     return switcher() + sharePanel() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
   }
   var nextGame = function () { return S.games.filter(function (g) { return g.game.date >= S.today; })[0]; };

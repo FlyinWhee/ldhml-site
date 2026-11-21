@@ -1280,7 +1280,7 @@ await csubmit('#f-code');
 await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
-assert.ok(cd.querySelector('.cp-ask [data-act="ask"]') && cd.querySelector('.cp-ask a.ta-ghost[href^="#match/"]'), 'the main action is right there: declare (guided); the next game\'s lineup beside it');
+assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]') && !cd.querySelector('.cp-ask [data-act="ask"]'), 'one main action: the next game\'s lineup (declaring is from there, or a game\'s "Remplacement…")');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');
@@ -1344,7 +1344,7 @@ assert.ok(hideBtn, 'a refused request can be hidden');
 hideBtn.click(); await wait(250);
 assert.equal(cd.querySelectorAll('.bd-req').length, nReq - 1, 'Masquer: the refused request leaves the page');
 
-cd.querySelector('[data-act="ask"]').click(); await wait(250);
+cw.location.hash = '#remplacement'; await wait(250);
 const cq = (sel) => cd.querySelector('#cp-builder ' + sel);
 assert.equal(cw.location.hash, '#remplacement', 'the builder is a page of its own');
 assert.ok(cq('.bd-steps') && !cq('[data-b-team]'), 'captain builder: their team, no team choice');
