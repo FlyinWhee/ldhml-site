@@ -25,7 +25,7 @@
       sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
-      myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
+      payTitle: 'Paiements', paySum: 'Reçu {p} sur {a} · reste {b}', payNote: 'Ce que chaque joueur doit cette saison (les administrateurs enregistrent les paiements).', pst_due: 'Doit {b}', pst_partial: 'Reste {b}', pst_paid: 'Payé', pst_noprice: 'Montant à fixer', planK: 'forfait {k}/{n}', payLast: 'dernier paiement {d}', myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
       payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / plafond {c}', posS: 'Joueur', posG: 'Gardien',
       noTeams: 'Aucune équipe pour le moment. Un administrateur de la ligue doit vous donner l’accès à votre équipe.',
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
@@ -56,7 +56,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
-      myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
+      payTitle: 'Payments', paySum: 'Received {p} of {a} · {b} left', payNote: 'What each player owes this season (the admins record the payments).', pst_due: 'Owes {b}', pst_partial: '{b} left', pst_paid: 'Paid', pst_noprice: 'Amount to set', planK: 'plan {k}/{n}', payLast: 'last payment {d}', myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
       payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / cap {c}', posS: 'Skater', posG: 'Goalie',
       noTeams: 'No team yet. A league admin must give you access to your team.',
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
@@ -179,7 +179,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var reqs = S.reqs.filter(function (q) { return q.team.id === tm.id; });
     var hero = '<div class="cp-hero"><div class="cp-team">' + teamHead(tm) + '<span class="note">' + esc(t('season', { s: tm.season_name })) + '</span></div>' +
       (nextGame() ? '<p class="cp-ask"><a class="ta-btn" href="#match/' + nextGame().game.id + '">' + t('seeLineup') + '</a></p>' : '') + '</div>';   // one main action: the next game's lineup (owner, 2026-11-20)
-    return switcher() + sharePanel() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + '</div></div>';
+    return switcher() + sharePanel() + hero + kpis(tm, reqs) + '<div class="cp-grid"><div class="cp-col">' + timeline(tm, reqs) + '</div><div class="cp-col">' + rosterPanel(tm) + payPanel(tm) + '</div></div>';
   }
   var nextGame = function () { return S.games.filter(function (g) { return g.game.date >= S.today; })[0]; };
   /* The two key numbers (owner: the others were noise): the next game, with what is declared for it, and the payroll. */
@@ -318,6 +318,22 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     return '<section class="cp-panel cp-roster"><h2 class="cp-ph">' + t('roster') + '</h2>' +
       (rows ? '<table class="tbl ta-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       (tm.rules && tm.rules.notes ? '<p class="note">' + esc(tm.rules.notes) + '</p>' : '') + '</section>';
+  }
+  /* What each player owes (owner, 2026-11-21: captains see the amounts, to know how much to ask). Read only. */
+  var cad = function (c) { if (c == null) return '—'; return (c / 100).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }); };
+  function payPanel(tm) {
+    var ps = tm.roster.filter(function (r) { return r.pay; });
+    if (!ps.length) return '';
+    var sum = { a: 0, p: 0, b: 0 };
+    ps.forEach(function (r) { sum.a += r.pay.amount || 0; sum.p += r.pay.paid; sum.b += Math.max(0, r.pay.balance || 0); });
+    var day = function (sec) { return new Date(sec * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { day: 'numeric', month: 'short', timeZone: 'America/Toronto' }); };
+    var rows = window.LDBuilder.rosterOrder(ps, function (r) { return r.pay.balance; }).map(function (r) {
+      var y = r.pay, last = y.payments.length ? y.payments[y.payments.length - 1] : null;
+      return '<li class="cp-pay-' + y.status + '"><span class="cp-pn"><b>' + esc(r.name) + '</b>' + (y.seasons > 1 ? ' <span class="ta-chip">' + esc(t('planK', { k: y.k, n: y.seasons })) + '</span>' : '') +
+        (last ? '<small>' + esc(t('payLast', { d: day(last.created_at) })) + '</small>' : '') + '</span><span class="ta-pst ta-pst-' + y.status + '">' + esc(t('pst_' + y.status, { b: cad(y.balance) })) + '</span></li>';
+    }).join('');
+    return '<section class="cp-panel cp-pays"><h2 class="cp-ph">' + t('payTitle') + '</h2><p class="cp-paysum"><b>' + esc(t('paySum', { p: cad(sum.p), a: cad(sum.a), b: cad(sum.b) })) + '</b></p>' +
+      '<ul class="cp-paylist">' + rows + '</ul><p class="note">' + t('payNote') + '</p></section>';
   }
   /* A game's lineup (#match/<game>): the roster, present or absent, numbers, replacements; saved at each change. */
   function viewMatch() {

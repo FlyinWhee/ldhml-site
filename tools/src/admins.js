@@ -25,7 +25,8 @@ export async function ensureSuperAdmin(env, email) {
  *  scripts/remove-admin.mjs. */
 export const ADMIN_REFS = [['seasons', 'created_by'], ['captains', 'created_by'], ['captain_access', 'created_by'], ['captain_access', 'revoked_by'],
   ['people', 'created_by'], ['section_players', 'created_by'], ['teams', 'created_by'], ['rosters', 'added_by'], ['rosters', 'removed_by'],
-  ['season_leagues', 'updated_by'], ['replacements', 'decided_by'], ['games', 'created_by'], ['games', 'updated_by'], ['league_players', 'created_by'], ['league_players', 'updated_by']];
+  ['season_leagues', 'updated_by'], ['replacements', 'decided_by'], ['games', 'created_by'], ['games', 'updated_by'], ['league_players', 'created_by'], ['league_players', 'updated_by'],
+  ['league_prices', 'updated_by'], ['inscriptions', 'created_by'], ['inscriptions', 'updated_by'], ['payments', 'created_by']];
 
 /** Routes (super admins only): GET /admins, POST /admins, POST /admins/:id, POST /admins/:id/(disable|enable|delete). */
 export async function adminsApi({ req, env, path, m, admin, audit }) {

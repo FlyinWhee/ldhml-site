@@ -204,7 +204,20 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       approved: 'Remplacement validé.', refused: 'Remplacement refusé.', cancelledMsg: 'Remplacement annulé et supprimé.',
       e_not_pending: 'Ce remplacement a déjà été traité.', e_not_open: 'Ce remplacement n’est plus ouvert.', e_decision: 'Décision invalide.',
       e_note_required: 'Une vérification échoue : une note est requise.', e_game: 'Match invalide.', e_replacement: 'Remplacement invalide.',
-      ageOn: 'Âge compté', ageOnGame: 'à la date du match', ageOnYear: 'dans l’année du match'
+      ageOn: 'Âge compté', ageOnGame: 'à la date du match', ageOnYear: 'dans l’année du match',
+      tabPay: 'Paiements', payLede: 'Ce que chaque joueur de la ligue doit cette saison, et ce qu’il a payé. Un joueur ajouté à la ligue (alignement ou inscription) doit le prix de la ligue ; un forfait de plusieurs saisons couvre les saisons suivantes. Les paiements partiels comptent contre un seul montant.',
+      payPriceLine: 'Prix de la saison : {p}', payPlanLine: 'forfait {n} saisons : {p}', payNoPrice: 'Prix de la ligue non fixé : les montants restent vides.', payPriceEdit: 'Modifier le prix →',
+      payKOwing: 'Reste à payer', payKOwingSub: '{n} joueurs', payKPaid: 'Reçu', payKPaidSub: 'payé en entier : {n}', payPlayer: 'Joueur', payKTotal: 'Total dû', payKPlayers: '{n} joueurs', payKNoPrice: 'Sans montant',
+      payF_all: 'Tous', payF_owing: 'À payer', payF_paid: 'Payé', payF_noprice: 'Sans montant', payQ: 'Chercher un joueur…',
+      payAmount: 'Montant', payPaid: 'Payé', payStatus: 'État', payLast: 'Dernier paiement', payAdd: '+ Paiement', payDetails: 'Détails', payNoTeam: 'sans équipe', payLeft: 'a quitté la ligue',
+      pst_due: 'Doit {b}', pst_partial: 'Reste {b}', pst_paid: 'Payé', pst_noprice: 'Montant à fixer', pst_none: 'Aucune inscription', planK: 'Forfait {k}/{n}', planN: 'forfait {n} saisons',
+      payAddTitle: 'Paiement · {n}', payOwes: 'Montant {a} · payé {p} · reste {b}', payAmountIn: 'Montant reçu ($)', payMethod: 'Mode de paiement (optionnel)', payNote: 'Note (optionnel)',
+      payDateNote: 'La date du paiement est celle de l’entrée.', payAddBtn: 'Enregistrer le paiement', paySaved: 'Paiement enregistré.', payNone: 'Aucun paiement.', payHist: 'Paiements',
+      payIns: 'Inscription', paySeasons: 'Saisons couvertes', payInsNote: 'Le montant et la durée restent sur cette inscription : un changement du prix de la ligue ne les touche pas.', payFrom: 'depuis {s}',
+      payToPlan: 'Passer au forfait {n} saisons ({p})', payToSingle: 'Revenir à une saison ({p})', confirmPayDel: 'Supprimer ce paiement de {a} ?', payDeleted: 'Paiement supprimé.',
+      priceH: 'Prix', priceSeason: 'Prix d’une saison ($)', pricePlanOn: 'Offrir un forfait de plusieurs saisons', pricePlan: 'Prix du forfait ($)', pricePlanN: 'Nombre de saisons',
+      priceNote: 'Un réglage de la ligue, pas de la saison : changez-le quand le prix change. Chaque inscription garde son montant.', priceFilled: 'Prix enregistré. {n} inscription(s) sans montant l’ont reçu.',
+      personPay: 'Paiements', personNoPay: 'Aucune inscription.', e_payment: 'Montant invalide.', e_inscription: 'Inscription invalide.', e_price: 'Prix invalide (un forfait demande son prix).', e_no_plan: 'La ligue n’offre pas de forfait.'
     },
     en: {
       captainsLede: 'The captains of the chosen league, team by team. A captain can have access in several leagues.',
@@ -308,7 +321,20 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       approved: 'Replacement validated.', refused: 'Replacement refused.', cancelledMsg: 'Replacement cancelled and deleted.',
       e_not_pending: 'This replacement was already handled.', e_not_open: 'This replacement is no longer open.', e_decision: 'Invalid decision.',
       e_note_required: 'A check fails: a note is required.', e_game: 'Invalid game.', e_replacement: 'Invalid replacement.',
-      ageOn: 'Age counted', ageOnGame: 'on the game date', ageOnYear: 'during the game’s year'
+      ageOn: 'Age counted', ageOnGame: 'on the game date', ageOnYear: 'during the game’s year',
+      tabPay: 'Payments', payLede: 'What each player of the league owes this season, and what they paid. A player added to the league (roster or sign-up) owes the league price; a multi-season plan covers the next seasons. Partial payments count against one amount.',
+      payPriceLine: 'Season price: {p}', payPlanLine: '{n}-season plan: {p}', payNoPrice: 'League price not set: the amounts stay empty.', payPriceEdit: 'Change the price →',
+      payKOwing: 'Still owed', payKOwingSub: '{n} players', payKPaid: 'Received', payKPaidSub: 'paid in full: {n}', payPlayer: 'Player', payKTotal: 'Total due', payKPlayers: '{n} players', payKNoPrice: 'No amount',
+      payF_all: 'All', payF_owing: 'To pay', payF_paid: 'Paid', payF_noprice: 'No amount', payQ: 'Find a player…',
+      payAmount: 'Amount', payPaid: 'Paid', payStatus: 'Status', payLast: 'Last payment', payAdd: '+ Payment', payDetails: 'Details', payNoTeam: 'no team', payLeft: 'left the league',
+      pst_due: 'Owes {b}', pst_partial: '{b} left', pst_paid: 'Paid', pst_noprice: 'Amount to set', pst_none: 'No inscription', planK: 'Plan {k}/{n}', planN: '{n}-season plan',
+      payAddTitle: 'Payment · {n}', payOwes: 'Amount {a} · paid {p} · left {b}', payAmountIn: 'Amount received ($)', payMethod: 'Payment method (optional)', payNote: 'Note (optional)',
+      payDateNote: 'The payment date is the entry date.', payAddBtn: 'Save the payment', paySaved: 'Payment saved.', payNone: 'No payment.', payHist: 'Payments',
+      payIns: 'Inscription', paySeasons: 'Seasons covered', payInsNote: 'The amount and length stay on this inscription: a change of the league price does not touch them.', payFrom: 'since {s}',
+      payToPlan: 'Switch to the {n}-season plan ({p})', payToSingle: 'Back to one season ({p})', confirmPayDel: 'Delete this payment of {a}?', payDeleted: 'Payment deleted.',
+      priceH: 'Price', priceSeason: 'One season ($)', pricePlanOn: 'Offer a multi-season plan', pricePlan: 'Plan price ($)', pricePlanN: 'Number of seasons',
+      priceNote: 'A league setting, not a season one: change it when the price changes. Each inscription keeps its amount.', priceFilled: 'Price saved. {n} inscription(s) with no amount got it.',
+      personPay: 'Payments', personNoPay: 'No inscription.', e_payment: 'Invalid amount.', e_inscription: 'Invalid inscription.', e_price: 'Invalid price (a plan needs its price).', e_no_plan: 'The league offers no plan.'
     }
   };
   Object.keys(STR2).forEach(function (k) { Object.keys(STR2[k]).forEach(function (n) { STR[k][n] = STR2[k][n]; }); });
@@ -321,7 +347,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var S = { me: null, step: 'email', email: '', devCode: '', msg: null, level: 'ldhml', tab: 'home', seasons: [], captains: [], audit: [], data: null, seasonId: null,
     section: null, league: null, plLeague: null, teams: [], rules: [], players: [], allPeople: [], pq: '', plf: '', pf: { pos: '', sex: '', miss: '', smin: '', smax: '' }, ps: { k: 'grp', d: 1 }, modal: null, accountsOpen: false,
     subs: [], pending: {}, admins: [], sf: 'pending', sub: null, subFrom: '', flash: null, cal: null, calDate: null, dash: null, edit: false };
-  var TOP_TABS = ['home', 'config', 'audit'], LEAGUE_TABS = ['overview', 'cal', 'teams', 'subs', 'setup'];
+  var TOP_TABS = ['home', 'config', 'audit'], LEAGUE_TABS = ['overview', 'cal', 'teams', 'subs', 'pay', 'setup'];
   var LEGACY = { home: 'home', audit: 'audit', setup: 'config', seasons: 'config', captains: 'config', rules: 'setup', teams: 'teams', cal: 'cal', subs: 'subs', players: 'players' };
   try { var sc = JSON.parse(localStorage.getItem('ldhml-admin-scope') || 'null'); if (sc) { S.section = sc.section || null; S.league = sc.league || null; } } catch (e) { /* storage can be blocked */ }
   function saveScope() { try { localStorage.setItem('ldhml-admin-scope', JSON.stringify({ section: S.section, league: S.league })); } catch (e) { /* ignore */ } }
@@ -769,7 +795,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<label>' + t('minAgeG') + '<input class="ctl ta-sm" name="min_age_g" inputmode="numeric" value="' + val(r.min_age_g) + '"></label>' +
       '<label>' + t('ageOn') + '<select class="ctl" name="age_on"><option value="game">' + t('ageOnGame') + '</option><option value="year"' + (r.age_on === 'year' ? ' selected' : '') + '>' + t('ageOnYear') + '</option></select></label>' +
       '<label class="ta-wide">' + t('notes') + '<input class="ctl" name="notes" maxlength="500" value="' + val(r.notes) + '"></label>' +
-      '<button class="ta-btn ta-btn-sm ta-ar" type="submit">' + t('save') + '</button></form>' +
+      '<button class="ta-btn ta-btn-sm ta-ar" type="submit">' + t('save') + '</button></form>' + priceForm(l) +
       '<h3 class="ta-h3">' + t('teamsSetup') + '</h3>' +
       (rows ? '<div class="tbl-wrap"><table class="tbl ta-tbl"><thead><tr><th>' + t('team') + '</th><th>' + t('abb') + '</th><th class="num">NBHPA</th><th class="num">' + t('playersShort') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="note">' + t('noTeamsLeague') + '</p>') +
       '<p class="ta-btns ta-ar"><button type="button" class="ta-btn ta-btn-sm" data-team-new="' + esc(l.slug) + '">' + t('newTeam') + '</button>' +
@@ -897,13 +923,67 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     var lines = x.lines.filter(function (q) { return inSec(q.league); });
     var subsP = '<section class="ta-panel"><h2 class="ta-ph">' + t('tabSubs') + (lines.length ? ' <span class="ta-hcnt">' + lines.length + '</span>' : '') + '</h2>' +
       (lines.length ? '<ul class="ta-capreqs">' + lines.map(lineRow).join('') + '</ul>' : '<p class="note">' + t('personNoSubs') + '</p>') + '</section>';
+    /* what they owe in each league of the section (payments: owner, 2026-11-21); the league's Paiements tab records the money */
+    var ins = (x.inscriptions || []).filter(function (i) { return inSec(i.league); });
+    var payP = '<section class="ta-panel"><h2 class="ta-ph">' + t('personPay') + '</h2>' + (ins.length ? '<ul class="ta-paylist">' + ins.map(function (i) {
+      var il = leagueOf(i.league);
+      return '<li>' + (il ? leagueOnly(il, false) : esc(i.league)) + '<span>' + esc(i.first_season || '') + (i.seasons > 1 ? ' · ' + esc(t('planN', { n: i.seasons })) : '') + '</span>' +
+        '<span class="note">' + esc(t('payOwes', { a: cad(i.amount), p: cad(i.paid), b: cad(i.balance) })) + '</span>' + payChip(i) + (il ? '<a class="lnk" href="' + hrefL(i.league, 'pay') + '">' + t('tabPay') + ' →</a>' : '') + '</li>'; }).join('') + '</ul>' : '<p class="note">' + t('personNoPay') + '</p>') + '</section>';
     var hist = x.rosters.filter(function (r) { return inSec(r.league); });
     var histP = '<section class="ta-panel"><h2 class="ta-ph">' + t('personHistory') + '</h2>' + (hist.length || x.lists.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl"><tbody>' +
       x.lists.filter(function (sp) { return sp.section === S.section; }).map(function (sp) { return '<tr><td>' + esc(sp.season_name) + '</td><td>' + esc(t('personOnList')) + '</td><td class="num" data-label="' + esc(t('colS')) + '">' + esc(money(sp.salary_s)) + '</td><td class="num" data-label="' + esc(t('colG')) + '">' + esc(money(sp.salary_g)) + '</td></tr>'; }).join('') +
       hist.map(function (r) { return '<tr' + (r.removed_at ? ' class="ta-off"' : '') + '><td>' + esc(r.season_name) + '</td><td>' + teamBadge(r.league, r.abb, r.team_name, r.team_id) + '</td><td class="ta-c-sm" colspan="2">' + esc(fmt(r.added_at)) + (r.removed_at ? ' → ' + esc(fmt(r.removed_at)) : '') + '</td></tr>'; }).join('') +
       '</tbody></table></div>' : '<p class="note">—</p>') + '</section>';
     return back + '<h1 class="ph">' + esc(p.name) + '</h1><p class="ta-subline">' + (sec ? '<span class="note">' + esc(nameOf(sec)) + '</span>' : '') + pub + '</p>' +
-      '<div class="ta-grid2"><div class="ta-col">' + seasonP + subsP + '</div><div class="ta-col">' + who + histP + '</div></div>';
+      '<div class="ta-grid2"><div class="ta-col">' + seasonP + payP + subsP + '</div><div class="ta-col">' + who + histP + '</div></div>';
+  }
+  /* ---------- Payments (owner, 2026-11-21): what each player of the league owes this season, what they paid ---------- */
+  var cad = function (c) { if (c == null) return '—'; return (c / 100).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 }); };
+  var payDay = function (sec) { return sec ? new Date(sec * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Toronto' }) : ''; };
+  var payChip = function (i) { return '<span class="ta-pst ta-pst-' + (i ? i.status : 'noprice') + '">' + esc(i ? t('pst_' + i.status, { b: cad(i.balance) }) : t('pst_none')) + '</span>'; };
+  var planTag = function (i) { return i && i.seasons > 1 ? ' <span class="ta-chip">' + esc(t('planK', { k: i.k || '–', n: i.seasons })) + '</span>' : ''; };
+  var foldA = function (s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); };
+  var PAY_METHODS = { fr: ['Interac', 'Comptant', 'Chèque'], en: ['Interac', 'Cash', 'Cheque'] };
+  function viewPay() {
+    var s = curSeason(), l = leagueOf(S.league), d = S.pay;
+    var head = '<h1 class="ph">' + t('tabPay') + '</h1><p class="lede">' + t('payLede') + '</p>';
+    if (!s || !l) return head;
+    if (!d) return head + '<p class="empty">' + t('loading') + '</p>';
+    var pr = d.price || {};
+    var price = '<p class="note">' + (pr.season_price != null ? esc(t('payPriceLine', { p: cad(pr.season_price) }) + (pr.plan_on ? ' · ' + t('payPlanLine', { n: pr.plan_seasons, p: cad(pr.plan_price) }) : ''))
+      : '<span class="ta-missing">' + esc(t('payNoPrice')) + '</span>') + ' <a class="lnk" href="' + hrefL(l.slug, 'setup') + '">' + t('payPriceEdit') + '</a></p>';
+    var sum = { owing: 0, paid: 0, total: 0 }, n = { due: 0, partial: 0, paid: 0, noprice: 0 };
+    d.rows.forEach(function (x) { var i = x.ins; if (!i) { n.noprice++; return; } n[i.status]++; sum.total += i.amount || 0; sum.paid += i.paid; sum.owing += Math.max(0, i.balance || 0); });
+    var kpi = function (label, value, sub, hot) { return '<div class="ta-kpi' + (hot ? ' ta-k-hot' : '') + '"><span class="ta-kl">' + esc(label) + '</span><span class="ta-kv">' + esc(value) + '</span>' + (sub ? '<span class="ta-ks">' + esc(sub) + '</span>' : '') + '</div>'; };
+    var kpis = '<div class="ta-kpis">' + kpi(t('payKOwing'), cad(sum.owing), t('payKOwingSub', { n: n.due + n.partial })) + kpi(t('payKPaid'), cad(sum.paid), t('payKPaidSub', { n: n.paid })) +
+      kpi(t('payKTotal'), cad(sum.total), t('payKPlayers', { n: d.rows.length })) + (n.noprice ? kpi(t('payKNoPrice'), String(n.noprice), '', true) : '') + '</div>';
+    var f = S.payf || '', qq = foldA(S.payq);
+    var seg = '<div class="seg" role="group">' + [['', 'payF_all', d.rows.length], ['owing', 'payF_owing', n.due + n.partial], ['paid', 'payF_paid', n.paid]].concat(n.noprice ? [['noprice', 'payF_noprice', n.noprice]] : []).map(function (x) {
+      return '<button type="button" data-payf="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + esc(t(x[1])) + ' (' + x[2] + ')</button>'; }).join('') + '</div>';
+    var search = '<input class="ctl" type="search" id="ta-payq" data-payq value="' + esc(S.payq || '') + '" placeholder="' + esc(t('payQ')) + '" aria-label="' + esc(t('payQ')) + '">';
+    var list = d.rows.filter(function (x) { var st = x.ins ? x.ins.status : 'noprice'; return (!f || (f === 'owing' ? st === 'due' || st === 'partial' : st === f)) && (!qq || foldA(x.name).indexOf(qq) >= 0); });
+    var rows = list.map(function (x) {
+      var i = x.ins, last = i && i.payments.length ? i.payments[i.payments.length - 1] : null;
+      var who = '<a class="lnk" href="' + hrefP(x.person_id, l.section) + '">' + esc(x.name) + '</a>' + planTag(i) + (x.left ? ' <span class="ta-chip ta-chip-sub">' + esc(t('payLeft')) + '</span>' : '');
+      var tm = x.team ? teamBadge(l.slug, x.team.abb, x.team.name, x.team.id) : x.left ? '' : '<span class="note">' + esc(t('payNoTeam')) + '</span>';
+      return '<tr' + (x.left ? ' class="ta-off"' : '') + '><td class="ta-c-name">' + who + '</td><td data-label="' + esc(t('team')) + '">' + tm + '</td>' +
+        '<td class="num" data-label="' + esc(t('payAmount')) + '">' + esc(i ? cad(i.amount) : '—') + '</td><td class="num" data-label="' + esc(t('payPaid')) + '">' + esc(i ? cad(i.paid) : '—') + '</td>' +
+        '<td data-label="' + esc(t('payStatus')) + '">' + payChip(i) + '</td><td class="ta-c-sm" data-label="' + esc(t('payLast')) + '">' + esc(last ? payDay(last.created_at) : '—') + '</td>' +
+        '<td class="ta-acts ta-ar">' + (i ? '<button type="button" class="ta-btn ta-btn-sm" data-pay-add="' + i.id + '">' + t('payAdd') + '</button><button type="button" class="lnk ta-linkbtn" data-pay-open="' + i.id + '">' + t('payDetails') + '</button>' : '') + '</td></tr>';
+    }).join('');
+    return head + price + kpis + '<section class="sec"><div class="controls ta-payctl">' + seg + search + '</div>' +
+      (rows ? '<div class="tbl-wrap"><table class="tbl ta-tbl ta-paytbl"><thead><tr><th>' + t('payPlayer') + '</th><th>' + t('team') + '</th><th class="num">' + t('payAmount') + '</th><th class="num">' + t('payPaid') + '</th><th>' + t('payStatus') + '</th><th>' + t('payLast') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<p class="empty">—</p>') + '</section>';
+  }
+  /* The league price, in its settings (not per season: owner, 2026-11-21). */
+  function priceForm(l) {
+    var p = (S.prices || []).filter(function (x) { return x.league === l.slug; })[0] || {}, dol = function (c) { return c == null ? '' : esc(String(c / 100)); };
+    return '<h3 class="ta-h3">' + t('priceH') + '</h3><form class="ta-form ta-row ta-rule" data-price="' + esc(l.slug) + '">' +
+      '<label>' + t('priceSeason') + '<input class="ctl ta-sm" name="season_price" inputmode="decimal" value="' + dol(p.season_price) + '"></label>' +
+      '<label class="ta-switch"><input type="checkbox" name="plan_on"' + (p.plan_on ? ' checked' : '') + '> ' + t('pricePlanOn') + '</label>' +
+      '<label>' + t('pricePlan') + '<input class="ctl ta-sm" name="plan_price" inputmode="decimal" value="' + dol(p.plan_price) + '"></label>' +
+      '<label>' + t('pricePlanN') + '<input class="ctl ta-sm" name="plan_seasons" inputmode="numeric" value="' + esc(p.plan_seasons || 3) + '"></label>' +
+      '<button class="ta-btn ta-btn-sm ta-ar" type="submit">' + t('save') + '</button></form><p class="note">' + t('priceNote') + '</p>';
   }
   /* A league's settings for the chosen season: active or not, its rules, its teams (with the NBHPA link). */
   function viewLgSetup() {
@@ -1149,6 +1229,28 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
         (gm ? '<label class="ta-switch"><input type="checkbox" name="cancelled"> ' + t('gameCancelled') + '</label>' : '') +
         '<p class="note">' + t(gm ? 'gameEditNote' : 'gameNewNote') + '</p>' + footer(gm ? t('save') : t('create')) + '</form>' };
     }
+    var prow = (m.kind === 'pay-add' || m.kind === 'pay-open') && S.pay && S.pay.rows.filter(function (x) { return x.ins && x.ins.id === m.id; })[0];
+    if (prow && m.kind === 'pay-add') {
+      var bi = prow.ins;
+      return { title: t('payAddTitle', { n: prow.name }), body: '<form class="ta-form ta-col" data-pay-f="' + bi.id + '"><p class="note">' + esc(t('payOwes', { a: cad(bi.amount), p: cad(bi.paid), b: cad(bi.balance) })) + '</p>' +
+        '<label>' + t('payAmountIn') + '<input class="ctl ta-sm" name="amount" inputmode="decimal" required autocomplete="off" value="' + (bi.balance > 0 ? esc(String(bi.balance / 100)) : '') + '"></label>' +
+        '<label>' + t('payMethod') + '<input class="ctl" name="method" list="ta-paym" maxlength="40" autocomplete="off"></label><datalist id="ta-paym">' + PAY_METHODS[lang].map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
+        '<label>' + t('payNote') + '<input class="ctl" name="note" maxlength="300"></label><p class="note">' + t('payDateNote') + '</p>' + footer(t('payAddBtn')) + '</form>' };
+    }
+    if (prow && m.kind === 'pay-open') {
+      var oi = prow.ins, pr2 = S.pay.price || {};
+      var hist = oi.payments.length ? '<ul class="ta-paylist">' + oi.payments.map(function (y) {
+        return '<li><b>' + esc(cad(y.amount)) + '</b><span>' + esc(payDay(y.created_at)) + '</span>' + (y.method ? '<span class="ta-chip">' + esc(y.method) + '</span>' : '') + (y.note ? '<span class="note">' + esc(y.note) + '</span>' : '') +
+          (y.by_name ? '<span class="note">' + esc(y.by_name) + '</span>' : '') + '<button type="button" class="ta-del" data-pay-del="' + y.id + '" data-amount="' + esc(cad(y.amount)) + '">' + t('del') + '</button></li>'; }).join('') + '</ul>' : '<p class="note">' + t('payNone') + '</p>';
+      var planBtn = pr2.plan_on && oi.seasons === 1 ? '<button type="button" class="ta-btn ta-btn-sm ta-ghost" data-ins-plan="' + oi.id + '">' + esc(t('payToPlan', { n: pr2.plan_seasons, p: cad(pr2.plan_price) })) + '</button>'
+        : oi.seasons > 1 ? '<button type="button" class="ta-btn ta-btn-sm ta-ghost" data-ins-single="' + oi.id + '">' + esc(t('payToSingle', { p: cad(pr2.season_price) })) + '</button>' : '';
+      return { title: prow.name, body: '<p class="ta-paysum">' + payChip(oi) + planTag(oi) + ' <span class="note">' + esc(t('payOwes', { a: cad(oi.amount), p: cad(oi.paid), b: cad(oi.balance) }) + (oi.seasons > 1 && oi.first_season ? ' · ' + t('payFrom', { s: oi.first_season }) : '')) + '</span></p>' +
+        '<p class="ta-btns"><button type="button" class="ta-btn ta-btn-sm" data-pay-add="' + oi.id + '">' + t('payAdd') + '</button></p>' +
+        '<h3 class="ta-h3">' + t('payHist') + '</h3>' + hist + '<h3 class="ta-h3">' + t('payIns') + '</h3>' + (planBtn ? '<p class="ta-btns">' + planBtn + '</p>' : '') +
+        '<form class="ta-form ta-col" data-ins-f="' + oi.id + '"><span class="ta-pair"><label>' + t('payAmount') + ' ($)<input class="ctl ta-sm" name="amount" inputmode="decimal" value="' + (oi.amount == null ? '' : esc(String(oi.amount / 100))) + '"></label>' +
+        '<label>' + t('paySeasons') + '<input class="ctl ta-sm" name="seasons" inputmode="numeric" value="' + oi.seasons + '"></label></span>' +
+        '<label>' + t('payNote') + '<input class="ctl" name="note" maxlength="300" value="' + esc(oi.note || '') + '"></label><p class="note">' + t('payInsNote') + '</p>' + footer() + '</form>' };
+    }
     if (m.kind === 'admin-new') return { title: t('newAdmin'), body: '<form id="f-admin" class="ta-form ta-col"><label>' + t('name') + '<input class="ctl" name="name" required maxlength="80"></label>' +
       '<label>' + t('email') + '<input class="ctl" type="email" name="email" required></label><p class="note">' + t('newAdminNote') + '</p>' + footer(t('create')) + '</form>' };
     var adm = m.kind === 'admin-edit' && S.admins.filter(function (x) { return x.id === m.id; })[0];
@@ -1195,6 +1297,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   var tabIcon = function (k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; };
   TAB_ICONS.overview = '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>';
   TAB_ICONS.config = TAB_ICONS.setup;
+  TAB_ICONS.pay = '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>';
   TAB_ICONS.valider = '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>';
   TAB_ICONS.lgsetup = '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>';
   /* The tabs of the current level: in the top bar on a computer, in the bottom bar on a phone. */
@@ -1203,7 +1306,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   function levelTabs() {
     var mk = function (k, label, href, icon, cnt) { return { k: k, label: t(label), href: href, icon: icon || k, cnt: cnt || 0 }; };
     if (S.level === 'league') return [mk('overview', 'tabOverview', hrefL(S.league)), mk('cal', 'tabCal', hrefL(S.league, 'cal')), mk('teams', 'tabTeams', hrefL(S.league, 'teams')),
-      mk('subs', 'tabSubs', hrefL(S.league, 'subs'), 'subs', S.pending[S.league]), mk('setup', 'tabLgSetup', hrefL(S.league, 'setup'), 'lgsetup')];
+      mk('subs', 'tabSubs', hrefL(S.league, 'subs'), 'subs', S.pending[S.league]), mk('pay', 'tabPay', hrefL(S.league, 'pay'), 'pay'), mk('setup', 'tabLgSetup', hrefL(S.league, 'setup'), 'lgsetup')];
     if (S.level === 'section') return [mk('players', 'tabPlayers', hrefS(S.section))];
     var pend = Object.keys(S.pending).reduce(function (a, k) { return a + S.pending[k]; }, 0);
     return [mk('home', 'tabHome', hrefTop('home')), mk('valider', 'tabValider', '#/valider', 'valider', pend), mk('config', 'tabSetup', hrefTop('config'), 'config'), mk('audit', 'tabAudit', hrefTop('audit'), 'audit')];
@@ -1245,7 +1348,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       '<div class="ta-tools">' + (S.me && pendAll() ? '<a class="ta-pill" href="#/valider" title="' + esc(t('tabValider')) + '"><b>' + pendAll() + '</b> <span class="ta-long">' + esc(t('pillValider')) + '</span><span class="ta-short">✓</span></a>' : '') +
       acctMenu(S.me ? S.me.email : '') + '</div></div>';
     var msg = S.msg ? '<p class="ta-msg ta-' + S.msg.kind + '" role="' + (S.msg.kind === 'err' ? 'alert' : 'status') + '">' + esc(S.msg.text) + '</p>' : '';
-    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, caps: viewCaps, refresh: viewRefresh, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, setup: viewLgSetup };
+    var views = { home: viewHome, valider: viewValider, req: viewReq, config: viewConfig, caps: viewCaps, refresh: viewRefresh, captain: viewCaptain, person: viewPerson, audit: viewAudit, players: viewPlayers, overview: viewOverview, cal: viewCal, subs: viewSubs, teams: viewTeams, pay: viewPay, setup: viewLgSetup };
     /* A message about a modal's form shows in the modal. */
     $('#main').innerHTML = (S.modal ? '' : msg) + (!S.me ? viewLogin() : contextBar() + (views[S.tab] || viewHome)());
     if (!S.booting) $('#main').setAttribute('data-ready', '1');   // shared/guard.js: the page started
@@ -1283,6 +1386,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       if (S.tab === 'config' && S.me && S.me.super) more.push(api('/admins').then(function (r) { S.admins = r.ok ? r.data.admins : []; }));
       if (S.tab === 'req' && S.reqId) more.push(api('/replacements?id=' + S.reqId).then(function (r) { S.req = r.ok ? (r.data.replacements || [])[0] || null : null; S.reqMissing = !S.req; }));
       if (S.tab === 'person' && S.personId) more.push(api('/people/' + S.personId).then(function (r) { S.person = r.ok ? r.data : null; S.personMissing = !r.ok; }));
+      if (S.seasonId && S.tab === 'pay' && S.league) more.push(api('/payments?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league)).then(function (r) { S.pay = r.ok ? r.data : null; }));
+      if (S.tab === 'setup' || S.tab === 'pay') more.push(api('/league-prices').then(function (r) { S.prices = r.ok ? r.data.prices : []; }));
       if (S.tab === 'teams' && S.teamId) more.push(api('/lineups?team=' + S.teamId).then(function (r) { S.teamSched = r.ok ? r.data : null; }));
       if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
       if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; S.teamsLoaded = true; }));
@@ -1386,6 +1491,13 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       api('/teams', 'POST', { season_id: S.seasonId, league: f.getAttribute('data-newteam'), name: v('name'), abb: v('abb'), nbhpa_team_id: v('nbhpa') || null }).then(function (r) { done(r); });
     } else if (f.hasAttribute('data-edit-team')) {
       api('/teams/' + f.getAttribute('data-edit-team'), 'POST', { name: v('name'), abb: v('abb'), nbhpa_team_id: v('nbhpa') || null }).then(function (r) { done(r); });
+    } else if (f.hasAttribute('data-pay-f')) {
+      api('/payments', 'POST', { inscription_id: Number(f.getAttribute('data-pay-f')), amount: numOrNull(v('amount')), method: v('method') || null, note: v('note') || null }).then(function (r) { done(r, t('paySaved')); });
+    } else if (f.hasAttribute('data-ins-f')) {
+      api('/inscriptions/' + f.getAttribute('data-ins-f'), 'POST', { amount: numOrNull(v('amount')), seasons: Number(v('seasons')), note: v('note') }).then(function (r) { done(r); });
+    } else if (f.hasAttribute('data-price')) {
+      api('/league-prices', 'POST', { league: f.getAttribute('data-price'), season_price: numOrNull(v('season_price')), plan_on: !!(f.elements.plan_on && f.elements.plan_on.checked),
+        plan_price: numOrNull(v('plan_price')), plan_seasons: numOrNull(v('plan_seasons')) }).then(function (r) { done(r, r.ok && r.data.filled ? t('priceFilled', { n: r.data.filled }) : null); });
     } else if (f.hasAttribute('data-rules')) {
       api('/rules', 'POST', { season_id: S.seasonId, league: f.getAttribute('data-rules'), salary_cap: numOrNull(v('salary_cap')), min_age_m: numOrNull(v('min_age_m')),
         min_age_f: numOrNull(v('min_age_f')), min_age_g: numOrNull(v('min_age_g')), age_on: v('age_on') || null, notes: v('notes') || null }).then(function (r) { done(r); });
@@ -1397,8 +1509,8 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('input', function (e) {
     var x = e.target;
-    if (!x.hasAttribute || !(x.hasAttribute('data-pq') || x.hasAttribute('data-pf') || x.hasAttribute('data-cq'))) return;
-    if (x.hasAttribute('data-pq')) S.pq = x.value; else if (x.hasAttribute('data-cq')) S.cq = x.value; else S.pf[x.getAttribute('data-pf')] = x.value;
+    if (!x.hasAttribute || !(x.hasAttribute('data-pq') || x.hasAttribute('data-pf') || x.hasAttribute('data-cq') || x.hasAttribute('data-payq'))) return;
+    if (x.hasAttribute('data-payq')) S.payq = x.value; else if (x.hasAttribute('data-pq')) S.pq = x.value; else if (x.hasAttribute('data-cq')) S.cq = x.value; else S.pf[x.getAttribute('data-pf')] = x.value;
     var pos = x.selectionStart, id = x.id;
     render();
     var n = document.getElementById(id);
@@ -1427,7 +1539,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   document.addEventListener('click', function (e) { var c = $('#ta-ctx'); if (c && c.open && !(e.target.closest && e.target.closest('#ta-ctx'))) c.open = false; }, true);
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-revoke],[data-disable],[data-enable],[data-delete-cap],[data-delete-season],[data-edit-cap],[data-access-cap],[data-access-team],' +
-      '[data-plg],[data-plf],[data-cf],[data-season-live],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del],[data-adm-edit],[data-adm-disable],[data-adm-enable],[data-adm-del]');
+      '[data-payf],[data-pay-add],[data-pay-open],[data-pay-del],[data-ins-plan],[data-ins-single],[data-plg],[data-plf],[data-cf],[data-season-live],[data-edit-person-btn],[data-del-list],[data-del-person],[data-roster-remove],[data-edit-team-btn],[data-del-team],[data-team-new],[data-import-league],[data-sub-team],[data-sf],[data-decide],[data-cancel-req],[data-psort],[data-pfsex],[data-pfmiss],[data-pfpos],[data-cal-date],[data-sub-game],[data-home-cal],[data-home-teams],[data-home-miss],[data-home-accounts],[data-edit-season],[data-games-import],[data-game-new],[data-game-edit],[data-game-del],[data-su-del],[data-adm-edit],[data-adm-disable],[data-adm-enable],[data-adm-del]');
     if (!b) return;
     var act = b.getAttribute('data-act'), nm = b.getAttribute('data-name');
     var num = function (a) { return Number(b.getAttribute(a)); };
@@ -1451,6 +1563,15 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (b.hasAttribute('data-sub-game')) { var sg = b.getAttribute('data-sub-game').split(':'); S.subFrom = location.hash; location.hash = hrefL(S.league, 'subs') + '/new/' + sg[0] + '/' + sg[1]; return; }
     if (b.hasAttribute('data-plf')) { S.plf = b.getAttribute('data-plf'); render(); return; }
     if (b.hasAttribute('data-sf')) { S.sf = b.getAttribute('data-sf'); render(); return; }
+    if (b.hasAttribute('data-payf')) { S.payf = b.getAttribute('data-payf'); render(); return; }
+    if (b.hasAttribute('data-pay-add')) { openModal({ kind: 'pay-add', id: num('data-pay-add') }); return; }
+    if (b.hasAttribute('data-pay-open')) { openModal({ kind: 'pay-open', id: num('data-pay-open') }); return; }
+    if (b.hasAttribute('data-pay-del') || b.hasAttribute('data-ins-plan') || b.hasAttribute('data-ins-single')) {   // inside the details window: it stays open, with the new numbers
+      if (b.hasAttribute('data-pay-del') && !window.confirm(t('confirmPayDel', { a: b.getAttribute('data-amount') }))) return;
+      var pcall = b.hasAttribute('data-pay-del') ? api('/payments/' + num('data-pay-del') + '/delete', 'POST', {}) : api('/inscriptions/' + num(b.hasAttribute('data-ins-plan') ? 'data-ins-plan' : 'data-ins-single'), 'POST', { plan: b.hasAttribute('data-ins-plan') });
+      pcall.then(function (r) { if (!r.ok) { say('err', errMsg(r)); render(); return; } say('ok', t(b.hasAttribute('data-pay-del') ? 'payDeleted' : 'saved')); refresh(); });
+      return;
+    }
     if (b.hasAttribute('data-psort')) { var pk = b.getAttribute('data-psort'); S.ps = pk === 'grp' ? { k: 'grp', d: 1 } : S.ps.k === pk ? { k: pk, d: -S.ps.d } : { k: pk, d: pk === 's' || pk === 'g' ? -1 : 1 }; render(); return; }
     if (b.hasAttribute('data-pfsex')) { S.pf.sex = b.getAttribute('data-pfsex'); render(); return; }
     if (b.hasAttribute('data-pfpos')) { S.pf.pos = b.getAttribute('data-pfpos'); render(); return; }

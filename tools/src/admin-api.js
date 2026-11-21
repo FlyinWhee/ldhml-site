@@ -10,6 +10,7 @@ import { gamesApi, nbhpaPlan } from './games.js';
 import { adminsApi, ensureSuperAdmin, isSuper } from './admins.js';
 import { isDemo, demoAdminLogin } from './demo.js';
 import { publishApi } from './publish.js';
+import { paymentApi, deleteFor } from './payments.js';
 import { today as todayIs } from './clock.js';
 
 const audit = (env, admin, action, target, detail) =>
@@ -217,6 +218,7 @@ export async function adminApi(req, env, url) {
     await env.DB.batch([
       env.DB.prepare('DELETE FROM replacement_lines WHERE replacement_id IN (SELECT id FROM replacements WHERE season_id = ?)').bind(id),
       env.DB.prepare('DELETE FROM game_rosters WHERE game_ref IN (SELECT id FROM games WHERE season_id = ?)').bind(id),
+      ...deleteFor(env.DB, 'season_id = ?', id),
       ...['replacements', 'games', 'captain_access', 'rosters', 'league_players', 'section_players', 'season_leagues', 'teams', 'seasons'].map((tb) =>
         env.DB.prepare(`DELETE FROM ${tb} WHERE ${tb === 'seasons' ? 'id' : 'season_id'} = ?`).bind(id))]);
     await audit(env, admin, 'season.delete', 'season:' + id);
@@ -251,6 +253,9 @@ export async function adminApi(req, env, url) {
   // ---- roster layer: people, player lists, teams, rosters, league rules (roster-api.js) ----
   const roster = await rosterApi({ req, env, url, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail), seasonData: () => seasonData(env, url) });
   if (roster) return roster;
+  // ---- payments: league prices, inscriptions, money received (payments.js) ----
+  const pay = await paymentApi({ req, env, url, path, m, admin, audit: (action, target, detail) => audit(env, admin, action, target, detail), seasonData: () => seasonData(env, url) });
+  if (pay) return pay;
 
   // ---- replacement requests: the builder, the queue, decisions (replacements.js; the captain area uses the same code) ----
   const rep = await replacementApi({ req, env, url, path, m, actor: { kind: 'admin', id: admin.id }, teamIds: async () => null,

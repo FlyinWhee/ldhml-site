@@ -480,3 +480,17 @@ a.ta-btn.ta-ghost { color: var(--ink); }   /* a ghost button that is a link: the
 @media (max-width: 600px) { .ta-rflog { font-size: 12px; } .ta-rflog li { gap: 6px; } }
 .ta-btn:disabled { opacity: .45; cursor: not-allowed; }
 .ta-rf .ta-btns { margin: 14px 0 8px; }
+/* payments (owner, 2026-11-21) */
+.ta-pst { display: inline-block; padding: 1px 9px; border: 1px solid var(--line); border-radius: 999px; font: 600 13px/1.6 var(--f-text); white-space: nowrap; }
+.ta-pst-paid { border-color: var(--ok, #3fb67a); color: var(--ok, #3fb67a); }
+.ta-pst-partial { border-color: var(--warn, #f0a500); color: var(--warn, #f0a500); }
+.ta-pst-due { border-color: var(--bad); color: var(--bad); }
+.ta-pst-noprice { border-style: dashed; color: var(--muted); }
+.ta-payctl { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.ta-payctl input[type=search] { flex: 1 1 220px; max-width: 320px; }
+.ta-paytbl td.ta-acts { white-space: nowrap; }
+.ta-paylist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.ta-paylist li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; }
+.ta-paylist .ta-del { margin-left: auto; }
+.ta-paysum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.ta-paytbl .ta-acts .ta-linkbtn { margin-left: 12px; }

@@ -635,6 +635,68 @@ const cookie2 = (await call('/api/admin/login/verify', { method: 'POST', body: {
 assert.equal((await call('/api/admin/me', { cookie: cookie2 })).status, 200);
 await DB.prepare("UPDATE admins SET disabled_at = 1 WHERE email = 'ops@example.test'").run();
 assert.equal((await call('/api/admin/me', { cookie: cookie2 })).status, 401, 'a disabled admin is out at once');
+// ---- payments (owner, 2026-11-21): an inscription per player and league (made with the sign-up or the roster), payments against it ----
+{
+  const P = async (p, b) => call('/api/admin' + p, { method: 'POST', cookie, body: b });
+  const pays = async (sid) => (await call('/api/admin/payments?season=' + sid + '&league=retro', { cookie })).data;
+  const rowOf = async (sid, pid) => (await pays(sid)).rows.find((x) => x.person_id === pid);
+  // the league price (not per season); the inscriptions with no amount yet take it
+  assert.equal((await P('/league-prices', { league: 'retro', season_price: 200, plan_on: true })).status, 400, 'a plan needs its price');
+  r = await P('/league-prices', { league: 'retro', season_price: 200, plan_on: true, plan_price: 540, plan_seasons: 3 });
+  assert.equal(r.status, 200);
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM inscriptions WHERE league = 'retro' AND amount IS NULL AND season_id = ?").bind(seasonId).first('n'), 0, 'the price fills the inscriptions without an amount');
+  // a roster player has one (made when they went on the team)
+  const capRow = await rowOf(seasonId, rosterA[0].person_id);
+  assert.ok(capRow && capRow.ins && capRow.ins.amount === 20000 && capRow.team, 'a roster player: their inscription, at the league price');
+  // a new sign-up (a draft league: no team yet) makes one at once
+  const payer = (await P('/people', { name: 'Payeur Test', sex: 'm' })).data.id;
+  r = await P('/league-players', { season_id: seasonId, league: 'retro', person_id: payer, pos: 's' });
+  const suId = r.data.id;
+  let row = await rowOf(seasonId, payer);
+  assert.deepEqual([row.ins.amount, row.ins.seasons, row.ins.status, row.ins.balance, row.team], [20000, 1, 'due', 20000, null], 'added to the league: owes the season price (no team yet)');
+  const insId = row.ins.id;
+  // a partial payment (a deposit), method optional; the date is the entry time
+  assert.equal((await P('/payments', { inscription_id: insId, amount: 0 })).status, 400, 'an amount is required');
+  assert.equal((await P('/payments', { inscription_id: insId, amount: 100, method: 'Interac' })).status, 201);
+  row = await rowOf(seasonId, payer);
+  assert.deepEqual([row.ins.status, row.ins.paid, row.ins.balance, row.ins.payments[0].method, typeof row.ins.payments[0].created_at], ['partial', 10000, 10000, 'Interac', 'number'], 'a deposit: partial, the balance');
+  // the league's plan (3 seasons): the inscription keeps its own amount and length
+  assert.equal((await P('/inscriptions/' + insId, { plan: true })).status, 200);
+  await P('/league-prices', { league: 'retro', season_price: 250, plan_on: true, plan_price: 600, plan_seasons: 3 });
+  row = await rowOf(seasonId, payer);
+  assert.deepEqual([row.ins.amount, row.ins.seasons, row.ins.k, row.ins.balance], [54000, 3, 1, 44000], 'the plan: 3 seasons, its price; a later price change does not touch it');
+  const nextId = (await P('/seasons', { name: 'Hiver paiements', status: 'upcoming' })).data.id;
+  // the next season: the plan covers it, no new inscription; partial payments still go against the one amount
+  { const rr = await P('/league-players', { season_id: nextId, league: 'retro', person_id: payer, pos: 's' }); assert.equal(rr.status, 201, JSON.stringify(rr.data) + ' ' + JSON.stringify(await DB.prepare('SELECT id, status FROM seasons').all())); }
+  assert.equal(await DB.prepare("SELECT COUNT(*) AS n FROM inscriptions WHERE person_id = ? AND league = 'retro'").bind(payer).first('n'), 1, 'covered by the plan: nothing new');
+  row = await rowOf(nextId, payer);
+  assert.deepEqual([row.ins.id, row.ins.k, row.ins.seasons, row.ins.balance], [insId, 2, 3, 44000], 'next season: season 2 of 3, the same balance');
+  // a plain player in the next season: a new one-season inscription at today's price
+  const other = (await P('/people', { name: 'Autre Payeur', sex: 'm' })).data.id;
+  await P('/league-players', { season_id: nextId, league: 'retro', person_id: other, pos: 's' });
+  assert.equal((await rowOf(nextId, other)).ins.amount, 25000, 'the price of today');
+  // removed from the league: nothing owed (deleted), unless money was received (kept, "left")
+  const otherSu = await DB.prepare("SELECT id FROM league_players WHERE person_id = ? AND season_id = ?").bind(other, nextId).first('id');
+  await P('/league-players/' + otherSu + '/delete', {});
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM inscriptions WHERE person_id = ?').bind(other).first('n'), 0, 'removed with nothing paid: no inscription');
+  await P('/league-players/' + suId + '/delete', {});
+  row = await rowOf(seasonId, payer);
+  assert.ok(row && row.left && row.ins.paid === 10000, 'removed after paying: kept, shown as left, with what was paid');
+  // a payment entered by mistake
+  const payId = row.ins.payments[0].id;
+  assert.equal((await P('/payments/' + payId + '/delete', {})).status, 200);
+  assert.ok(!(await rowOf(seasonId, payer)), 'no payment any more, out of the league: gone from the list');
+  assert.ok((await DB.prepare("SELECT COUNT(*) AS n FROM audit WHERE action IN ('payment.add', 'payment.delete', 'inscription.update', 'price.set')").first('n')) >= 5, 'every change is logged');
+  // captains see the amounts of their team (never the admins' notes)
+  const ct = (await call('/api/captain/teams', { cookie: ccookie })).data.teams.find((x) => x.id === teamA);
+  const cp = ct.roster.find((x) => x.person_id === rosterA[0].person_id).pay;
+  assert.ok(cp && cp.amount === 20000 && cp.status && !('note' in cp), 'captain: each player\'s amount, paid, balance');
+  // clean up: the person goes with their inscriptions and payments; the next season keeps its sign-up
+  assert.equal((await P('/people/' + payer + '/delete', {})).status, 200);
+  assert.equal(await DB.prepare('SELECT COUNT(*) AS n FROM inscriptions WHERE person_id = ?').bind(payer).first('n'), 0);
+  await P('/people/' + other + '/delete', {});
+  assert.equal((await P('/seasons/' + nextId + '/delete', {})).status, 200, 'a season deleted: its inscriptions go too');
+}
 r = await call('/api/admin/logout', { method: 'POST', cookie, body: {} });
 assert.match(r.cookie, /Max-Age=0/);
 assert.equal((await call('/api/admin/me', { cookie })).status, 401, 'logged out');
@@ -824,8 +886,27 @@ assert.ok([...d.querySelectorAll('.ta-lcard')].every((c) => c.querySelector('.ta
 assert.equal(d.querySelectorAll('.ta-ctx-pop .ta-ctx-lg').length, season.leagues.length, 'the switcher lists every league');
 w.location.hash = hL(lg); await wait(250);
 assert.ok(d.querySelector('.nav a[aria-current="page"]').getAttribute('href') === hL(lg) && d.querySelectorAll('.ta-kpis .ta-kpi').length === 4 && d.querySelector('.ta-ovteams'), 'a league opens on its overview (key numbers, to validate, teams)');
-assert.equal(d.querySelectorAll('#tabbar a').length, 5, 'league level: five tabs (Aperçu, Calendrier, Équipes, Remplacements, Réglages)');
+assert.equal(d.querySelectorAll('#tabbar a').length, 6, 'league level: six tabs (Aperçu, Calendrier, Équipes, Remplacements, Paiements, Réglages)');
 assert.ok(d.querySelector('.ta-crumbs a[href="' + hS(lg.section) + '"]'), 'the section is one step up');
+{ // Paiements (owner, 2026-11-21): every player of the league, what they owe and paid; a payment in one modal
+  w.location.hash = hL(lg, 'pay'); await wait(300);
+  const nPlayers = await DB.prepare('SELECT COUNT(*) AS n FROM league_players WHERE season_id = ? AND league = ?').bind(seasonId, lg.slug).first('n');
+  assert.equal(d.querySelectorAll('.ta-paytbl tbody tr').length, nPlayers, 'Paiements: one row per player of the league');
+  assert.ok(d.querySelector('.ta-kpis .ta-kpi') && d.querySelector('[data-payf="owing"]'), 'the totals, and a filter for who still owes');
+  const addBtn = d.querySelector('[data-pay-add]'), insId = Number(addBtn.getAttribute('data-pay-add'));
+  addBtn.click(); await wait(60);
+  const mf = d.querySelector('#modal [data-pay-f]');
+  assert.ok(mf && mf.elements.amount, 'a payment: one small form (amount, method, note)');
+  mf.elements.amount.value = '50'; mf.elements.method.value = 'Comptant';
+  mf.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); await wait(300);
+  assert.deepEqual(Object.values(await DB.prepare('SELECT amount, method FROM payments WHERE inscription_id = ? ORDER BY id DESC').bind(insId).first()), [5000, 'Comptant'], 'saved in cents, with its method');
+  assert.ok(!d.querySelector('#modal .ta-modal') && d.querySelector('.ta-msg.ta-ok'), 'saved: the modal closes');
+  d.querySelector('[data-pay-open="' + insId + '"]').click(); await wait(60);
+  assert.ok(d.querySelector('#modal .ta-paylist li') && d.querySelector('#modal [data-ins-f]'), 'details: the payments, the inscription (amount, seasons)');
+  d.querySelector('#modal [data-act="close-modal"]').click(); await wait(30);
+  w.location.hash = hL(lg, 'setup'); await wait(300);
+  assert.ok(d.querySelector('[data-price="' + lg.slug + '"] [name=season_price]'), 'Réglages: the league price');
+}
 w.location.hash = hL(lg, 'teams'); await wait(200);
 assert.ok(!d.getElementById('main').classList.contains('ta-editing') && d.querySelector('.ta-team .ta-ed'), 'Équipes opens in read mode: the controls that change things are hidden');
 assert.ok(d.querySelector('.ta-team [data-sub-team]:not(.ta-ed)'), '"Remplacement…" stays (daily work, not editing)');
@@ -1281,6 +1362,7 @@ await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
 assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]') && !cd.querySelector('.cp-ask [data-act="ask"]'), 'one main action: the next game\'s lineup (declaring is from there, or a game\'s "Remplacement…")');
+assert.ok(cd.querySelector('.cp-pays .cp-paylist li .ta-pst') && cd.querySelector('.cp-paysum'), 'captain: what each player owes, and the team total (read only: no payment buttons)'); assert.ok(!cd.querySelector('.cp-pays button'));
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');

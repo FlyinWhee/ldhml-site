@@ -7,6 +7,7 @@ import { isDemo, demoCaptainApi } from './demo.js';
 import { sendCode, signInLink } from './email.js';
 import { replacementApi } from './replacements.js';
 import { lineupApi } from './lineups.js';
+import { teamPayments } from './payments.js';
 
 const audit = (env, cap, action, target, detail) =>
   env.DB.prepare('INSERT INTO audit (at, actor_kind, actor_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?)')
@@ -70,7 +71,10 @@ export async function captainApi(req, env, url) {
         LEFT JOIN section_players sp ON sp.season_id = r.season_id AND sp.section = ? AND sp.person_id = r.person_id
         WHERE r.team_id = ? AND r.removed_at IS NULL ORDER BY r.pos DESC, p.name COLLATE NOCASE`).bind(lg ? lg.section : '', t.id).all();
       const rules = await env.DB.prepare('SELECT salary_cap, min_age_m, min_age_f, min_age_g, age_on, notes FROM season_leagues WHERE season_id = ? AND league = ?').bind(t.season_id, t.league).first();
-      out.push({ ...t, rules, roster: roster.map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: (r.pos === 'g' ? r.salary_g : r.salary_s) ?? null })) });
+      // what each player owes (owner, 2026-11-21: captains see the amounts, to know how much to ask); never the admins' notes
+      const pays = await teamPayments(env.DB, t, roster.map((r) => r.person_id));
+      const payOf = (id) => { const y = pays[id]; return y ? { amount: y.amount, paid: y.paid, balance: y.balance, status: y.status, seasons: y.seasons, k: y.k, payments: y.payments.map((z) => ({ amount: z.amount, method: z.method, created_at: z.created_at })) } : null; };
+      out.push({ ...t, rules, roster: roster.map((r) => ({ person_id: r.person_id, name: r.name, site_id: r.site_id, sex: r.sex, pos: r.pos, salary: (r.pos === 'g' ? r.salary_g : r.salary_s) ?? null, pay: payOf(r.person_id) })) });
     }
     return json({ teams: out });
   }

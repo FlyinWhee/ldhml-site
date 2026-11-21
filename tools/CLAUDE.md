@@ -8,6 +8,8 @@ src/admin-api.js   /api/admin/...: sign-in, seasons, captains, access per season
 src/roster-api.js  /api/admin/...: people, league player lists, sign-ups per league, our teams, rosters, league rules (called by admin-api.js)
 src/captain-api.js /api/captain/...: captain sign-in, my teams, then the replacement routes for those teams only
 src/replacements.js replacement requests and their checks, shared by both areas (admin: any team; captain: their teams)
+src/payments.js    league prices, inscriptions (what a player owes: made when added to a league), payments; captains read their team
+src/clock.js       "today" (Montréal); the demo can run on a simulated date (DEMO_TODAY)
 src/lineups.js     the actual lineup of a game (roster - absents + replacements on file): admin calendar, captain games
 src/games.js       our schedule (games table): read helpers, the optional NBHPA import (never over a hand edit), admin edits
 src/guest.js       a replacement player not on the list ("joueur hors-ligue")

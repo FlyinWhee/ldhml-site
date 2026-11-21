@@ -14,7 +14,9 @@ const OPEN = new Set(['/api/admin/demo-login', '/api/captain/demo-login', '/api/
   // game-night lineups (2026-11-20): to try the lineup page; they write the demo's own database only (test data)
   '/api/captain/replacements/lineup', '/api/admin/replacements/lineup', '/api/captain/replacements/jersey', '/api/admin/replacements/jersey']);   // the stats site refresh writes GitHub, not the demo database (owner, 2026-10-30)
 /** True when the demo must refuse this request (a write). */
-export const demoRefuses = (env, req, url) => isDemo(env) && req.method !== 'GET' && !OPEN.has(url.pathname);
+// payments (2026-11-21): to try them; the demo's own database only
+const OPEN_RE = /^\/api\/admin\/(payments(\/\d+\/delete)?|inscriptions\/\d+|league-prices)$/;
+export const demoRefuses = (env, req, url) => isDemo(env) && req.method !== 'GET' && !OPEN.has(url.pathname) && !OPEN_RE.test(url.pathname);
 
 async function keyOk(env, key) {
   return !!env.DEMO_KEY && env.DEMO_KEY.length >= 8 && typeof key === 'string' && key.length <= 200 && await sameSecret(env, key, env.DEMO_KEY);

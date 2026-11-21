@@ -45,6 +45,8 @@ export function seedSql(data, reg, now = Math.floor(Date.now() / 1000)) {
   }
   // everyone on a team plays in that league (their sign-up)
   out.push(`INSERT OR IGNORE INTO league_players (season_id, league, person_id, pos, created_at) SELECT season_id, league, person_id, pos, added_at FROM rosters WHERE season_id = ${S} AND removed_at IS NULL;`);
+  // what each one owes (payments): one season, at the league price when set
+  out.push(`INSERT INTO inscriptions (season_id, league, person_id, seasons, amount, created_at) SELECT u.season_id, u.league, u.person_id, 1, (SELECT season_price FROM league_prices lp WHERE lp.league = u.league), u.created_at FROM league_players u WHERE u.season_id = ${S} AND NOT EXISTS (SELECT 1 FROM inscriptions i WHERE i.person_id = u.person_id AND i.league = u.league AND i.season_id = u.season_id);`);
   out.push(`INSERT INTO audit (at, actor_kind, action, target, detail) VALUES (${now}, 'system', 'seed.local', 'season:' || ${S}, '{"by":"seed-local script"}');`);
   return out.join('\n');
 }

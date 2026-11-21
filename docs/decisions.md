@@ -107,3 +107,7 @@ The owner wants to refresh the public site without running a script. The Worker 
 
 ## ldhml.com on Cloudflare; GitHub Pages is staging (2026-11-20)
 The owner bought ldhml.com (Cloudflare) and wants the public site there, with GitHub Pages as the dev/staging copy. The live site is a small Worker with static assets (`live/`), deployed by the same "Refresh and publish" run as Pages, from the same build: staging and live never differ, and the data refresh reaches both. Kept on Pages: the branch previews. The tools moved from the planned `app.<domain>` to one address per area (admin.ldhml.com, capitaine.ldhml.com), served by the same Worker: a captain never lands on the admin sign-in, and each area has its own cookies. Sign-in emails: Cloudflare Email Service (decided 2026-10-16), no other vendor.
+
+## Payments: the league price is not per season; an inscription carries its own terms (2026-11-21)
+Rule 2 asks a `season_id` on every feature table. `league_prices` has none on purpose (owner: "a league setting… we can just toggle it when we need it, and look at the state of the setting when applying changes"). What must not move is on the inscription: its amount and its number of seasons are copied when it is made or changed, so a later price change never rewrites what someone owes. `inscriptions` keep a `season_id` (their first season). A multi-season plan is one inscription with one amount (partial payments against it), not one row per season: splitting partial payments across seasons was the headache the owner wanted to avoid.
+

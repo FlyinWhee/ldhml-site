@@ -4,6 +4,7 @@
 import { json, fail, readJson, cleanText, now } from './http.js';
 import { isArchived } from './seasons.js';
 import { freezePast } from './lineups.js';
+import { ensureInscription, dropInscription, deleteFor, personPayments } from './payments.js';
 
 const num = (v) => (v === '' || v == null ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN);
 const int = (v, lo, hi) => (v === '' || v == null ? null : Number.isInteger(Number(v)) && Number(v) >= lo && Number(v) <= hi ? Number(v) : NaN);
@@ -87,7 +88,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       FROM replacement_lines l JOIN replacements q ON q.id = l.replacement_id JOIN teams t ON t.id = q.team_id
       LEFT JOIN people pa ON pa.id = l.absent_id LEFT JOIN people ps ON ps.id = l.sub_id
       WHERE l.absent_id = ? OR l.sub_id = ? ORDER BY q.game_date DESC, q.id DESC LIMIT 40`).bind(id, id).all();
-    return json({ person: p, lists, rosters, signups, captain: captain || null, lines });
+    return json({ person: p, lists, rosters, signups, captain: captain || null, lines, inscriptions: await personPayments(DB, id) });
   }
   if (m === 'POST' && x) {
     const id = Number(x[1]), b = await readJson(req) || {}, f = personFields(b);
@@ -112,6 +113,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
       DB.prepare('DELETE FROM rosters WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM game_rosters WHERE person_id = ?').bind(id),
       DB.prepare('DELETE FROM league_players WHERE person_id = ?').bind(id),
+      ...deleteFor(DB, 'person_id = ?', id),
       DB.prepare('DELETE FROM section_players WHERE person_id = ?').bind(id),
       DB.prepare('UPDATE audit SET detail = NULL WHERE target = ?').bind('person:' + id),
       DB.prepare('DELETE FROM people WHERE id = ?').bind(id)
@@ -237,6 +239,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     await DB.prepare(`INSERT INTO league_players (season_id, league, person_id, pos, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT (season_id, league, person_id) DO UPDATE SET pos = excluded.pos, updated_at = excluded.created_at, updated_by = excluded.created_by`)
       .bind(t.season_id, t.league, p.id, b.pos, now(), admin.id).run();
+    await ensureInscription(DB, { season_id: t.season_id, league: t.league, person_id: p.id }, admin.id);   // what they owe (payments.js)
     await audit('roster.add', 'team:' + t.id, { person: p.id, pos: b.pos });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
@@ -250,7 +253,10 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     const r = await DB.prepare('UPDATE rosters SET removed_at = ?, removed_by = ? WHERE id = ? AND removed_at IS NULL').bind(now(), admin.id, Number(x[1])).run();
     if (!r.meta.changes) return fail(404, 'roster');
     // a team league: off the team = out of the league; a draft league: back in the draft pool
-    if ((leagueOf(ro.league) || {}).section !== 'draft') await DB.prepare('DELETE FROM league_players WHERE season_id = ? AND league = ? AND person_id = ?').bind(ro.season_id, ro.league, ro.person_id).run();
+    if ((leagueOf(ro.league) || {}).section !== 'draft') {
+      await DB.prepare('DELETE FROM league_players WHERE season_id = ? AND league = ? AND person_id = ?').bind(ro.season_id, ro.league, ro.person_id).run();
+      await dropInscription(DB, ro);   // out of the league: nothing owed, unless money was received (payments.js)
+    }
     await audit('roster.remove', 'roster:' + x[1]);
     return json({ ok: true });
   }
@@ -273,6 +279,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     await DB.prepare('INSERT OR IGNORE INTO section_players (season_id, section, person_id, created_at, created_by) VALUES (?, ?, ?, ?, ?)').bind(s.id, lg.section, p.id, now(), admin.id).run();
     const r = await DB.prepare('INSERT INTO league_players (season_id, league, person_id, pos, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
       .bind(s.id, lg.slug, p.id, b.pos, now(), admin.id).run();
+    await ensureInscription(DB, { season_id: s.id, league: lg.slug, person_id: p.id }, admin.id);   // what they owe (payments.js)
     await audit('signup.add', 'person:' + p.id, { season: s.id, league: lg.slug, pos: b.pos });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
@@ -284,6 +291,7 @@ export async function rosterApi({ req, env, url, path, m, admin, audit, seasonDa
     if (await isArchived(DB, u.season_id)) return fail(409, 'season_archived');
     if (await DB.prepare('SELECT 1 FROM rosters WHERE season_id = ? AND league = ? AND person_id = ? AND removed_at IS NULL').bind(u.season_id, u.league, u.person_id).first()) return fail(409, 'on_roster');
     await DB.prepare('DELETE FROM league_players WHERE id = ?').bind(u.id).run();
+    await dropInscription(DB, u);
     await audit('signup.delete', 'person:' + u.person_id, { season: u.season_id, league: u.league });
     return json({ ok: true });
   }
