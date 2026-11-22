@@ -142,11 +142,6 @@
 .cp-gacts { display: inline-flex; gap: 6px; flex: none; }
 .cp-lu-g { min-height: 30px; padding: 0 10px; font-size: 14px; }
 @media (max-width: 600px) { .cp-gacts { margin-left: auto; } }
-/* payments (owner, 2026-11-21): read only, what each player owes */
-.cp-pays { margin-top: 16px; }
-.cp-paysum { margin: 0 0 8px; }
-.cp-paylist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
-.cp-paylist li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); }
-.cp-pn { min-width: 0; display: grid; }
-.cp-pn small { color: var(--muted); font-size: 12px; }
-.cp-pn .ta-chip { justify-self: start; margin: 2px 0; }
+/* payments in the roster (owner, 2026-11-22): a tag on who still owes, one line on top */
+.cp-owe { margin-left: 6px; font-size: 12px; padding: 0 7px; vertical-align: 1px; }
+.cp-owesum { margin: 0 0 8px; color: var(--warn, #f0a500); font-size: 14px; }

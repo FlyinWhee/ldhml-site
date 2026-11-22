@@ -6,6 +6,9 @@
 // of seasons, so a later price change never rewrites the past. Admins only write; captains read their team (captain-api.js).
 import { json, fail, readJson, cleanText, now } from './http.js';
 
+/** The price of a league with no price set (owner, 2026-11-22: 200 $ for now), in cents. */
+export const DEFAULT_PRICE = 20000;
+const NO_ROW = (league) => ({ league, season_price: DEFAULT_PRICE, plan_on: 0, plan_price: null, plan_seasons: 3, is_default: true });
 const cents = (v) => (v === '' || v == null ? null : Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 100000 ? Math.round(Number(v) * 100) : NaN);
 
 /** The seasons in order (oldest first), with the leagues switched off in each. */
@@ -37,7 +40,8 @@ const statusOf = (amount, paid) => (amount == null ? 'noprice' : paid >= amount 
 export async function ensureInscription(DB, { season_id, league, person_id }, by) {
   const line = await seasonLine(DB);
   if (await covering(DB, line, person_id, league, season_id)) return;
-  const price = await DB.prepare('SELECT season_price FROM league_prices WHERE league = ?').bind(league).first('season_price');
+  const row = await DB.prepare('SELECT season_price FROM league_prices WHERE league = ?').bind(league).first();
+  const price = row ? row.season_price : DEFAULT_PRICE;   // a league with no price set: the default
   await DB.prepare('INSERT INTO inscriptions (season_id, league, person_id, seasons, amount, created_at, created_by) VALUES (?, ?, ?, 1, ?, ?, ?)')
     .bind(season_id, league, person_id, price ?? null, now(), by || null).run();
 }
@@ -78,7 +82,7 @@ export async function paymentApi({ req, env, url, path, m, admin, audit, seasonD
   const DB = env.DB, q = url.searchParams;
   let x;
   const leagueOk = async (slug) => { const d = await seasonData(); return !!(d && d.leagues.some((l) => l.slug === slug)); };
-  const priceOf = (league) => DB.prepare('SELECT * FROM league_prices WHERE league = ?').bind(league).first();
+  const priceOf = async (league) => (await DB.prepare('SELECT * FROM league_prices WHERE league = ?').bind(league).first()) || NO_ROW(league);
   /** True when every season an inscription covers is archived (then it is read only). */
   const frozen = async (line, ins) => covered(line, ins).every((id) => (line.seasons.find((s) => s.id === id) || {}).status === 'archived');
 
@@ -157,7 +161,7 @@ export async function paymentApi({ req, env, url, path, m, admin, audit, seasonD
   // GET /league-prices: every league's price. POST /league-prices { league, season_price, plan_on, plan_price, plan_seasons } (dollars).
   if (m === 'GET' && path === '/league-prices') {
     const { results } = await DB.prepare('SELECT * FROM league_prices').all();
-    return json({ prices: results });
+    return json({ prices: results, default_price: DEFAULT_PRICE });
   }
   if (m === 'POST' && path === '/league-prices') {
     const b = await readJson(req) || {}, sp = cents(b.season_price), pp = cents(b.plan_price), on = b.plan_on === true, n = b.plan_seasons == null || b.plan_seasons === '' ? 3 : Number(b.plan_seasons);

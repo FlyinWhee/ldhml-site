@@ -641,6 +641,7 @@ assert.equal((await call('/api/admin/me', { cookie: cookie2 })).status, 401, 'a 
   const pays = async (sid) => (await call('/api/admin/payments?season=' + sid + '&league=retro', { cookie })).data;
   const rowOf = async (sid, pid) => (await pays(sid)).rows.find((x) => x.person_id === pid);
   // the league price (not per season); the inscriptions with no amount yet take it
+  assert.equal((await call('/api/admin/league-prices', { cookie })).data.default_price, 20000, 'a league with no price set: 200 $ (owner, 2026-11-22)');
   assert.equal((await P('/league-prices', { league: 'retro', season_price: 200, plan_on: true })).status, 400, 'a plan needs its price');
   r = await P('/league-prices', { league: 'retro', season_price: 200, plan_on: true, plan_price: 540, plan_seasons: 3 });
   assert.equal(r.status, 200);
@@ -1362,7 +1363,8 @@ await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
 assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]') && !cd.querySelector('.cp-ask [data-act="ask"]'), 'one main action: the next game\'s lineup (declaring is from there, or a game\'s "Remplacement…")');
-assert.ok(cd.querySelector('.cp-pays .cp-paylist li .ta-pst') && cd.querySelector('.cp-paysum'), 'captain: what each player owes, and the team total (read only: no payment buttons)'); assert.ok(!cd.querySelector('.cp-pays button'));
+assert.ok(!cd.querySelector('.cp-pays') && cd.querySelector('.cp-roster .cp-owesum') && cd.querySelector('.cp-roster td .cp-owe'), 'captain: payments in the roster (owner, 2026-11-22): a tag on who still owes, one line on top; no separate panel');
+assert.equal(cd.querySelectorAll('.cp-roster .cp-owe').length, (await DB.prepare("SELECT COUNT(*) AS n FROM rosters r JOIN inscriptions i ON i.person_id = r.person_id AND i.league = r.league AND i.season_id = r.season_id WHERE r.team_id = ? AND r.removed_at IS NULL AND i.amount > (SELECT COALESCE(SUM(y.amount), 0) FROM payments y WHERE y.inscription_id = i.id)").bind(teamA).first('n')), 'a tag only for who still owes (nothing once paid)');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');

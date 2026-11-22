@@ -977,7 +977,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   }
   /* The league price, in its settings (not per season: owner, 2026-11-21). */
   function priceForm(l) {
-    var p = (S.prices || []).filter(function (x) { return x.league === l.slug; })[0] || {}, dol = function (c) { return c == null ? '' : esc(String(c / 100)); };
+    var p = (S.prices || []).filter(function (x) { return x.league === l.slug; })[0] || { season_price: S.defaultPrice, plan_seasons: 3 }, dol = function (c) { return c == null ? '' : esc(String(c / 100)); };
     return '<h3 class="ta-h3">' + t('priceH') + '</h3><form class="ta-form ta-row ta-rule" data-price="' + esc(l.slug) + '">' +
       '<label>' + t('priceSeason') + '<input class="ctl ta-sm" name="season_price" inputmode="decimal" value="' + dol(p.season_price) + '"></label>' +
       '<label class="ta-switch"><input type="checkbox" name="plan_on"' + (p.plan_on ? ' checked' : '') + '> ' + t('pricePlanOn') + '</label>' +
@@ -1387,7 +1387,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       if (S.tab === 'req' && S.reqId) more.push(api('/replacements?id=' + S.reqId).then(function (r) { S.req = r.ok ? (r.data.replacements || [])[0] || null : null; S.reqMissing = !S.req; }));
       if (S.tab === 'person' && S.personId) more.push(api('/people/' + S.personId).then(function (r) { S.person = r.ok ? r.data : null; S.personMissing = !r.ok; }));
       if (S.seasonId && S.tab === 'pay' && S.league) more.push(api('/payments?season=' + S.seasonId + '&league=' + encodeURIComponent(S.league)).then(function (r) { S.pay = r.ok ? r.data : null; }));
-      if (S.tab === 'setup' || S.tab === 'pay') more.push(api('/league-prices').then(function (r) { S.prices = r.ok ? r.data.prices : []; }));
+      if (S.tab === 'setup' || S.tab === 'pay') more.push(api('/league-prices').then(function (r) { S.prices = r.ok ? r.data.prices : []; S.defaultPrice = r.ok ? r.data.default_price : null; }));
       if (S.tab === 'teams' && S.teamId) more.push(api('/lineups?team=' + S.teamId).then(function (r) { S.teamSched = r.ok ? r.data : null; }));
       if (S.tab === 'captain' && S.capId) more.push(api('/captains/' + S.capId).then(function (r) { S.cap = r.ok ? r.data : null; S.capMissing = !r.ok; }));
       if (S.seasonId && ['teams', 'setup', 'subs', 'cal', 'overview', 'config', 'captain'].indexOf(S.tab) >= 0) more.push(api('/teams?season=' + S.seasonId).then(function (r) { S.teams = r.data.teams || []; S.rules = r.data.rules || []; S.teamsLoaded = true; }));
