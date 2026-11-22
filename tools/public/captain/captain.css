@@ -142,6 +142,12 @@
 .cp-gacts { display: inline-flex; gap: 6px; flex: none; }
 .cp-lu-g { min-height: 30px; padding: 0 10px; font-size: 14px; }
 @media (max-width: 600px) { .cp-gacts { margin-left: auto; } }
-/* payments in the roster (owner, 2026-11-22): a tag on who still owes, one line on top */
-.cp-owe { margin-left: 6px; font-size: 12px; padding: 0 7px; vertical-align: 1px; }
-.cp-owesum { margin: 0 0 8px; color: var(--warn, #f0a500); font-size: 14px; }
+/* payments in the roster (owner, 2026-11-22): a small "$" icon on who still owes, a "$ n" chip by the title; details on hover or tap */
+.cp-rh { display: flex; align-items: center; gap: 10px; }
+.cp-pi { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin-right: 6px; border: 1px solid currentColor; border-radius: 999px; background: none; font: 700 12px/1 var(--f-text); cursor: pointer; vertical-align: 1px; }
+.cp-pi-due { color: var(--bad); }
+.cp-pi-partial { color: var(--warn, #f0a500); }
+.cp-pi-sum { color: var(--warn, #f0a500); height: 24px; padding: 0 9px; font-size: 13px; }
+.cp-pi[aria-expanded="true"] { background: color-mix(in srgb, currentColor 18%, transparent); }
+.cp-owesum { margin: 8px 0; color: var(--warn, #f0a500); font-size: 14px; }
+.cp-paydet td { padding-top: 0 !important; color: var(--muted); font-size: 13px; }

@@ -1363,8 +1363,13 @@ await wait(100);
 assert.ok(cd.querySelector('.cp-team') && cd.querySelector('.cp-team').textContent.includes(retro.teams.find((x) => x.abb === mainAbb).name), 'signed in: straight on their team');
 assert.ok(!cd.querySelector('.cp-switch'), 'one team: no team switcher, no sections, no setup');
 assert.ok(cd.querySelector('.cp-ask a.ta-btn[href^="#match/"]') && !cd.querySelector('.cp-ask [data-act="ask"]'), 'one main action: the next game\'s lineup (declaring is from there, or a game\'s "Remplacement…")');
-assert.ok(!cd.querySelector('.cp-pays') && cd.querySelector('.cp-roster .cp-owesum') && cd.querySelector('.cp-roster td .cp-owe'), 'captain: payments in the roster (owner, 2026-11-22): a tag on who still owes, one line on top; no separate panel');
-assert.equal(cd.querySelectorAll('.cp-roster .cp-owe').length, (await DB.prepare("SELECT COUNT(*) AS n FROM rosters r JOIN inscriptions i ON i.person_id = r.person_id AND i.league = r.league AND i.season_id = r.season_id WHERE r.team_id = ? AND r.removed_at IS NULL AND i.amount > (SELECT COALESCE(SUM(y.amount), 0) FROM payments y WHERE y.inscription_id = i.id)").bind(teamA).first('n')), 'a tag only for who still owes (nothing once paid)');
+assert.ok(!cd.querySelector('.cp-pays') && cd.querySelector('.cp-roster .cp-rh [data-paysum]') && cd.querySelector('.cp-roster td [data-payi]'), 'captain: payments in the roster as icons (owner, 2026-11-22): a "$" on who still owes, a "$ n" chip by the title; no separate panel');
+assert.ok(cd.querySelector('.cp-roster .cp-owesum').hidden, 'the total line is closed at first (takes no room)');
+{ const ic = cd.querySelector('.cp-roster td [data-payi]'); ic.click(); const det = ic.closest('tr').nextElementSibling;
+  assert.ok(det && det.classList.contains('cp-paydet') && det.textContent.includes('$'), 'a tap on the icon opens the details under the row');
+  ic.click(); assert.ok(!cd.querySelector('.cp-paydet'), 'a second tap closes them');
+  cd.querySelector('[data-paysum]').click(); assert.ok(!cd.querySelector('.cp-roster .cp-owesum').hidden, 'the chip opens the total line'); cd.querySelector('[data-paysum]').click(); }
+assert.equal(cd.querySelectorAll('.cp-roster [data-payi]').length, (await DB.prepare("SELECT COUNT(*) AS n FROM rosters r JOIN inscriptions i ON i.person_id = r.person_id AND i.league = r.league AND i.season_id = r.season_id WHERE r.team_id = ? AND r.removed_at IS NULL AND i.amount > (SELECT COALESCE(SUM(y.amount), 0) FROM payments y WHERE y.inscription_id = i.id)").bind(teamA).first('n')), 'an icon only for who still owes (nothing once paid)');
 assert.equal(cd.querySelectorAll('.bd-req').length, (await DB.prepare('SELECT COUNT(*) AS n FROM replacements WHERE team_id = ? AND captain_hidden_at IS NULL').bind(teamA).first('n')), 'their team’s requests (not the hidden ones)');
 assert.equal(cd.querySelectorAll('.cp-game .bd-req').length, cd.querySelectorAll('.bd-req').length, 'every request is under its game (the timeline)');
 assert.ok(!cd.querySelector('.cp-game .bd-req b.bd-game'), 'under a game, the card does not repeat the game');

@@ -25,7 +25,7 @@
       sxM: 'H', sxF: 'F', nextTag: 'Prochain', myGames: 'Mes matchs et mes remplacements', pastReqs: 'Matchs passés avec des remplacements ({n})', noGames: 'Aucun match à venir pour votre équipe.',
       offSchedule: 'hors calendrier', hideReq: 'Masquer', hidden: 'Remplacement masqué.', gPay: 'masse {a} / {c}', gPayNoCap: 'masse {a}',
       gSum: '{s} J · {g} G', gSubs: '{n} remplaçant(s)', gAbs: '{n} absent(s)',
-      owesSum: 'Paiements : {n} joueur(s) doivent encore {b} au total.', payTip: 'Montant {a} · payé {p}', pst_due: 'Doit {b}', pst_partial: 'Reste {b}', pst_paid: 'Payé', pst_noprice: 'Montant à fixer', myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
+      owesSum: 'Paiements : {n} joueur(s) doivent encore {b} au total.', payTip: 'montant {a}, payé {p}', planK: 'forfait {k}/{n}', payLast: 'dernier paiement {d}', pst_due: 'Doit {b}', pst_partial: 'Reste {b}', pst_paid: 'Payé', pst_noprice: 'Montant à fixer', myReqs: 'Mes remplacements', noReqs: 'Aucun remplacement pour le moment.', roster: 'Alignement', emptyRoster: 'L’alignement n’est pas encore entré.',
       payroll: 'Masse salariale : {v}', payrollCap: 'Masse salariale : {v} / plafond {c}', posS: 'Joueur', posG: 'Gardien',
       noTeams: 'Aucune équipe pour le moment. Un administrateur de la ligue doit vous donner l’accès à votre équipe.',
       sent: 'Remplacement déclaré. Un administrateur va le valider.', cancelReq: 'Annuler le remplacement', confirmCancel: 'Annuler ce remplacement ? Il sera supprimé.', cancelled: 'Remplacement annulé et supprimé.',
@@ -56,7 +56,7 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       sxM: 'M', sxF: 'W', nextTag: 'Next', myGames: 'My games and replacements', pastReqs: 'Past games with replacements ({n})', noGames: 'No upcoming game for your team.',
       offSchedule: 'not in the schedule', hideReq: 'Hide', hidden: 'Replacement hidden.', gPay: 'payroll {a} / {c}', gPayNoCap: 'payroll {a}',
       gSum: '{s} S · {g} G', gSubs: '{n} replacement(s)', gAbs: '{n} absent',
-      owesSum: 'Payments: {n} player(s) still owe {b} in all.', payTip: 'Amount {a} · paid {p}', pst_due: 'Owes {b}', pst_partial: '{b} left', pst_paid: 'Paid', pst_noprice: 'Amount to set', myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
+      owesSum: 'Payments: {n} player(s) still owe {b} in all.', payTip: 'amount {a}, paid {p}', planK: 'plan {k}/{n}', payLast: 'last payment {d}', pst_due: 'Owes {b}', pst_partial: '{b} left', pst_paid: 'Paid', pst_noprice: 'Amount to set', myReqs: 'My replacements', noReqs: 'No replacement yet.', roster: 'Roster', emptyRoster: 'The roster is not entered yet.',
       payroll: 'Payroll: {v}', payrollCap: 'Payroll: {v} / cap {c}', posS: 'Skater', posG: 'Goalie',
       noTeams: 'No team yet. A league admin must give you access to your team.',
       sent: 'Replacement declared. An admin will validate it.', cancelReq: 'Cancel the replacement', confirmCancel: 'Cancel this replacement? It will be deleted.', cancelled: 'Replacement cancelled and deleted.',
@@ -312,16 +312,24 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       (list.length ? '<div class="tbl-wrap"><table class="tbl cp-players"><thead><tr>' + sh('name', t('name')) + '<th class="cp-pl-teams">' + t('teamsCol') + '</th><th>' + t('sexShort') + '</th>' + sh('rank', t('rankCol'), 'num') + sh('sal', pos === 'g' ? t('colG') : t('colS'), 'num') + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<p class="empty">' + t('noPlayersMatch') + '</p>');
   }
-  /* Payments live in the roster (owner, 2026-11-22: a separate panel repeated the roster for nothing; payments are cleared fast,
-     and when they are not, they matter): a small tag on a player who still owes, one line on top when someone does; nothing once paid. */
+  /* Payments live in the roster, as small icons (owner, 2026-11-22: the info exists but takes no room; most of the season nobody
+     owes anything): a "$" before the name of a player who still owes (red: nothing paid; orange: part paid), one "$ n" chip by the
+     title. Hover shows the details; a tap opens them in one line under the row (no new page, no re-render). Nothing once paid. */
   var owes = function (r) { return r.pay && (r.pay.status === 'due' || r.pay.status === 'partial'); };
-  var payTag = function (r) { return owes(r) ? ' <span class="ta-pst ta-pst-' + r.pay.status + ' cp-owe" title="' + esc(t('payTip', { a: cad(r.pay.amount), p: cad(r.pay.paid) })) + '">' + esc(t('pst_' + r.pay.status, { b: cad(r.pay.balance) })) + '</span>' : ''; };
+  var payLine = function (r) {
+    var y = r.pay, last = y.payments && y.payments.length ? y.payments[y.payments.length - 1] : null;
+    return [t('pst_' + y.status, { b: cad(y.balance) }), t('payTip', { a: cad(y.amount), p: cad(y.paid) })]
+      .concat(y.seasons > 1 ? [t('planK', { k: y.k, n: y.seasons })] : [])
+      .concat(last ? [t('payLast', { d: new Date(last.created_at * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { day: 'numeric', month: 'short', timeZone: 'America/Toronto' }) })] : []).join(' · ');
+  };
+  var payIcon = function (r) { return owes(r) ? '<button type="button" class="cp-pi cp-pi-' + r.pay.status + '" data-payi aria-expanded="false" title="' + esc(payLine(r)) + '" aria-label="' + esc(payLine(r)) + '" data-line="' + esc(payLine(r)) + '">$</button>' : ''; };
   function rosterPanel(tm) {
-    var due = tm.roster.filter(owes), left = due.reduce(function (s, r) { return s + Math.max(0, r.pay.balance || 0); }, 0);
+    var due = tm.roster.filter(owes), left = due.reduce(function (s, r) { return s + Math.max(0, r.pay.balance || 0); }, 0), sum = t('owesSum', { n: due.length, b: cad(left) });
     var rows = window.LDBuilder.rosterOrder(tm.roster, function (r) { return r.salary; }).map(function (r) {
-      return '<tr><td>' + person(tm, r) + payTag(r) + '</td><td class="cp-sx">' + esc(r.sex === 'f' ? t('sxF') : r.sex === 'm' ? t('sxM') : '—') + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.salary)) + '</td></tr>'; }).join('');
-    return '<section class="cp-panel cp-roster"><h2 class="cp-ph">' + t('roster') + '</h2>' +
-      (due.length ? '<p class="cp-owesum">' + esc(t('owesSum', { n: due.length, b: cad(left) })) + '</p>' : '') +
+      return '<tr><td>' + payIcon(r) + person(tm, r) + '</td><td class="cp-sx">' + esc(r.sex === 'f' ? t('sxF') : r.sex === 'm' ? t('sxM') : '—') + '</td><td>' + esc(r.pos === 'g' ? t('posG') : t('posS')) + '</td><td class="num">' + esc(money(r.salary)) + '</td></tr>'; }).join('');
+    return '<section class="cp-panel cp-roster"><div class="cp-rh"><h2 class="cp-ph">' + t('roster') + '</h2>' +
+      (due.length ? '<button type="button" class="cp-pi cp-pi-sum" data-paysum aria-expanded="false" title="' + esc(sum) + '" aria-label="' + esc(sum) + '">$ ' + due.length + '</button>' : '') + '</div>' +
+      (due.length ? '<p class="cp-owesum" hidden>' + esc(sum) + '</p>' : '') +
       (rows ? '<table class="tbl ta-roster"><tbody>' + rows + '</tbody></table>' : '<p class="note">' + t('emptyRoster') + '</p>') +
       (tm.rules && tm.rules.notes ? '<p class="note">' + esc(tm.rules.notes) + '</p>' : '') + '</section>';
   }
@@ -469,6 +477,17 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   document.addEventListener('toggle', function (e) { var k = e.target && e.target.getAttribute && e.target.getAttribute('data-game-key'); if (k) S.openGames[k] = e.target.open; }, true);
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
+  // the payment icons of the roster: a tap opens (or closes) the details in place
+  document.addEventListener('click', function (e) {
+    var i = e.target.closest && e.target.closest('[data-payi],[data-paysum]');
+    if (!i) return;
+    var open = i.getAttribute('aria-expanded') !== 'true';
+    i.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (i.hasAttribute('data-paysum')) { var p = i.closest('.cp-roster').querySelector('.cp-owesum'); if (p) p.hidden = !open; return; }
+    var tr = i.closest('tr'), nx = tr.nextElementSibling;
+    if (nx && nx.classList.contains('cp-paydet')) nx.remove();
+    if (open) tr.insertAdjacentHTML('afterend', '<tr class="cp-paydet"><td colspan="' + tr.children.length + '">' + esc(i.getAttribute('data-line')) + '</td></tr>');
+  });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-act],[data-team],[data-cancel],[data-hide],[data-ask-game],[data-share],[data-share-go],[data-share-copy],[data-share-close],[data-cpsex],[data-cppos],[data-cpst],[data-cpsort],[data-fpanel],[data-fpanel-close],[data-fclear]');
     if (!b) return;
