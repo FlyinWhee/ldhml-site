@@ -95,6 +95,19 @@ if (data.po) {
     assert.equal(w.document.querySelectorAll('#main .gm .potag').length, poGames.length, 'schedule: every playoff game labelled');
   }
 } else assert.ok(!w.document.querySelector('.nav a[href="#playoffs"]'), 'no playoffs link without playoffs');
+// 2d. desktop nav: Joueurs, Gardiens, Meneurs sit in one "Statistiques" menu (owner, 2026-11-25)
+{
+  const btn = w.document.querySelector('.nav [data-navg]'), sub = w.document.getElementById('navsub');
+  assert.ok(btn && sub && sub.hidden && !w.document.querySelector('.nav a[href="#players"]'), 'stats pages are in the Statistiques menu, closed');
+  assert.deepEqual([...sub.querySelectorAll('a')].map((a) => a.getAttribute('href')), ['#players', '#goalies', '#leaders']);
+  btn.click(); await wait();
+  assert.ok(!sub.hidden && btn.getAttribute('aria-expanded') === 'true', 'the button opens the menu');
+  w.document.body.click(); await wait();
+  assert.ok(sub.hidden, 'a click elsewhere closes it');
+  await go('#goalies');
+  assert.equal(btn.getAttribute('aria-current'), 'page', 'on a stats page the menu button is marked');
+  assert.ok(sub.hidden, 'a new page closes the menu');
+}
 // 3. every internal link found on any page points to a page that exists
 const known = new Set(data.teams.map((t) => 'team-' + t.id));
 data.games.forEach((g) => known.add('game-' + g.id));

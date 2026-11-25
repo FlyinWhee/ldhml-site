@@ -695,6 +695,19 @@
   /* While a league has playoffs, "Séries" comes right after "En direct" (a bit more presence); on phones it takes a main tab and "Meneurs" moves to "Plus". */
   var NAV0 = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
   var navList = function () { return PO.on ? [NAV0[0], ['playoffs', 'playoffs']].concat(NAV0.slice(1)) : NAV0; };
+  /* Desktop: the stats pages sit in one "Statistiques" menu (owner, 2026-11-25: the bar got long), like "Plus" on phones.
+   * The panel (#navsub) is outside .nav (.nav hides its overflow to measure itself, fitNav) and opens under its button. */
+  var NAV_STATS = ['players', 'goalies', 'leaders'];
+  function setNavSub(open) {
+    var p = $('#navsub'), b = document.querySelector('[data-navg]');
+    if (!p || !b) return;
+    if (open) {
+      var r = b.getBoundingClientRect();
+      p.style.left = Math.max(8, Math.min(window.innerWidth - 220, r.left)) + 'px'; p.style.top = r.bottom + 'px';
+    }
+    p.hidden = !open;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
   var TAB_ICONS = {
     live: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M8.1 15.9a5.5 5.5 0 0 1 0-7.8M15.9 8.1a5.5 5.5 0 0 1 0 7.8"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
     standings: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
@@ -727,8 +740,11 @@
   }
 
   function renderChrome() {
+    var subOpen = !!($('#navsub') && !$('#navsub').hidden);   // a live rebuild keeps the stats menu open
     $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + (LG.logo ? '<img class="mk-logo" src="' + LG.logo + '" alt="" width="52" height="44">' : BALL) + '<span><b>LDHML <i>' + esc(LG.short) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
-      '<nav class="nav" aria-label="Main">' + navList().map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
+      '<nav class="nav" aria-label="Main">' + navList().filter(function (n) { return NAV_STATS.indexOf(n[0]) < 0; }).map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') +
+      '<button type="button" class="navg" data-navg aria-expanded="false" aria-controls="navsub">' + t('statsMenu') + '<i aria-hidden="true"></i></button></nav>' +
+      '<div class="navsub" id="navsub" hidden>' + NAV_STATS.map(function (k) { return '<a href="#' + k + '" data-nav="' + k + '">' + t(k) + '</a>'; }).join('') + '</div>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('searchPh') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
       '</div></div>';
     renderTabbar();
@@ -739,6 +755,7 @@
     renderPicker();
     updateFresh();
     fitNav();
+    if (subOpen) setNavSub(true);
   }
 
   /* Desktop: keep the menu on one row. Add .two (second row) only when the links do not fit. */
@@ -748,6 +765,8 @@
     if (window.innerWidth >= 900 && nav.scrollWidth > nav.clientWidth + 1) top.classList.add('two');
   }
   window.addEventListener('resize', fitNav);
+  window.addEventListener('resize', function () { setNavSub(false); });
+  window.addEventListener('scroll', function () { setNavSub(false); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNav);
   var VIEWS = { home: viewHome, playoffs: viewPlayoffs, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, teams: viewTeams, team: viewTeam, player: viewPlayer, game: viewGame };
   function parseRoute() {
@@ -771,7 +790,11 @@
     });
     var mb = document.querySelector('[data-more]');
     if (mb) { if (tabMore().indexOf(navKey) >= 0) mb.setAttribute('aria-current', 'page'); else mb.removeAttribute('aria-current'); }
+    var ng = document.querySelector('[data-navg]');
+    if (ng) { if (NAV_STATS.indexOf(navKey) >= 0) ng.setAttribute('aria-current', 'page'); else ng.removeAttribute('aria-current'); }
     setMore(false);
+    /* a live redraw (keepScroll) leaves the stats menu as it is; a new page closes it */
+    if (!keepScroll) setNavSub(false);
     var title = LG.name;
     if (r.name === 'team' && T[r.id]) title = T[r.id].name + ' | ' + LG.name;
     if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | ' + LG.name;
@@ -848,6 +871,9 @@
   document.addEventListener('click', function (e) {
     var mt = e.target.closest ? e.target.closest('[data-more]') : null;
     if (mt) { setMore(mt.getAttribute('aria-expanded') !== 'true'); return; }
+    var ngb = e.target.closest ? e.target.closest('[data-navg]') : null;
+    if (ngb) { setNavSub(ngb.getAttribute('aria-expanded') !== 'true'); return; }
+    if (!e.target.closest || !e.target.closest('#navsub')) setNavSub(false);
     if (!e.target.closest || !e.target.closest('#more')) setMore(false);
     var el = e.target.closest ? e.target.closest('[data-set],[data-sort],[data-lang],[data-scope],[data-theme-toggle]') : null;
     if (el) {
@@ -896,7 +922,7 @@
       else if (e.key === 'Enter') { var items = document.querySelectorAll('.gs-item'); var pick = items[activeIdx >= 0 ? activeIdx : 0]; if (pick) { e.preventDefault(); location.hash = pick.getAttribute('href'); } }
       else if (e.key === 'Escape') { e.target.value = ''; closeSearch(); }
     }
-    if (e.key === 'Escape') setMore(false);
+    if (e.key === 'Escape') { setMore(false); setNavSub(false); }
   });
   document.addEventListener('error', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.remove(); }, true);
   document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ok'); }, true);

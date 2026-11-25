@@ -642,3 +642,20 @@ a.lgb-l:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 a.potag:hover { filter: brightness(1.08); }
 .sbc-meta .potag, .lv-top .potag { margin: 0 4px 0 0; }
 .po-sec { border-left: 3px solid var(--ball); padding-left: 12px; }
+
+/* Desktop: "Statistiques" groups Joueurs, Gardiens, Meneurs (owner, 2026-11-25), like "Plus" on phones.
+   The button looks like a nav link; the panel opens under it (placed by setNavSub). */
+.nav .navg { position: relative; isolation: isolate; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 0; background: none; cursor: pointer; font: 500 18px/1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; color: var(--panel-mute); white-space: nowrap; }
+.nav .navg::before { content: ""; position: absolute; inset: 0 -3px; z-index: -1; transform: skewX(-11deg); background: transparent; transition: background .15s; }
+.nav .navg i { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; transition: transform .15s; }
+.nav .navg[aria-expanded="true"] i { transform: rotate(180deg); }
+.nav .navg:hover, .nav .navg[aria-expanded="true"] { color: var(--panel-ink); }
+.nav .navg[aria-current="page"] { color: var(--on-ball); }
+.nav .navg[aria-current="page"]::before { background: var(--ball); }
+.nav .navg:focus-visible { outline: 2px solid var(--ball); outline-offset: -2px; }
+.navsub { position: fixed; z-index: 45; min-width: 200px; padding: 6px; border-radius: 3px; background: var(--panel); border: 1px solid var(--panel-line); box-shadow: 0 8px 28px rgba(0, 0, 0, .35); }
+.navsub[hidden] { display: none; }
+.navsub a { display: block; padding: 11px 14px; border-radius: 2px; font: 500 18px/1 var(--f-display); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; color: var(--panel-ink); }
+.navsub a:hover { background: rgba(255, 91, 20, .10); }
+.navsub a[aria-current="page"] { color: var(--on-ball); background: var(--ball); }
+@media (max-width: 899px) { .navsub { display: none !important; } }
