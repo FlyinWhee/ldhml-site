@@ -13,7 +13,7 @@ for (const lg of cfg.leagues) {
   const raw = rawAll[lg.slug];
   if (!raw) continue;
   const old = await readJson(path.join(DATA_DIR, lg.slug, 'box.json'));
-  const { problems, boxSaved, out } = assemble(raw, lg, cfg, old);
+  const { problems, boxSaved, out } = assemble(raw, lg, cfg, old, await readJson(path.join(DATA_DIR, lg.slug, 'playoffs.json')));
   if (problems.length) { console.error(`${lg.slug}: not saved (${problems.join('; ')})`); continue; }
   await saveLeague(lg.slug, out);
   console.log(`${lg.slug}: ${out.teams.length} teams, ${out.games.length} games, ${out.players.length} players, ${out.goalies.length} goalies, ${boxSaved} box scores.`);

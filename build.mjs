@@ -109,6 +109,13 @@ for (const lg of cfg.leagues) {
   const data = {};
   try { for (const n of names) data[n] = JSON.parse(await read(`data/${lg.slug}/${n}.json`)); }
   catch { console.warn(`No data for ${lg.slug}. Run "npm run fetch" first. League skipped.`); continue; }
+  // The playoffs (optional): data/<slug>/playoffs.json, only when it is of the playoff season of leagues.json.
+  // Team ids and codes in it are already those of the regular season (shared/refresh.js, assemblePlayoffs).
+  data.po = null;
+  try {
+    const po = JSON.parse(await read(`data/${lg.slug}/playoffs.json`));
+    if (cfg.playoffs && po?.meta?.seasonId === cfg.playoffs.seasonId) data.po = po;
+  } catch { /* no playoffs for this league */ }
   leagues.push({ lg, data });
 }
 if (!leagues.length) throw new Error('No league data found in data/<slug>/');
@@ -137,6 +144,7 @@ const reg = JSON.parse(await read('registry/people.json').catch(() => '{"next":1
 const { people, missing } = peopleIndex(cfg, leagues, reg, nice);
 if (missing.length) console.warn(`${missing.length} people are not in registry/people.json yet (temporary ids). Run "npm run registry".`);
 const personByNid = new Map(Object.values(people).map((p) => [p.nid, p]));
+const regByNid = new Map((reg?.people ?? []).map((p) => [p.nid, p]));
 
 // ---- home page data: a small summary of each league ----
 // Teams carry id, code, name and logo, so every page can show the badge, the colour and a link (docs/presentation.md).
@@ -150,7 +158,10 @@ const summary = leagues.map(({ lg, data }) => {
     teamList: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), logo: t.logo })),
     top: [...data.teams].sort((a, b) => a.pos - b.pos).slice(0, 3).map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name), pos: t.pos, w: t.w, l: t.l, t: t.t, pts: t.pts, gp: t.gp })),
     scorer: scorer && scorer.p > 0 ? { id: personByNid.get(scorer.nid)?.id, name: nice(scorer.name), abb: scorer.teams[0], p: scorer.p } : null,
-    upcoming: data.games.filter((g) => !(g.as != null && g.hs != null) && !g.cancelled).map((g) => ({ date: g.date, time: g.time, away: teamName[g.away]?.abb, home: teamName[g.home]?.abb })),
+    // the playoff games too (po: true): the playoffs are part of the season story
+    upcoming: [...data.games, ...(data.po?.games ?? []).map((g) => ({ ...g, po: true }))].filter((g) => !(g.as != null && g.hs != null) && !g.cancelled)
+      .map((g) => ({ date: g.date, time: g.time, away: teamName[g.away]?.abb, home: teamName[g.home]?.abb, ...(g.po ? { po: true } : {}) })),
+    playoffs: data.po?.games?.length ? { games: data.po.games.length, played: data.po.games.filter((g) => g.as != null && g.hs != null).length } : null,
     fetchedAt: data.meta.fetchedAt
   };
 });
@@ -171,6 +182,14 @@ const sectionData = (s) => ({
 // League page: maps from NBHPA ids to our ids, and where else each person plays.
 const leagueIds = (lg, data) => {
   const ids = { pids: {}, nids: {}, who: {} };
+  // playoff rows too: a playoff player_id is an alias of the same person (a person seen only in the playoffs: the registry)
+  for (const row of [...(data.po?.players ?? []), ...(data.po?.goalies ?? [])]) {
+    const r = regByNid.get(row.nid);
+    if (!r) continue;
+    ids.nids[r.nid] = r.id;
+    for (const pid of r.pids) ids.pids[pid] = r.id;
+    ids.who[r.id] ??= { lg: [], xs: [] };
+  }
   for (const row of [...data.players, ...data.goalies]) {
     const p = personByNid.get(row.nid);
     if (!p) continue;
@@ -216,7 +235,12 @@ for (const out of outDirs) {
     const registry = s.leagues.map(({ lg, data }) => ({ slug: lg.slug, path: pathOf(lg), name: lg.name, short: lg.short, theme: lg.theme, logo: lg.logo,
       teams: data.teams.map((t) => ({ id: t.id, abb: t.abb, name: nice(t.name) })) }));
     for (const { lg, data } of s.leagues) {
-      const D = { ...data, league: { slug: lg.slug, path: pathOf(lg), theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null },
+      // D.po: the playoff games and box scores (the lists are only used for the ids above)
+      // nb: the NBHPA playoff teams (their own ids and codes), so the live page can read the playoff schedule and map it
+      const inv = Object.fromEntries(Object.entries(data.po?.abbMap ?? {}).map(([k, v]) => [v, k]));
+      const po = data.po ? { meta: { ...data.po.meta, name: cfg.playoffs.seasonName }, games: data.po.games, box: data.po.box, teamMap: data.po.teamMap,
+        nb: (data.po.teams ?? []).map((t) => ({ id: t.nbhpaId, abb: inv[t.abb] || t.abb })) } : null;
+      const D = { ...data, po, league: { slug: lg.slug, path: pathOf(lg), theme: lg.theme, short: lg.short, name: lg.name, logo: lg.logo ? logos[lg.logo] : null },
         section: { key: s.key, path: s.path, name: s.name }, sections: sectionLinks, registry, ids: leagueIds(lg, data), base: '../', root: '../../' };
       const frag = fill(leagueTpl, leagueCss, leagueJs, safe(D));
       const html = page(frag, { title: `${lg.name} | ${cfg.seasonName}`, theme: lg.theme, icon: lg.logo ? icons[lg.logo] : null, description: `Classement, calendrier, feuilles de match et statistiques de ${lg.name}, hockey balle.`, pwa: isArtifact ? null : { up: '../../', icon: lg.logo || 'hub', shortName: `LDHML - ${lg.short}` } });

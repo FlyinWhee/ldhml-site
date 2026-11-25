@@ -29,7 +29,7 @@
       confirmDeleteCap: 'Supprimer définitivement {n} ? Le compte, ses accès (toutes les saisons) et ses données personnelles dans le journal seront effacés. Impossible d’annuler.',
       confirmDeleteSeason: 'Supprimer la saison {n} ? Impossible d’annuler.', e_season_in_use: 'Des capitaines ont encore un accès actif dans cette saison. Retirez ces accès d’abord.',
       e_email: 'Adresse courriel invalide.', e_code: 'Code invalide ou expiré.', e_session: 'Votre session a expiré. Reconnectez-vous.',
-      e_season: 'Saison invalide : un nom est requis, et le no NBHPA doit être un nombre.', e_season_exists: 'Cette saison existe déjà.',
+      e_season: 'Saison invalide : un nom est requis, et les no NBHPA (saison, séries) doivent être des nombres différents.', e_season_exists: 'Cette saison existe déjà.',
       e_captain: 'Capitaine invalide : un nom et un courriel sont requis.', e_captain_exists: 'Un capitaine a déjà ce courriel.', e_access: 'Accès invalide.',
       e_no_season_data: 'Pas de données d’équipes pour cette saison.', e_team: 'Équipe introuvable.', e_access_exists: 'Ce capitaine a déjà cet accès.',
       e_server: 'Erreur du serveur. Réessayez.', e_origin: 'Requête refusée.', e_net: 'Le serveur ne répond pas.',
@@ -74,7 +74,7 @@
       confirmDeleteCap: 'Delete {n} for good? The account, its access (every season) and its personal data in the log will be erased. This cannot be undone.',
       confirmDeleteSeason: 'Delete the {n} season? This cannot be undone.', e_season_in_use: 'Captains still have active access in this season. Remove that access first.',
       e_email: 'Invalid email address.', e_code: 'Invalid or expired code.', e_session: 'Your session expired. Sign in again.',
-      e_season: 'Invalid season: a name is required, and the NBHPA no. must be a number.', e_season_exists: 'This season already exists.',
+      e_season: 'Invalid season: a name is required, and the NBHPA nos. (season, playoffs) must be different numbers.', e_season_exists: 'This season already exists.',
       e_captain: 'Invalid captain: a name and an email are required.', e_captain_exists: 'A captain already has this email.', e_access: 'Invalid access.',
       e_no_season_data: 'No team data for this season.', e_team: 'Team not found.', e_access_exists: 'This captain already has this access.',
       e_server: 'Server error. Try again.', e_origin: 'Request refused.', e_net: 'The server does not answer.',
@@ -167,6 +167,10 @@ demoTitle: 'Démo', demoLede: 'Version de démonstration, en lecture seule : on 
       rf_base: 'Départ : commit {sha} de {repo} ({branch}).', rf_baseErr: 'Impossible de lire le dépôt GitHub ({error}).',
       rf_notConfigured: 'Pas encore configuré : le Worker n’a pas le secret GITHUB_TOKEN (docs/tools.md).',
       rf_league: '{lg} : lecture de NBHPA…', rf_step_standings: 'classement', rf_step_players: 'statistiques des joueurs', rf_step_goalies: 'statistiques des gardiens', rf_step_schedule: 'calendrier',
+      rf_step_po_standings: 'séries : classement', rf_step_po_players: 'séries : statistiques des joueurs', rf_step_po_goalies: 'séries : statistiques des gardiens', rf_step_po_schedule: 'séries : calendrier',
+      rf_poSeason: 'Séries : saison NBHPA no {no} (Configuration, la saison).', rf_poOff: 'Séries : plus de saison de séries (la saison NBHPA no {no} est retirée du site).',
+      rf_poOk: '{lg}, séries : {games} matchs, {box} sommaires.', rf_poKept: '{lg}, séries : non lues, les données en place restent.',
+      poId: 'No de saison NBHPA des séries', poIdHint: 'Facultatif. Les séries ont leur propre saison NBHPA (exemple : « LDHML AUTOMNE 2026 SÉRIES »). Le site public les montre avec cette saison après la prochaine mise à jour des données du site public.', poShort: 'séries {n}', e_season_po: 'Le no des séries doit être un nombre, et différent du no de la saison.',
       rf_step_recaps: '{n} sommaires de match à lire (nouveaux matchs, et matchs lus moins de 6 h après leur début)', rf_step_recap: 'sommaire {i}/{n} : match {id} ({date})', rf_warn: '{msg}',
       rf_leagueOk: '{lg} : {teams} équipes, {games} matchs, {players} joueurs, {goalies} gardiens, {box} sommaires.',
       rf_refused: '{lg} : refusé, les données en place restent ({problems}).', rf_leagueErr: '{lg} : erreur ({msg}). Les données en place restent.',
@@ -284,6 +288,10 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       rf_base: 'Start: commit {sha} of {repo} ({branch}).', rf_baseErr: 'Cannot read the GitHub repository ({error}).',
       rf_notConfigured: 'Not set up yet: the Worker has no GITHUB_TOKEN secret (docs/tools.md).',
       rf_league: '{lg}: reading NBHPA…', rf_step_standings: 'standings', rf_step_players: 'player stats', rf_step_goalies: 'goalie stats', rf_step_schedule: 'schedule',
+      rf_step_po_standings: 'playoffs: standings', rf_step_po_players: 'playoffs: player stats', rf_step_po_goalies: 'playoffs: goalie stats', rf_step_po_schedule: 'playoffs: schedule',
+      rf_poSeason: 'Playoffs: NBHPA season no. {no} (Setup, the season).', rf_poOff: 'Playoffs: no playoff season any more (NBHPA season no. {no} leaves the site).',
+      rf_poOk: '{lg}, playoffs: {games} games, {box} box scores.', rf_poKept: '{lg}, playoffs: not read, the saved data stays.',
+      poId: 'NBHPA playoff season no.', poIdHint: 'Optional. The playoffs have their own NBHPA season (for example “LDHML AUTOMNE 2026 SÉRIES”). The public site shows them with this season after the next public site data refresh.', poShort: 'playoffs {n}', e_season_po: 'The playoff no. must be a number, and not the season no.',
       rf_step_recaps: '{n} box scores to read (new games, and games read less than 6 h after their start)', rf_step_recap: 'box score {i}/{n}: game {id} ({date})', rf_warn: '{msg}',
       rf_leagueOk: '{lg}: {teams} teams, {games} games, {players} players, {goalies} goalies, {box} box scores.',
       rf_refused: '{lg}: refused, the current data stays ({problems}).', rf_leagueErr: '{lg}: error ({msg}). The current data stays.',
@@ -803,7 +811,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
   }
   function viewConfig() {
     var s = curSeason();
-    var seasonRows = S.seasons.map(function (x) { return '<tr' + (x.id === S.seasonId ? ' class="ta-cur"' : '') + '><td><b>' + esc(x.name) + '</b></td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td>' +
+    var seasonRows = S.seasons.map(function (x) { return '<tr' + (x.id === S.seasonId ? ' class="ta-cur"' : '') + '><td><b>' + esc(x.name) + '</b></td><td class="num" data-label="' + esc(t('nbhpaId')) + '">' + esc(x.nbhpa_season_id || '—') + (x.nbhpa_playoff_season_id ? '<br><small>' + esc(t('poShort', { n: x.nbhpa_playoff_season_id })) + '</small>' : '') + '</td><td data-label="' + esc(t('status')) + '">' + esc(t('st_' + x.status)) + '</td>' +
       '<td class="ta-acts"><button type="button" class="lnk ta-linkbtn" data-edit-season="' + x.id + '">' + t('edit') + '</button><button type="button" class="ta-del" data-delete-season="' + x.id + '" data-name="' + esc(x.name) + '">' + t('del') + '</button></td></tr>'; }).join('');
     var seasons = '<section class="sec"><div class="sec-h ta-sec-h"><h2>' + t('seasons') + '</h2><button type="button" class="ta-btn ta-btn-sm" data-act="season-new">+ ' + t('newSeason') + '</button></div><p class="note">' + t('seasonHint') + '</p>' +
       (S.seasons.length ? '<div class="tbl-wrap"><table class="tbl ta-tbl"><thead><tr><th>' + t('name') + '</th><th class="num">' + t('nbhpaShort') + '</th><th>' + t('status') + '</th><th></th></tr></thead><tbody>' + seasonRows + '</tbody></table></div>' : '<p class="empty">' + t('noSeasons') + '</p>') + '</section>';
@@ -1261,6 +1269,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
       return { title: t('newSeason'), body: '<form id="f-season" class="ta-form ta-col">' +
         '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="60" value="' + esc(known ? '' : (d.seasonName || '')) + '"></label>' +
         '<label>' + t('nbhpaId') + '<input class="ctl" name="nbhpa" inputmode="numeric" value="' + esc(known ? '' : (d.seasonId || '')) + '"></label>' +
+        '<label>' + t('poId') + '<input class="ctl" name="nbhpa_po" inputmode="numeric" value=""></label><p class="note">' + t('poIdHint') + '</p>' +
         '<label>' + t('status') + statusSelect(S.seasons.some(function (x) { return x.status === 'active'; }) ? 'upcoming' : 'active') + '</label>' +
         '<p class="note">' + t('seasonHint') + ' ' + t('liveHint') + '</p>' + footer(t('create')) + '</form>' };
     }
@@ -1268,6 +1277,7 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     if (se) return { title: t('editSeason'), body: '<form class="ta-form ta-col" data-edit-season-f="' + se.id + '">' +
       '<label>' + t('name') + '<input class="ctl" name="name" required maxlength="60" value="' + esc(se.name) + '"></label>' +
       '<label>' + t('nbhpaId') + '<input class="ctl" name="nbhpa" inputmode="numeric" value="' + esc(se.nbhpa_season_id || '') + '"></label>' +
+      '<label>' + t('poId') + '<input class="ctl" name="nbhpa_po" inputmode="numeric" value="' + esc(se.nbhpa_playoff_season_id || '') + '"></label><p class="note">' + t('poIdHint') + '</p>' +
       '<label>' + t('status') + statusSelect(se.status) + '</label><p class="note">' + t('liveHint') + '</p>' + footer() + '</form>' };
     return null;
   }
@@ -1448,11 +1458,11 @@ demoTitle: 'Demo', demoLede: 'Demo version, read only: you can see everything, n
     } else if (f.hasAttribute('data-edit-season-f')) {
       var sid = Number(f.getAttribute('data-edit-season-f')), live = S.seasons.filter(function (x) { return x.status === 'active' && x.id !== sid; })[0];
       if (v('status') === 'active' && live && !window.confirm(t('confirmActivate', { n: v('name'), o: live.name }))) return;
-      api('/seasons/' + sid, 'POST', { name: v('name'), nbhpa_season_id: v('nbhpa'), status: v('status') }).then(function (r) { done(r); });
+      api('/seasons/' + sid, 'POST', { name: v('name'), nbhpa_season_id: v('nbhpa'), nbhpa_playoff_season_id: v('nbhpa_po'), status: v('status') }).then(function (r) { done(r); });
     } else if (f.id === 'f-season') {
       var live2 = S.seasons.filter(function (x) { return x.status === 'active'; })[0];
       if (v('status') === 'active' && live2 && !window.confirm(t('confirmActivate', { n: v('name'), o: live2.name }))) return;
-      api('/seasons', 'POST', { name: v('name'), nbhpa_season_id: v('nbhpa'), status: v('status') }).then(function (r) { done(r); });
+      api('/seasons', 'POST', { name: v('name'), nbhpa_season_id: v('nbhpa'), nbhpa_playoff_season_id: v('nbhpa_po'), status: v('status') }).then(function (r) { done(r); });
     } else if (f.id === 'f-access') {
       var grant = function (capId) { api('/access', 'POST', { captain_id: capId, team_ref: Number(v('team')) }).then(function (r) { done(r); }); };
       if (v('captain')) { grant(Number(v('captain'))); return; }

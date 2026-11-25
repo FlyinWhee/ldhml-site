@@ -8,8 +8,10 @@
 //   GET  /api/admin/refresh/status?sha=     { status, conclusion, url }       (the Pages build of that commit)
 import { json, fail, readJson, now } from './http.js';
 import { isSuper } from './admins.js';
+import { liveSeason, playoffsOf } from './seasons.js';
 
-const FILE = /^data\/([a-z0-9-]{1,20})\/(meta|teams|games|players|goalies|box)\.json$/;
+const FILE = /^data\/([a-z0-9-]{1,20})\/(meta|teams|games|players|goalies|box|playoffs)\.json$/;
+const NEEDED = 6;   // the six season files of a league; playoffs.json is optional (a league with a playoff season)
 const REGISTRY = 'registry/people.json';
 const MAX_FILE = 2 * 1024 * 1024, MAX_BODY = 12 * 1024 * 1024, GAP_S = 120;   // a publish at most every 2 minutes
 
@@ -39,6 +41,13 @@ function checkLeagueFile(slug, name, v) {
     return null;
   }
   if (name === 'box') return isObj(v) && isObj(v.games) && isObj(v.names) ? null : 'box';
+  if (name === 'playoffs') {
+    // the playoffs may have no game yet; their teams are those of the season (teamMap)
+    if (!isObj(v) || !isObj(v.meta) || !Number.isInteger(v.meta.seasonId) || !ISO.test(String(v.meta.fetchedAt)) || !isObj(v.teamMap)) return 'playoffs';
+    if (!Array.isArray(v.games) || v.games.some((g) => !isObj(g) || !g.id || !g.away || !g.home || !g.date)) return 'playoffs.games';
+    if (!Array.isArray(v.players) || !Array.isArray(v.goalies) || !isObj(v.box) || !isObj(v.box.games) || !isObj(v.box.names)) return 'playoffs';
+    return null;
+  }
   if (!Array.isArray(v) || !v.every(isObj)) return name;
   if (name === 'teams' && (v.length < 2 || v.some((t) => !t.id))) return 'teams';
   if (name === 'games' && (!v.length || v.some((g) => !g.id || !g.away || !g.home || !g.date))) return 'games';
@@ -62,6 +71,25 @@ function checkRegistry(old, reg) {
   return null;
 }
 
+/* The playoffs (owner, 2026-11-25): the admin sets the NBHPA playoff season on the tools season (Configuration). The
+ * refresh reads it with the season, and the publish writes it into leagues.json ("playoffs"), in the same commit, when
+ * leagues.json shows that same season. One line of leagues.json changes; the rest of the file stays as it is. */
+async function wantedPlayoffs(env, cfg) {
+  const s = await liveSeason(env.DB);
+  if (!s || !cfg || s.nbhpa_season_id !== cfg.seasonId) return { same: false };
+  return { same: true, playoffs: playoffsOf(s) };
+}
+export function withPlayoffs(text, po) {
+  const eol = /\r\n/.test(text) ? '\r\n' : '\n';
+  let out = text.replace(/^[ \t]*"playoffs"[ \t]*:.*\r?\n/m, '');
+  if (po) {
+    const line = '  "playoffs": { "seasonId": ' + Number(po.seasonId) + ', "seasonName": ' + JSON.stringify(String(po.seasonName)) + ' },' + eol;
+    if (!/^[ \t]*"seasonName"[ \t]*:.*\r?\n/m.test(out)) return null;
+    out = out.replace(/^([ \t]*"seasonName"[ \t]*:.*\r?\n)/m, (x) => x + line);
+  }
+  try { const c = JSON.parse(out); return JSON.stringify(c.playoffs || null) === JSON.stringify(po || null) ? out : null; } catch { return null; }
+}
+
 export async function publishApi({ req, env, url, path, m, admin, audit }) {
   if (!path.startsWith('/refresh/')) return null;
   if (!isSuper(env, admin)) return fail(403, 'super_only');
@@ -75,7 +103,10 @@ export async function publishApi({ req, env, url, path, m, admin, audit }) {
     const ref = await gh(env, 'GET', '/git/ref/heads/' + branchOf(env));
     if (!ref.ok || !ref.data || !ref.data.object) return fail(502, 'github', { status: ref.status });
     const sha = ref.data.object.sha;
-    return json({ configured: true, repo: repoOf(env), branch: branchOf(env), sha, raw: rawUrl(env, sha), last: lastOut });
+    // the playoff season the refresh must read (from the tools season), when leagues.json shows the same season
+    const cfg = await rawJson(env, sha, 'leagues.json');
+    const want = await wantedPlayoffs(env, cfg);
+    return json({ configured: true, repo: repoOf(env), branch: branchOf(env), sha, raw: rawUrl(env, sha), last: lastOut, ...(want.same ? { playoffs: want.playoffs } : {}) });
   }
 
   if (m === 'GET' && path === '/refresh/status') {
@@ -115,21 +146,32 @@ export async function publishApi({ req, env, url, path, m, admin, audit }) {
     }
     const leagues = Object.keys(byLeague);
     if (!leagues.length) return fail(400, 'no_league');
-    for (const s of leagues) if (byLeague[s].size !== 6) return fail(400, 'incomplete', { league: s });
+    for (const s of leagues) if ([...byLeague[s]].filter((n) => n !== 'playoffs').length !== NEEDED) return fail(400, 'incomplete', { league: s });
+    // leagues.json: the playoff season of the tools season, when it changed
+    const want = await wantedPlayoffs(env, cfg);
+    let playoffsChanged = false;
+    if (want.same && JSON.stringify(cfg.playoffs || null) !== JSON.stringify(want.playoffs || null)) {
+      const r0 = await fetch(rawUrl(env, b.base) + 'leagues.json', { headers: { 'User-Agent': 'ldhml-tools' } });
+      const text = r0.ok ? await withPlayoffs(await r0.text(), want.playoffs) : null;
+      if (!text) return fail(502, 'github_leagues');
+      tree.push({ path: 'leagues.json', mode: '100644', type: 'blob', content: text });
+      playoffsChanged = true;
+    }
 
     // one commit on top of the commit the browser started from; main moved meanwhile = refused (run again)
     const base = await gh(env, 'GET', '/git/commits/' + b.base);
     if (!base.ok) return fail(502, 'github', { step: 'base', status: base.status });
     const t = await gh(env, 'POST', '/git/trees', { base_tree: base.data.tree.sha, tree });
     if (!t.ok) return fail(502, 'github', { step: 'tree', status: t.status });
-    const msg = 'Refresh data cache (' + leagues.join(', ') + ')\n\nFrom the LDHML tools (admin, Données du site public): the steps of npm run fetch:force, run in the browser.';
+    const msg = 'Refresh data cache (' + leagues.join(', ') + ')' + (playoffsChanged ? '; playoff season ' + (want.playoffs ? want.playoffs.seasonId : 'removed') + ' in leagues.json' : '') +
+      '\n\nFrom the LDHML tools (admin, Données du site public): the steps of npm run fetch:force, run in the browser.';
     const c = await gh(env, 'POST', '/git/commits', { message: msg, tree: t.data.sha, parents: [b.base] });
     if (!c.ok) return fail(502, 'github', { step: 'commit', status: c.status });
     const r = await gh(env, 'PATCH', '/git/refs/heads/' + branchOf(env), { sha: c.data.sha, force: false });
     if (!r.ok) return r.status === 422 ? fail(409, 'moved') : fail(502, 'github', { step: 'ref', status: r.status });
     const commitUrl = 'https://github.com/' + repoOf(env) + '/commit/' + c.data.sha;
-    await audit('data.publish', 'github:' + c.data.sha.slice(0, 7), { commit: c.data.sha, url: commitUrl, leagues, registry: REGISTRY in b.files });
-    return json({ ok: true, commit: c.data.sha, url: commitUrl, leagues });
+    await audit('data.publish', 'github:' + c.data.sha.slice(0, 7), { commit: c.data.sha, url: commitUrl, leagues, registry: REGISTRY in b.files, ...(playoffsChanged ? { playoffs: want.playoffs } : {}) });
+    return json({ ok: true, commit: c.data.sha, url: commitUrl, leagues, playoffs: playoffsChanged ? want.playoffs : undefined });
   }
   return fail(404, 'not_found');
 }

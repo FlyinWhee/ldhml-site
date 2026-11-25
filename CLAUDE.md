@@ -14,6 +14,8 @@ working name "Équipes", `/equipes/`). An entry page (`/`) splits into the two s
 leagues and its people. Leagues are at `/<section>/<league>/`. The two sections are kept apart on purpose; links
 between them are for navigation only.
 
+**Playoffs:** NBHPA keeps them in their own season (`leagues.json` "playoffs", set from the tools season). They sit with their season on the league page ("Séries"), never counted in season stats. See `docs/data-formats.md` (`playoffs.json`) and `docs/gotchas.md`.
+
 **People:** each person has **our own id** (`L0001`) in `registry/people.json` (a source of truth, not a cache). The NBHPA
 person id (`nid`) is the foreign key. NBHPA `player_id` values are aliases (one person can have several). A person has one
 *instance* per section they play in. A rank exists **per position** (skater `s`, goalie `g`): the NBHPA rank now, our own

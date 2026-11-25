@@ -30,6 +30,10 @@ export async function syncFromData() {
       try { list = JSON.parse(await readFile(path.join(ROOT, 'data', lg.slug, `${f}.json`), 'utf8')); } catch { continue; }
       for (const p of list) rows.push({ nid: p.nid, pid: p.id, name: p.name, sex: p.sex });
     }
+    // the playoff lists: their player_id values are aliases of the same people
+    let po = null;
+    try { po = JSON.parse(await readFile(path.join(ROOT, 'data', lg.slug, 'playoffs.json'), 'utf8')); } catch { po = null; }
+    for (const p of [...(po?.players ?? []), ...(po?.goalies ?? [])]) rows.push({ nid: p.nid, pid: p.id, name: p.name, sex: p.sex });
   }
   const before = await loadRegistry();
   const res = syncRegistry(before, rows, { since: cfg.seasonName });

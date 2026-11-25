@@ -19,7 +19,7 @@ try {
   console.error(`The tools at ${base} do not answer (${e.message}). Start them (scripts\\tools-dev.bat) or give their address.`);
   process.exit(2);
 }
-console.log(`Public site (leagues.json): ${cfg.seasonName}, NBHPA season ${cfg.seasonId}, ${cfg.leagues.length} leagues.`);
+console.log(`Public site (leagues.json): ${cfg.seasonName}, NBHPA season ${cfg.seasonId}${cfg.playoffs ? ', playoffs ' + cfg.playoffs.seasonId : ''}, ${cfg.leagues.length} leagues.`);
 if (!live) { console.log('Tools: no live season (en cours). Choose one in the admin area: Configuration, Modifier, Statut: En cours.'); process.exit(1); }
 console.log(`Tools live season: ${live.name}, NBHPA season ${live.nbhpa_season_id ?? '(none)'}${live.leagues_off.length ? ', switched off: ' + live.leagues_off.join(', ') : ''}.`);
 
@@ -29,6 +29,11 @@ if (live.nbhpa_season_id !== cfg.seasonId) problems.push(`The NBHPA season diffe
   against the official standings page, delete data/, run npm run fetch:force (at home), npm test, push. See docs/operations.md, "New season".
   If the site is right: in the admin area, make the season with NBHPA no. ${cfg.seasonId} the current one (Configuration, Modifier).`);
 else if (live.name !== cfg.seasonName) problems.push(`Same NBHPA season, other name ("${cfg.seasonName}" on the public site, "${live.name}" in the tools). Make them the same (leagues.json "seasonName", or the season name in Configuration).`);
+// the playoffs: their own NBHPA season, set on the tools season; the admin refresh (Données du site public) writes it into leagues.json
+const poSite = cfg.playoffs?.seasonId ?? null, poTools = live.nbhpa_playoff_season_id ?? null;
+if (live.nbhpa_season_id === cfg.seasonId && poSite !== poTools) problems.push(`The playoff season differs (${poSite ?? 'none'} on the public site, ${poTools ?? 'none'} in the tools).
+  Run the public site data refresh in the admin area (Configuration, Données du site public): it writes the tools value into leagues.json.
+  Or by hand: leagues.json "playoffs": { "seasonId": <no.>, "seasonName": "Séries ${live.name}" } (remove the line for none), then npm run fetch:force, npm test, push.`);
 const shown = cfg.leagues.map((l) => l.slug), off = live.leagues_off.filter((s) => shown.includes(s));
 if (off.length) problems.push(`Leagues switched off this season in the tools but still on the public site: ${off.join(', ')}. Remove them from leagues.json (and their data/<league>/ folder), or switch them back on in Configuration.`);
 

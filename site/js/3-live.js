@@ -10,8 +10,11 @@
   var LEAGUE_ID = String(D.meta.leagueId || '10');
   var POLL = {
     tickMs: 5000, live: 30000, pre: 90000, none: 120000, recap: 120000, timeout: 12000, gap: 1200, gapSmall: 400,
-    ttl: { standings: [600000, 300000], schedule: [900000, 300000], players: [900000, 600000], goalies: [900000, 600000] }
+    ttl: { standings: [600000, 300000], schedule: [900000, 300000], players: [900000, 600000], goalies: [900000, 600000], poSchedule: [900000, 300000] }
   };
+  /* The playoff schedule (D.po: a playoff season in leagues.json): one more request, at the pace of the season schedule,
+   * only on the pages that show games. Playoff stats come from the playoff box scores (no extra list requests). */
+  var PO_NEED = ['home', 'schedule', 'live', 'playoffs', 'team', 'player', 'game'];
   var NEED = {
     home: ['standings', 'schedule'], standings: ['standings', 'schedule'], schedule: ['schedule'], players: ['players'], goalies: ['goalies'],
     leaders: ['players', 'goalies'], team: ['standings', 'schedule', 'players', 'goalies'], player: ['players', 'goalies', 'schedule'], game: ['schedule'], live: ['schedule', 'standings']
@@ -40,8 +43,8 @@
       }, function (e) { clearTimeout(to); throw e; });
     }, gap);
   }
-  var formInit = function (extra) {
-    var p = { season_id: String(D.meta.seasonId), category_id: String(D.meta.categoryId), league_id: LEAGUE_ID };
+  var formInit = function (extra, seasonId) {
+    var p = { season_id: String(seasonId || D.meta.seasonId), category_id: String(D.meta.categoryId), league_id: LEAGUE_ID };
     Object.keys(extra || {}).forEach(function (k) { p[k] = extra[k]; });
     return { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(p).toString() };
   };
@@ -71,6 +74,17 @@
         return setData('games', rows);
       });
     },
+    /* NBHPA gives the playoff teams new ids: map them to the season teams (D.po.teamMap, made by the refresh). */
+    poSchedule: function () {
+      var po = D.po;
+      return http('/sites/site_schedule_include.php?lang=fr', formInit({ view: 'list' }, po.meta.seasonId), POLL.gap, 'text').then(function (html) {
+        var rows = LDParsers.parseSchedule(html, po.nb || []), map = po.teamMap || {};
+        rows.forEach(function (g) { g.away = map[g.away] || g.away; g.home = map[g.home] || g.home; });
+        if (rows.length < po.games.length * 0.8 || rows.some(function (g) { return !g.id || !g.away || !g.home || !g.date; })) throw new Error('poSchedule');
+        if (JSON.stringify(po.games.map(strip)) === JSON.stringify(rows.map(strip))) return false;
+        po.games = rows; LIVE.modelDirty = true; return true;
+      });
+    },
     players: function () {
       return http('/sites/site_stats_players.php?lang=fr', formInit(), POLL.gap, 'text').then(function (html) {
         var rows = LDParsers.parsePlayers(html);
@@ -86,18 +100,30 @@
       });
     }
   };
+  /* the playoff flag is added by the model: compare schedules without it */
+  var strip = function (g) { var o = Object.assign({}, g); delete o.po; return o; };
   function fetchRecap(g) {
     return http('/sites/site_game_recap.php?game_id=' + g.id + '&league_id=' + LEAGUE_ID + '&lang=fr', {}, POLL.gap, 'text').then(function (html) {
       var r = LDParsers.parseRecap(html);
       if (r.game.t.length !== 2) return false;
+      var store = boxStore(g), isPo = store !== D.box;
+      if (isPo) {
+        /* a playoff box score: the team ids and codes of the season (as the refresh does) */
+        var map = D.po.teamMap || {}, abbMap = {};
+        (D.po.nb || []).forEach(function (x) { if (map[x.id] && T[map[x.id]]) abbMap[x.abb] = T[map[x.id]].abb; });
+        r.game.t.forEach(function (bt) { bt.id = map[bt.id] || bt.id; });
+        r.game.goals.forEach(function (go) { go[2] = abbMap[go[2]] || go[2]; });
+        r.game.pens.forEach(function (pe) { pe[2] = abbMap[pe[2]] || pe[2]; });
+      }
       Object.assign(D.box.names, r.names);
-      /* Work out the value of each goal (a goal by a woman counts for 2) from the other games' running totals. */
-      var wbox = { games: Object.assign({}, D.box.games) }; wbox.games[g.id] = r.game;
-      LDParsers.weighGoals(wbox, D.games, D.teams, D.players);
+      /* Work out the value of each goal (a goal by a woman counts for 2) from the other games' running totals.
+       * The playoffs are their own NBHPA season: their running totals start again, so they are weighed on their own. */
+      var wbox = { games: Object.assign({}, store.games) }; wbox.games[g.id] = r.game;
+      LDParsers.weighGoals(wbox, isPo ? D.po.games : D.games, D.teams, D.players);
       var final = played(gameById[g.id] || g) && !liveOf(g.id);
-      var before = JSON.stringify(final ? D.box.games[g.id] : (LIVE.recap[g.id] || {}).game);
+      var before = JSON.stringify(final ? store.games[g.id] : (LIVE.recap[g.id] || {}).game);
       if (before === JSON.stringify(r.game)) return false;
-      if (final) { D.box.games[g.id] = r.game; delete LIVE.recap[g.id]; LIVE.modelDirty = true; }
+      if (final) { store.games[g.id] = r.game; delete LIVE.recap[g.id]; LIVE.modelDirty = true; }
       else LIVE.recap[g.id] = { game: r.game, at: Date.now() };
       return true;
     });
@@ -129,7 +155,7 @@
 
   function route() { return parseRoute(); }
   function staleKinds(onNight) {
-    var r = route(), need = NEED[r.name] || [], now = Date.now();
+    var r = route(), need = (NEED[r.name] || []).concat(D.po && PO_NEED.indexOf(r.name) >= 0 ? ['poSchedule'] : []), now = Date.now();
     return need.filter(function (k) {
       if (LIVE.forced && LIVE.forced[k]) return true;
       return now - (LIVE.fetched[k] || 0) >= POLL.ttl[k][onNight ? 1 : 0];
@@ -141,16 +167,17 @@
   function boxMissing(g) {
     if (!played(g) || g.cancelled || liveOf(g.id)) return false;
     if (BX.fresh[g.id]) return false;
-    var b = D.box.games[g.id];
+    var b = boxStore(g).games[g.id];
     if (!b) return true;
     /* cached before the goal values were kept (older build) */
     if ((b.goals || []).some(function (go) { return go.length < 6; })) return true;
     /* a box saved in the first hours after the game may be incomplete; after that it is final (same rule as the scraper) */
-    return LDParsers.boxUnsettled(g, D.meta.fetchedAt);
+    return LDParsers.boxUnsettled(g, g.po ? D.po.meta.fetchedAt : D.meta.fetchedAt);
   }
   function boxNeeds(r) {
-    var pl = games.filter(played), id = r.id, set;
-    if (SCOPE === 'main' || r.name === 'standings') set = pl;
+    var pl = allGames.filter(played), id = r.id, set;
+    if (r.name === 'playoffs') set = pl.filter(function (g) { return g.po; });
+    else if (SCOPE === 'main' || r.name === 'standings') set = pl.filter(function (g) { return !g.po; });
     else if (r.name === 'game') set = pl.filter(function (g) { return g.id === id; });
     else if (r.name === 'team') set = pl.filter(function (g) { return g.away === id || g.home === id; });
     else if (r.name === 'player') {
@@ -172,7 +199,7 @@
 
   function run() {
     var steps = [], now = Date.now(), r = route();
-    var tonight = games.filter(function (g) { return g.date === todayStr(); });
+    var tonight = allGames.filter(function (g) { return g.date === todayStr(); });
     var active = tonight.filter(inWindow);
     var onNight = active.length > 0;
 
@@ -189,6 +216,7 @@
     /* A game that just ended: once the league posts the final score, bring in the box score and the new stats. */
     if (LIVE.settleAt && now >= LIVE.settleAt) {
       LIVE.forced = { standings: 1, schedule: 1, players: 1, goalies: 1 };
+      if (D.po) LIVE.forced.poSchedule = 1;
       LIVE.settleAt = 0;
       LIVE.settleCheck = true;
     }
@@ -269,6 +297,7 @@
   (function init() {
     var t0 = Date.parse(D.meta.fetchedAt) || 0;
     ['standings', 'schedule', 'players', 'goalies'].forEach(function (k) { LIVE.fetched[k] = t0; });
+    if (D.po) LIVE.fetched.poSchedule = Date.parse(D.po.meta.fetchedAt) || 0;
     if (window.LDHML_LIVE === false) return;
     liveTimer = setTimeout(tick, 600);
     setInterval(updateFresh, 1000);

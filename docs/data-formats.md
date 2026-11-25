@@ -69,6 +69,11 @@ Goalie: `{ id, nid, name, sex, rank, teams, gp, w, l, t, sa, sv, ga, pct, gaa, g
 There is **no birth date, age or photo**. `rank` is a skill level label (for example H10), not a standings rank.
 `teams` has several entries when a person played for several teams. The stat line is then combined.
 
+## `playoffs.json` (optional; owner, 2026-11-25)
+The playoffs of the season: NBHPA keeps them in their own season (`leagues.json` "playoffs": `{ seasonId, seasonName }`). Written by the refresh (`assemblePlayoffs` in `shared/refresh.js`) only when its checks pass; a failure keeps the old file and never blocks the season files.
+`{ meta: { seasonId, season, fetchedAt, source }, teamMap: { playoffTeamId: ourTeamId }, abbMap: { playoffCode: ourCode }, teams: [standings rows with our id and code, nbhpaId], games: [games.json rows, team ids already ours], players, goalies (the playoff lists, for our person ids; [] before the first game), box: { names, games } (box.json shape, team ids and codes already ours, goals weighed on their own) }`.
+The build puts `D.po = { meta (with name), games, box, teamMap, nb: [{ id: NBHPA playoff team id, abb }] }` in the page only when `meta.seasonId` equals `leagues.json` "playoffs".seasonId. Playoff stats on the site come from the box scores.
+
 ## `box.json`
 ```
 { names: { playerId: "M. BUREAU", ... },        // names seen in recaps (cleaned by niceName at load)

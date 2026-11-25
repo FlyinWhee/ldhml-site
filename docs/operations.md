@@ -31,6 +31,9 @@ Pulls the repo, runs `node scraper/fetch.mjs` in a `node:22-alpine` container, p
 3. Run once by hand. Read the log. Check that a commit appears on `main` and Pages deploys.
 Status: **not set up yet**. The owner runs `npm run fetch:force` by hand for now.
 
+## Playoffs
+NBHPA keeps the playoffs in their own season (for example 4409 "LDHML AUTOMNE 2026 SÉRIES"; the season list is on the league's site). To show them: in the tools, Configuration, Modifier the season, "No de saison NBHPA des séries"; then Configuration > Données du site public. That writes `leagues.json` "playoffs" and `data/<slug>/playoffs.json`. Without the tools: add `"playoffs": { "seasonId": 4409, "seasonName": "Séries Automne 2026" }` under `seasonName` in `leagues.json`, then `npm run fetch:force`. A league with no playoff game shows nothing new. At a new season, remove the line (the playoffs belong to their season) and archive `playoffs.json` with the other files.
+
 ## New season
 The live season is chosen in the tools (admin, Configuration: make the new season "En cours"; switch off the leagues that do not run). Then `npm run season:check` (with the tools address, or the local tools) says what the public site needs. Edit `leagues.json`: `seasonId`, `seasonName`, and check each `categoryId` against the official standings page (they can change). Run `npm run fetch:force`, `npm test`, push. Old `data/<slug>/box.json` entries of the previous season would stay in the file, so the old season must leave `data/` first, otherwise stale box scores keep growing the pages. **Do not delete it: move it.** Before you edit `leagues.json`, move every `data/<slug>/` folder to `data/archive/<old seasonId>/<slug>/` (with a copy of the old `leagues.json` as `data/archive/<old seasonId>/leagues.json`). It is the history of that season (owner, 2026-10-16: the public site will show past seasons); the build does not read `data/archive/`.
 

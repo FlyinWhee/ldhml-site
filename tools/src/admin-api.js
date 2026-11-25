@@ -71,22 +71,25 @@ export async function adminApi(req, env, url) {
   if (pub) return pub;
 
   // ---- seasons ----
+  // An NBHPA season no.: null when empty, false when not a positive whole number. The playoffs have their own NBHPA
+  // season (owner, 2026-11-25): nbhpa_playoff_season_id, optional; the stats site shows those games with this season.
+  const nbNo = (v) => { if (v === '' || v == null) return null; const n = Number(v); return Number.isInteger(n) && n > 0 ? n : false; };
   if (m === 'GET' && path === '/seasons') {
-    const { results } = await env.DB.prepare('SELECT id, key, name, nbhpa_season_id, status, created_at FROM seasons ORDER BY created_at DESC, id DESC').all();
+    const { results } = await env.DB.prepare('SELECT id, key, name, nbhpa_season_id, nbhpa_playoff_season_id, status, created_at FROM seasons ORDER BY created_at DESC, id DESC').all();
     return json({ seasons: results });
   }
   if (m === 'POST' && path === '/seasons') {
     const body = await readJson(req) || {};
-    const name = cleanText(body.name, 60), nb = body.nbhpa_season_id === '' || body.nbhpa_season_id == null ? null : Number(body.nbhpa_season_id);
+    const name = cleanText(body.name, 60), nb = nbNo(body.nbhpa_season_id), po = nbNo(body.nbhpa_playoff_season_id);
     // A new season is "upcoming" unless asked otherwise, or "active" when there is no active season yet (the first one).
     const hasLive = await env.DB.prepare("SELECT 1 FROM seasons WHERE status = 'active'").first();
     const status = ['upcoming', 'active', 'archived'].includes(body.status) ? body.status : hasLive ? 'upcoming' : 'active';
-    if (!name || !seasonKey(name) || (nb !== null && !(Number.isInteger(nb) && nb > 0))) return fail(400, 'season');
+    if (!name || !seasonKey(name) || nb === false || po === false || (po !== null && po === nb)) return fail(400, 'season');
     if (await env.DB.prepare('SELECT 1 FROM seasons WHERE key = ?').bind(seasonKey(name)).first()) return fail(409, 'season_exists');
-    const r = await env.DB.prepare('INSERT INTO seasons (key, name, nbhpa_season_id, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)')
-      .bind(seasonKey(name), name, nb, status, now(), admin.id).run();
+    const r = await env.DB.prepare('INSERT INTO seasons (key, name, nbhpa_season_id, nbhpa_playoff_season_id, status, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(seasonKey(name), name, nb, po, status, now(), admin.id).run();
     if (status === 'active') await archiveOthers(env.DB, r.meta.last_row_id).run();   // one active season at a time
-    await audit(env, admin, 'season.create', 'season:' + r.meta.last_row_id, { name, nbhpa_season_id: nb, status });
+    await audit(env, admin, 'season.create', 'season:' + r.meta.last_row_id, { name, nbhpa_season_id: nb, nbhpa_playoff_season_id: po, status });
     return json({ ok: true, id: r.meta.last_row_id }, 201);
   }
   // Edit a season: name, NBHPA no., status. Making it active archives the active one (one active season at a time).
@@ -95,17 +98,19 @@ export async function adminApi(req, env, url) {
     const id = Number(xs[1]), cur = await env.DB.prepare('SELECT * FROM seasons WHERE id = ?').bind(id).first();
     if (!cur) return fail(404, 'season');
     const body = await readJson(req) || {};
-    const name = cleanText(body.name, 60), nb = body.nbhpa_season_id === '' || body.nbhpa_season_id == null ? null : Number(body.nbhpa_season_id);
+    const name = cleanText(body.name, 60), nb = nbNo(body.nbhpa_season_id);
+    // the playoff no. is optional and kept when the form does not send it (an older page)
+    const po = 'nbhpa_playoff_season_id' in body ? nbNo(body.nbhpa_playoff_season_id) : cur.nbhpa_playoff_season_id;
     const status = ['upcoming', 'active', 'archived'].includes(body.status) ? body.status : null;
-    if (!name || !seasonKey(name) || !status || (nb !== null && !(Number.isInteger(nb) && nb > 0))) return fail(400, 'season');
+    if (!name || !seasonKey(name) || !status || nb === false || po === false || (po !== null && po === nb)) return fail(400, 'season');
     if (seasonKey(name) !== cur.key && await env.DB.prepare('SELECT 1 FROM seasons WHERE key = ? AND id <> ?').bind(seasonKey(name), id).first()) return fail(409, 'season_exists');
     const archived = status === 'active' && cur.status !== 'active'
       ? (await env.DB.prepare("SELECT id FROM seasons WHERE status = 'active' AND id <> ?").bind(id).all()).results.map((r) => r.id) : [];
     await env.DB.batch([
       ...(archived.length ? [archiveOthers(env.DB, id)] : []),
-      env.DB.prepare('UPDATE seasons SET key = ?, name = ?, nbhpa_season_id = ?, status = ? WHERE id = ?').bind(seasonKey(name), name, nb, status, id)
+      env.DB.prepare('UPDATE seasons SET key = ?, name = ?, nbhpa_season_id = ?, nbhpa_playoff_season_id = ?, status = ? WHERE id = ?').bind(seasonKey(name), name, nb, po, status, id)
     ]);
-    await audit(env, admin, 'season.update', 'season:' + id, { name, nbhpa_season_id: nb, status, was: cur.status, archived });
+    await audit(env, admin, 'season.update', 'season:' + id, { name, nbhpa_season_id: nb, nbhpa_playoff_season_id: po, status, was: cur.status, archived });
     return json({ ok: true, archived });
   }
 

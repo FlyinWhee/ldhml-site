@@ -19,7 +19,7 @@ var STR = {
     title: 'LDHML', lead: 'Classements, calendriers, feuilles de match et statistiques des ligues de hockey balle, saison {s}.',
     leagues: 'Ligues', teams: 'équipes', games: 'matchs', played: 'matchs joués', pts: 'PTS', lang: 'EN',
     leader: 'En tête', scorer: 'Meilleur pointeur', open: 'Ouvrir la ligue', night: 'Prochaine soirée', nights: 'Prochaines soirées', tonight: 'Ce soir',
-    noNight: 'Aucun match à venir pour le moment.', gm: 'match', gms: 'matchs', all: 'Toutes les ligues', pickLabel: 'Ligue', themeLabel: 'Thème', themeTipOff: 'Désactiver les thèmes des ligues (look par défaut)', themeTipOn: 'Activer les thèmes des ligues',
+    noNight: 'Aucun match à venir pour le moment.', po: 'Séries', gm: 'match', gms: 'matchs', all: 'Toutes les ligues', pickLabel: 'Ligue', themeLabel: 'Thème', themeTipOff: 'Désactiver les thèmes des ligues (look par défaut)', themeTipOn: 'Activer les thèmes des ligues',
     footUpdated: 'Données du {t}', footSource: 'Aperçu non officiel. Tous les chiffres viennent des données publiques de la ligue NBHPA.',
     of: 'sur', gp: 'MJ', noGames: 'Pas de match joué', pointsShort: 'pts', fresh: 'Classements à jour', goTonight: 'Voir en direct',
     sections: 'Sections', nLeagues: '{n} ligues', nLeague: '{n} ligue', nTeams: '{n} équipes', nPeople: '{n} joueurs', openSection: 'Ouvrir la section {s}',
@@ -38,7 +38,7 @@ var STR = {
     title: 'LDHML', lead: 'Standings, schedules, box scores and stats for the ball hockey leagues, {s} season.',
     leagues: 'Leagues', teams: 'teams', games: 'games', played: 'games played', pts: 'PTS', lang: 'FR',
     leader: 'Leading', scorer: 'Top scorer', open: 'Open the league', night: 'Next game night', nights: 'Next game nights', tonight: 'Tonight',
-    noNight: 'No upcoming games for now.', gm: 'game', gms: 'games', all: 'All leagues', pickLabel: 'League', themeLabel: 'Theme', themeTipOff: 'Switch off the league themes (default look)', themeTipOn: 'Switch the league themes on',
+    noNight: 'No upcoming games for now.', po: 'Playoffs', gm: 'game', gms: 'games', all: 'All leagues', pickLabel: 'League', themeLabel: 'Theme', themeTipOff: 'Switch off the league themes (default look)', themeTipOn: 'Switch the league themes on',
     footUpdated: 'Data of {t}', footSource: 'Unofficial preview. All numbers come from the public NBHPA league data.',
     of: 'of', gp: 'GP', noGames: 'No game played yet', pointsShort: 'pts', fresh: 'Standings are up to date', goTonight: 'Watch live',
     sections: 'Sections', nLeagues: '{n} leagues', nLeague: '{n} league', nTeams: '{n} teams', nPeople: '{n} players', openSection: 'Open the {s} section',
@@ -102,7 +102,7 @@ function nextNights(list) {
     if (!up.length) return;
     var date = up.map(function (g) { return g.date; }).sort()[0];
     var gs = up.filter(function (g) { return g.date === date; });
-    rows.push({ l: l, date: date, n: gs.length, first: gs.map(function (g) { return g.time; }).sort()[0], isToday: date === td });
+    rows.push({ l: l, date: date, n: gs.length, first: gs.map(function (g) { return g.time; }).sort()[0], isToday: date === td, po: gs.some(function (g) { return g.po; }) });
   });
   rows.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.l.name < b.l.name ? -1 : 1; });
   return rows;
@@ -113,8 +113,9 @@ function nightHtml(list, prefix) {
   if (!rows.length) return '<p class="lede">' + t('noNight') + '</p>';
   return '<section class="night" aria-labelledby="nt"><h2 id="nt" class="night-h">' + (rows[0].isToday ? t('tonight') : t('nights')) + '</h2><ul class="night-l">' +
     rows.map(function (r) {
-      return '<li>' + badgeOf(r.l, { href: prefix + r.l.path + '/#' + (r.isToday ? 'live' : 'schedule'), title: r.l.name,
-        extra: (r.isToday ? t('tonight') : fmtShort(r.date)) + ' · ' + r.n + ' ' + (r.n === 1 ? t('gm') : t('gms')) + ' · ' + r.first }) + '</li>';
+      /* a playoff night says so, and opens the playoff page of the league */
+      return '<li>' + badgeOf(r.l, { href: prefix + r.l.path + '/#' + (r.isToday ? 'live' : r.po ? 'playoffs' : 'schedule'), title: r.l.name,
+        extra: (r.isToday ? t('tonight') : fmtShort(r.date)) + ' · ' + r.n + ' ' + (r.n === 1 ? t('gm') : t('gms')) + ' · ' + r.first + (r.po ? ' · ' + t('po') : '') }) + '</li>';
     }).join('') + '</ul></section>';
 }
 

@@ -1,5 +1,5 @@
 {
-  "next": 265,
+  "next": 269,
   "people": [
     {"id":"L0001","nid":"181226","name":"Alain Galipeault","sex":"m","pids":["588373"],"since":"Automne 2026"},
     {"id":"L0002","nid":"111261","name":"Alex Landry","sex":"f","pids":["295690"],"since":"Automne 2026"},
@@ -264,6 +264,10 @@
     {"id":"L0261","nid":"136392","name":"Annie Pimparé","sex":"f","pids":["375330"],"since":"Automne 2026"},
     {"id":"L0262","nid":"80494","name":"François Lapointe","sex":"m","pids":["244430"],"since":"Automne 2026"},
     {"id":"L0263","nid":"118713","name":"Sonia Sauvé","sex":"f","pids":["545661"],"since":"Automne 2026"},
-    {"id":"L0264","nid":"114685","name":"Stephanie Nadeau","sex":"f","pids":["305310"],"since":"Automne 2026"}
+    {"id":"L0264","nid":"114685","name":"Stephanie Nadeau","sex":"f","pids":["305310"],"since":"Automne 2026"},
+    {"id":"L0265","nid":"203042","name":"Jérémie Picard","sex":"m","pids":["603595"],"since":"Automne 2026"},
+    {"id":"L0266","nid":"117093","name":"Kevin Parent","sex":"m","pids":["304289"],"since":"Automne 2026"},
+    {"id":"L0267","nid":"198402","name":"Louis-charles Gravel","sex":"m","pids":["587963"],"since":"Automne 2026"},
+    {"id":"L0268","nid":"111147","name":"Vincent Marcil bissonnette","sex":"m","pids":["301294"],"since":"Automne 2026"}
   ]
 }

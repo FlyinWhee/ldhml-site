@@ -4,7 +4,8 @@
 //   node scraper/fetch.mjs retro 4v4-b     -> only these leagues
 //   node scraper/fetch.mjs --force         -> refresh now
 //
-// About 4 requests per league, plus one per new box score, with a pause between requests.
+// About 4 requests per league, plus one per new box score, with a pause between requests. When leagues.json has a
+// playoff season ("playoffs"), 4 more per league for it, plus its new box scores (data/<slug>/playoffs.json).
 // If anything looks wrong, the old snapshot of that league stays in place.
 import path from 'node:path';
 import { assemble, saveLeague, readJson, loadLeagues, DATA_DIR } from './lib.mjs';
@@ -30,9 +31,9 @@ async function http(url, init = {}, tries = 3) {
 }
 
 // The request steps are in shared/refresh.js (the tools run the same steps from an admin's browser).
-const fetchLeague = (lg, cfg, oldBox, oldAt) => globalThis.LDRefresh.fetchLeague(lg, cfg, oldBox, {
+const fetchLeague = (lg, cfg, oldBox, oldAt, oldPo) => globalThis.LDRefresh.fetchLeague(lg, cfg, oldBox, {
   get: async (url, init, kind) => { const r = await http(url, init); return kind === 'json' ? r.json() : r.text(); },
-  sleep, delay: DELAY, warn: (m) => console.warn(m), oldAt
+  sleep, delay: DELAY, warn: (m) => console.warn(m), oldAt, oldPo
 });
 
 const cfg = await loadLeagues();
@@ -48,11 +49,13 @@ for (const lg of cfg.leagues) {
   }
   try {
     const oldBox = await readJson(path.join(DATA_DIR, lg.slug, 'box.json'));
-    const raw = await fetchLeague(lg, cfg, oldBox, old?.fetchedAt);
-    const { problems, boxSaved, out } = assemble(raw, lg, cfg, oldBox);
+    const oldPo = await readJson(path.join(DATA_DIR, lg.slug, 'playoffs.json'));
+    const raw = await fetchLeague(lg, cfg, oldBox, old?.fetchedAt, oldPo);
+    const { problems, boxSaved, out } = assemble(raw, lg, cfg, oldBox, oldPo);
     if (problems.length) throw new Error(`refusing to overwrite data: ${problems.join('; ')}`);
-    await saveLeague(lg.slug, out);
-    console.log(`${lg.slug}: ${out.teams.length} teams, ${out.games.length} games, ${out.players.length} players, ${out.goalies.length} goalies, ${boxSaved} box scores.`);
+    await saveLeague(lg.slug, out);   // playoffs.json too, when the playoffs were read and passed their checks
+    const po = out.playoffs ? `; playoffs: ${out.playoffs.games.length} games, ${out.playoffs.players.length} players, ${Object.keys(out.playoffs.box.games).length} box scores` : '';
+    console.log(`${lg.slug}: ${out.teams.length} teams, ${out.games.length} games, ${out.players.length} players, ${out.goalies.length} goalies, ${boxSaved} box scores${po}.`);
   } catch (e) {
     failed++;
     console.error(`${lg.slug}: ${e.message}`);

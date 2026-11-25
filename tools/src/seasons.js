@@ -10,7 +10,10 @@ export const seasonStatus = (DB, id) => DB.prepare('SELECT status FROM seasons W
 export const isArchived = async (DB, id) => (await seasonStatus(DB, id)) === 'archived';
 
 /** The live season (en cours), or null. */
-export const liveSeason = (DB) => DB.prepare("SELECT id, key, name, nbhpa_season_id FROM seasons WHERE status = 'active' ORDER BY id DESC LIMIT 1").first();
+export const liveSeason = (DB) => DB.prepare("SELECT id, key, name, nbhpa_season_id, nbhpa_playoff_season_id FROM seasons WHERE status = 'active' ORDER BY id DESC LIMIT 1").first();
+
+/** The playoffs of a season for the stats site (leagues.json "playoffs"), or null: { seasonId, seasonName }. */
+export const playoffsOf = (s) => s && s.nbhpa_playoff_season_id ? { seasonId: s.nbhpa_playoff_season_id, seasonName: 'Séries ' + s.name } : null;
 
 /** Statements that archive every other active season (one active season at a time). */
 export const archiveOthers = (DB, id) => DB.prepare("UPDATE seasons SET status = 'archived' WHERE status = 'active' AND id <> ?").bind(id);

@@ -70,11 +70,38 @@ for (const g of data.games) {
   }
   hrefs().forEach((x) => seen.add(x));
 }
+// 2c. the playoffs (D.po, a playoff season in leagues.json): their page, their games, the regular numbers untouched
+const poGames = data.po?.games ?? [];
+if (data.po) {
+  await go('#playoffs');
+  assert.ok(main().length > 100, '#playoffs renders');
+  hrefs().forEach((x) => seen.add(x));
+  for (const g of poGames) {
+    await go('#game-' + g.id);
+    assert.ok(w.document.querySelector('.gboard .potag'), `playoff game ${g.id} carries the playoff label`);
+    hrefs().forEach((x) => seen.add(x));
+  }
+  if (poGames.length) {
+    // every team of a playoff game is a team of the season (the refresh maps the new NBHPA team ids)
+    const tids = new Set(data.teams.map((t) => t.id));
+    assert.deepEqual(poGames.flatMap((g) => [g.away, g.home]).filter((id) => !tids.has(id)), [], 'playoff teams are the season teams');
+    assert.ok(w.document.querySelector('.nav a[href="#playoffs"]'), 'the nav has a playoffs link');
+    // the regular standings count only regular games
+    await go('#standings');
+    const gpSum = data.teams.reduce((n, t) => n + t.gp, 0);
+    assert.ok(gpSum <= data.games.filter((g) => g.as != null).length * 2, 'standings games are regular games only');
+    // the schedule lists the playoff games too, with their label
+    await go('#schedule'); w.document.querySelector('[data-set="sched.mode=all"]').click(); await wait();
+    assert.equal(w.document.querySelectorAll('#main .gm .potag').length, poGames.length, 'schedule: every playoff game labelled');
+  }
+} else assert.ok(!w.document.querySelector('.nav a[href="#playoffs"]'), 'no playoffs link without playoffs');
 // 3. every internal link found on any page points to a page that exists
 const known = new Set(data.teams.map((t) => 'team-' + t.id));
 data.games.forEach((g) => known.add('game-' + g.id));
+poGames.forEach((g) => known.add('game-' + g.id));
 ids.forEach((i) => known.add('player-' + i));
 ['home', 'standings', 'schedule', 'players', 'goalies', 'leaders', 'live', 'teams'].forEach((r) => known.add(r));
+if (data.po) known.add('playoffs');
 const broken = [...seen].filter((h) => !known.has(h.slice(1)));
 assert.deepEqual(broken, [], 'broken internal links: ' + broken.join(', '));
 
@@ -193,7 +220,7 @@ assert.ok(/Standings/.test(w.document.getElementById('top').textContent), 'langu
 assert.equal(w.document.documentElement.lang, 'en');
 await go('#schedule');
 w.document.querySelector('[data-set="sched.mode=upcoming"]').click(); await wait();
-assert.equal(w.document.querySelectorAll('.gm').length, data.games.filter((g) => g.as == null && !g.cancelled).length, 'every upcoming game is listed');
+assert.equal(w.document.querySelectorAll('.gm').length, [...data.games, ...poGames].filter((g) => g.as == null && !g.cancelled).length, 'every upcoming game is listed (season and playoffs)');
 // player page shows the game log; totals match the season stats
 const jobin = data.players.find((p) => p.name === 'Michael Jobin');
 await go('#player-' + jobin.id);

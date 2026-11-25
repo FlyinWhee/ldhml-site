@@ -44,7 +44,7 @@ export default {
       if (req.method === 'GET' && url.pathname === '/api/public/season') {
         const s = await liveSeason(env.DB);
         const off = s ? (await env.DB.prepare('SELECT league FROM season_leagues WHERE season_id = ? AND enabled = 0').bind(s.id).all()).results.map((r) => r.league) : [];
-        return json({ season: s ? { key: s.key, name: s.name, nbhpa_season_id: s.nbhpa_season_id, leagues_off: off } : null, demo: isDemo(env), simulated: simulated(),
+        return json({ season: s ? { key: s.key, name: s.name, nbhpa_season_id: s.nbhpa_season_id, nbhpa_playoff_season_id: s.nbhpa_playoff_season_id || null, leagues_off: off } : null, demo: isDemo(env), simulated: simulated(),
           urls: { admin: env.ADMIN_URL || null, captain: env.CAPTAIN_URL || null } }, 200, { 'Access-Control-Allow-Origin': '*' });
       }
       return fail(404, 'not_found');

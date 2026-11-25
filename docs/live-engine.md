@@ -39,7 +39,9 @@ The owner wants low rates. Change these only on request.
 | game | schedule |
 | live | schedule, standings |
 
-Request shapes live in `FETCH` (`standings`, `schedule`, `players`, `goalies`) and `fetchRecap(g)`. They copy the scraper's requests. Keep them equal.
+Request shapes live in `FETCH` (`standings`, `schedule`, `players`, `goalies`, `poSchedule`) and `fetchRecap(g)`. They copy the scraper's requests. Keep them equal.
+
+**The playoffs** (owner, 2026-11-25): when the page has `D.po` (a playoff season in `leagues.json`), the routes of `PO_NEED` (home, schedule, live, playoffs, team, player, game) also need `poSchedule`: the same schedule request with the playoff `season_id`, the same TTL as `schedule`. Its rows are mapped to the season team ids (`D.po.teamMap`, `D.po.nb`). That is the only extra request: playoff stats come from the playoff box scores (`fetchRecap` stores them in `D.po.box`, weighed on their own). Tonight's games, live clocks and box scores use `allGames` (season and playoffs).
 
 ## Game clocks
 `inWindow(g)`: today's games, from 30 min before the start until 110 min after (up to 4 h while the game is live). Only these games are polled (`/livegame_json/<id>`).

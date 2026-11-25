@@ -18,7 +18,7 @@ export async function readJson(file) {
 export const loadLeagues = async () => JSON.parse(await readFile(path.join(ROOT, 'leagues.json'), 'utf8'));
 
 /** Turn raw responses of one league into the snapshot files. Returns { problems, boxSaved, out }. In shared/refresh.js. */
-export const assemble = (raw, lg, cfg, oldBox) => globalThis.LDRefresh.assemble(raw, lg, cfg, oldBox);
+export const assemble = (raw, lg, cfg, oldBox, oldPo) => globalThis.LDRefresh.assemble(raw, lg, cfg, oldBox, undefined, oldPo);
 
 export async function saveLeague(slug, out) {
   const dir = path.join(DATA_DIR, slug);

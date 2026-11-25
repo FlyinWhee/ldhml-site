@@ -62,7 +62,12 @@
       alsoShort: 'SUB:', more: 'More', subs: 'Substitutes', subsNote: 'Players of other teams who filled in. Numbers are for games with this team only.', byTeam: 'By team', mainTag: 'Main team', teamCol: 'Team',
       teamsLede: 'All {n} teams in standings order. Open a team for its roster, substitutes and schedule.',
       shotsLive: 'Shots on goal', pickLabel: 'League', searchPh: 'Search', assistsLabel: 'Assists:', themeLabel: 'Theme', themeTipOff: 'Switch off the league theme (default look)', themeTipOn: 'Switch the league theme on', hubName: 'LDHML home', allLeagues: 'All leagues', footHub: 'All LDHML leagues', clockLabel: 'Clock', openGame: 'Open the game page',
-      ratingS: 'Skater rating', ratingG: 'Goalie rating', alsoIn: 'See also:', sectionProfile: '{s} profile', allLeaguesOf: 'All {s} leagues', footSection: 'All {s} leagues', inLeague: '{p}: stats in {l}', subTag: 'SUB'
+      ratingS: 'Skater rating', ratingG: 'Goalie rating', alsoIn: 'See also:', sectionProfile: '{s} profile', allLeaguesOf: 'All {s} leagues', footSection: 'All {s} leagues', inLeague: '{p}: stats in {l}', subTag: 'SUB',
+      playoffs: 'Playoffs', poTag: 'Playoffs', poLede: 'The playoff games of the season. They do not count in the season standings or the season stats: their numbers are here, and next to the season numbers on each team and player page.',
+      poRecords: 'Playoff records', poGames: 'Playoff games', poSkaters: 'Playoff skaters', poGoalies: 'Playoff goalies', poLeaders: 'Playoff leaders',
+      poNoStats: 'The playoff stats appear here after the first playoff game.', poStatsNote: 'Playoff numbers come from the box scores: every team, substitute games included.',
+      seasonRank: 'Season rank', seasonCol: 'Season', poCol: 'Playoffs', totalCol: 'Total', seasonAndPo: 'Season and playoffs', poLog: 'Playoff game log',
+      allPlayoffs: 'All playoffs', scheduleLedePo: 'Every game of the season and of the playoffs, with scores as they come in.', poRecordShort: 'Playoffs', poNext: 'Next playoff games', poNextLine: 'Next playoff games: {d}, {n} (above).', poResults: 'Playoff results'
     },
     fr: {
       home: 'Accueil', standings: 'Classement', schedule: 'Calendrier', players: 'Joueurs', goalies: 'Gardiens', leaders: 'Meneurs',
@@ -103,7 +108,12 @@
       alsoShort: 'SUB:', more: 'Plus', subs: 'Remplaçants', subsNote: 'Joueurs d’autres équipes qui ont remplacé. Les chiffres comptent seulement les matchs avec cette équipe.', byTeam: 'Par équipe', mainTag: 'Équipe principale', teamCol: 'Équipe',
       teamsLede: 'Les {n} équipes selon le classement. Ouvrez une équipe pour voir sa formation, ses remplaçants et son calendrier.',
       shotsLive: 'Tirs au but', pickLabel: 'Ligue', searchPh: 'Chercher', assistsLabel: 'Passes :', themeLabel: 'Thème', themeTipOff: 'Désactiver le thème de la ligue (look par défaut)', themeTipOn: 'Activer le thème de la ligue', hubName: 'Accueil LDHML', allLeagues: 'Toutes les ligues', footHub: 'Toutes les ligues LDHML', clockLabel: 'Horloge', openGame: 'Ouvrir la page du match',
-      ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', alsoIn: 'Voir aussi :', sectionProfile: 'Profil {s}', allLeaguesOf: 'Toutes les ligues {s}', footSection: 'Toutes les ligues {s}', inLeague: '{p} : statistiques dans {l}', subTag: 'SUB'
+      ratingS: 'Cote de joueur', ratingG: 'Cote de gardien', alsoIn: 'Voir aussi :', sectionProfile: 'Profil {s}', allLeaguesOf: 'Toutes les ligues {s}', footSection: 'Toutes les ligues {s}', inLeague: '{p} : statistiques dans {l}', subTag: 'SUB',
+      playoffs: 'Séries', poTag: 'Séries', poLede: 'Les matchs des séries de la saison. Ils ne comptent pas dans le classement ni dans les statistiques de la saison : leurs chiffres sont ici, et à côté des chiffres de la saison sur chaque page d’équipe et de joueur.',
+      poRecords: 'Fiches des séries', poGames: 'Matchs des séries', poSkaters: 'Joueurs en séries', poGoalies: 'Gardiens en séries', poLeaders: 'Meneurs des séries',
+      poNoStats: 'Les statistiques des séries apparaissent ici après le premier match des séries.', poStatsNote: 'Les chiffres des séries viennent des feuilles de match : toutes les équipes, remplacements inclus.',
+      seasonRank: 'Rang saison', seasonCol: 'Saison', poCol: 'Séries', totalCol: 'Total', seasonAndPo: 'Saison et séries', poLog: 'Journal des séries',
+      allPlayoffs: 'Toutes les séries', scheduleLedePo: 'Tous les matchs de la saison et des séries, avec les pointages au fur et à mesure.', poRecordShort: 'Séries', poNext: 'Prochains matchs des séries', poNextLine: 'Prochains matchs des séries : {d}, {n} (ci-dessus).', poResults: 'Résultats des séries'
     }
   };
   var COLS = {
@@ -294,7 +304,103 @@
       var o = people[k], m = o.main = mainTeam(o);
       o.teams.sort(function (a, b) { return (a === m ? -1 : b === m ? 1 : 0) || gpOf(o.id, b) - gpOf(o.id, a); });
     });
+    buildPlayoffs();
   }
+
+  /* ================= the playoffs =================
+   * D.po (optional, from the build): { meta: { seasonId, name, fetchedAt }, games, box, nb, teamMap }. NBHPA keeps the
+   * playoffs in their own season; the refresh already gave them the team ids and codes of the regular season.
+   * The playoffs are a small extra set of games: they never count in the regular standings, leaders or season totals.
+   * Their numbers come from their box scores (every team, substitutes included), so they also work live.
+   * PO.on: there is at least one playoff game. allGames: the regular games and the playoff games, in time order. */
+  var PO = { on: false }, allGames = [];
+  function buildPlayoffs() {
+    var po = D.po;
+    PO = { on: !!(po && po.games && po.games.length), name: po && po.meta ? po.meta.name || '' : '', games: [], played: [], upcoming: [], rec: {}, results: {}, skaters: [], goalies: [], logS: {}, logG: {}, sk: {}, gk: {} };
+    if (!po) { allGames = games.slice(); return; }
+    if (!po.box) po.box = { names: {}, games: {} };
+    /* box names of the playoffs: one name list for pLink (a name is the same person in both seasons) */
+    Object.keys(po.box.names).forEach(function (k) { po.box.names[k] = LDParsers.niceName(po.box.names[k]); if (!BOX.names[k]) BOX.names[k] = po.box.names[k]; });
+    PO.games = po.games.slice().sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    PO.games.forEach(function (g) { g.po = true; gameById[g.id] = g; });
+    PO.played = PO.games.filter(played);
+    PO.upcoming = PO.games.filter(function (g) { return !played(g) && !g.cancelled; });
+    allGames = games.concat(PO.games).sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+    /* team records: from the scores of the schedule (2 points a win, 1 a tie, like the season) */
+    PO.played.forEach(function (g) {
+      [[g.away, g.home, g.as, g.hs], [g.home, g.away, g.hs, g.as]].forEach(function (s) {
+        var r = PO.rec[s[0]] || (PO.rec[s[0]] = { id: s[0], gp: 0, w: 0, l: 0, t: 0, gf: 0, ga: 0, diff: 0, pts: 0 });
+        r.gp++; r.gf += s[2]; r.ga += s[3]; r.diff = r.gf - r.ga;
+        if (s[2] > s[3]) { r.w++; r.pts += 2; } else if (s[2] < s[3]) r.l++; else { r.t++; r.pts++; }
+        (PO.results[s[0]] = PO.results[s[0]] || []).push({ g: g, opp: s[1], gf: s[2], ga: s[3], r: s[2] > s[3] ? 'W' : s[2] < s[3] ? 'L' : 'T' });
+      });
+    });
+    /* teams of a playoff game that has no score yet still belong to the playoffs */
+    PO.games.forEach(function (g) { [g.away, g.home].forEach(function (id) { if (!PO.rec[id]) PO.rec[id] = { id: id, gp: 0, w: 0, l: 0, t: 0, gf: 0, ga: 0, diff: 0, pts: 0 }; }); });
+    /* players: from the box scores */
+    var add = function (map, u, abb, keys) {
+      var o = map[u] || (map[u] = { id: u, teams: [] });
+      keys.forEach(function (k) { if (o[k] == null) o[k] = 0; });
+      if (abb && o.teams.indexOf(abb) < 0) o.teams.push(abb);
+      return o;
+    };
+    var SKK = ['gp', 'g', 'a', 'p', 'pim', 'ppg', 'ppp', 'shg', 'shp', 'gwg', 'otg'], GKK = ['gp', 'w', 'l', 't', 'sa', 'sv', 'ga', 'so'];
+    PO.played.forEach(function (g) {
+      var b = po.box.games[g.id];
+      if (!b || !b.t || b.t.length !== 2) return;
+      b.t.forEach(function (bt, i) {
+        var mine = bt.id === g.away ? g.as : g.hs, theirs = bt.id === g.away ? g.hs : g.as;
+        var base = { game: g, team: bt.id, opp: b.t[1 - i].id, gf: mine, ga: theirs, r: mine > theirs ? 'W' : mine < theirs ? 'L' : 'T' };
+        var abb = T[bt.id] ? T[bt.id].abb : '';
+        bt.sk.forEach(function (r) {
+          if (!r[0]) return;
+          var u = U(r[0]), z = add(PO.sk, u, abb, SKK);
+          z.gp++; z.g += r[2]; z.a += r[3]; z.p += r[2] + r[3]; z.pim += r[4] * 60; z.ppg += r[5]; z.ppp += r[6]; z.shg += r[7]; z.shp += r[8]; z.gwg += r[9]; z.otg += r[10];
+          z.pid = z.pid || r[0];
+          (PO.logS[u] = PO.logS[u] || []).push(Object.assign({ no: r[1], g: r[2], a: r[3], pim: r[4], gwg: r[9] }, base));
+        });
+        bt.gk.forEach(function (r) {
+          if (!r[0]) return;
+          var u = U(r[0]), y = add(PO.gk, u, abb, GKK);
+          y.gp++; y.w += r[1]; y.l += r[2]; y.t += r[3]; y.sa += r[4]; y.sv += r[5]; y.ga += r[6]; y.so += r[7];
+          y.pid = y.pid || r[0];
+          (PO.logG[u] = PO.logG[u] || []).push(Object.assign({ w: r[1], l: r[2], t: r[3], sa: r[4], sv: r[5], ga: r[6], so: r[7] }, base));
+        });
+      });
+    });
+    Object.keys(PO.logS).forEach(function (k) { PO.logS[k].sort(byDateDesc); });
+    Object.keys(PO.logG).forEach(function (k) { PO.logG[k].sort(byDateDesc); });
+    /* one person in both seasons: the name and the season numbers come from the season rows when they exist */
+    var named = function (o) {
+      var p = people[o.id];
+      /* seen only in the playoffs: a person of its own (the regular team lists stay as they are) */
+      if (!p) p = people[o.id] = { id: o.id, nid: null, name: BOX.names[o.pid] || po.box.names[o.pid] || '', sex: '', rank: { s: null, g: null }, teams: [], main: null, poOnly: true };
+      if (p.poOnly) o.teams.forEach(function (a) { if (p.teams.indexOf(a) < 0) p.teams.push(a); });
+      o.name = p.name; o.sex = p.sex; o.also = [];
+      return p;
+    };
+    PO.skaters = Object.keys(PO.sk).map(function (k) { var o = PO.sk[k]; named(o).poS = o; return o; });
+    PO.goalies = Object.keys(PO.gk).map(function (k) {
+      var o = PO.gk[k]; o.pct = o.sa ? o.sv / o.sa : 0; o.gaa = o.gp ? o.ga / o.gp : 0; o.pim = 0; o.mp = 0;
+      named(o).poG = o; return o;
+    });
+  }
+  /* A person's playoff numbers with one team (from the playoff game log). pos 's' skater, 'g' goalie. */
+  function poFor(p, abb, pos) {
+    var log = ((pos === 'g' ? PO.logG : PO.logS)[p.id] || []).filter(function (x) { return abbOfTeam(x.team) === abb; });
+    var s = function (k) { return log.reduce(function (n, x) { return n + (x[k] || 0); }, 0); };
+    var o = Object.assign({}, p, { teams: [abb], also: [], gp: log.length });
+    if (pos === 'g') {
+      o.w = s('w'); o.l = s('l'); o.t = s('t'); o.sa = s('sa'); o.sv = s('sv'); o.ga = s('ga'); o.so = s('so');
+      o.pct = o.sa ? o.sv / o.sa : 0; o.gaa = o.gp ? o.ga / o.gp : 0;
+    } else {
+      o.g = s('g'); o.a = s('a'); o.p = o.g + o.a; o.pim = s('pim') * 60; o.gwg = s('gwg');
+      if (p.teams.length > 1) { o.ppg = 0; o.ppp = 0; o.shg = 0; o.shp = 0; o.otg = 0; }
+    }
+    return o;
+  }
+  /* The box score store of a game: the playoff games keep theirs in D.po.box. */
+  var boxStore = function (g) { return g && g.po && D.po ? D.po.box : D.box; };
   var mainTeam, skaterFor, goalieFor, rosterS, rosterG;
   buildModel();
 
@@ -315,10 +421,10 @@
     return x ? Object.assign({}, g, { as: x.lv.gv, hs: x.lv.gh, _live: false }) : g;
   };
   var boxOf = function (id) {
-    var b = BOX.games[id] || (LIVE.recap[id] && LIVE.recap[id].game) || null;
+    var b = BOX.games[id] || (D.po && D.po.box && D.po.box.games[id]) || (LIVE.recap[id] && LIVE.recap[id].game) || null;
     return b && b.t && b.t.length === 2 ? b : null;
   };
-  var liveList = function () { return games.filter(function (g) { return liveOf(g.id); }); };
+  var liveList = function () { return allGames.filter(function (g) { return liveOf(g.id); }); };
 
   /* ================= small components ================= */
   var ICON_EXT = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';

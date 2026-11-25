@@ -22,6 +22,13 @@
     var raw = function (p, text) { return fetch(base.raw + p, { cache: 'no-store' }).then(function (r) { return r.ok ? (text ? r.text() : r.json()) : null; }, function () { return null; }); };
     var cfg = await raw('leagues.json');
     if (!cfg || !cfg.leagues) { log('baseErr', { error: 'leagues.json' }, 'err'); return { state: 'error' }; }
+    /* The playoff season comes from the tools season (Configuration); the publish writes it into leagues.json. */
+    if ('playoffs' in base) {
+      var had = cfg.playoffs ? cfg.playoffs.seasonId : null;
+      if (base.playoffs) cfg.playoffs = base.playoffs; else delete cfg.playoffs;
+      if (base.playoffs) log('poSeason', { no: base.playoffs.seasonId, changed: had !== base.playoffs.seasonId ? 1 : 0 });
+      else if (had) log('poOff', { no: had });
+    }
 
     var hiddenSaid = false;
     var waitVisible = async function () {
@@ -50,17 +57,22 @@
       if (!want(lg)) continue;
       log('league', { lg: lg.short });
       var oldBox = await raw('data/' + lg.slug + '/box.json'), oldMeta = await raw('data/' + lg.slug + '/meta.json');
+      var oldPo = cfg.playoffs ? await raw('data/' + lg.slug + '/playoffs.json') : null;
       try {
         var io = { get: get, sleep: sleep, delay: delay(), warn: function (m) { log('warn', { msg: m.trim() }, 'warn'); },
-          step: function (key, p) { log('step_' + key, p || {}); }, oldAt: oldMeta && oldMeta.fetchedAt };
+          step: function (key, p) { log('step_' + key, p || {}); }, oldAt: oldMeta && oldMeta.fetchedAt, oldPo: oldPo };
         var rawLg = await R().fetchLeague(lg, cfg, oldBox, io);
-        var res = R().assemble(rawLg, lg, cfg, oldBox, io.warn);
+        var res = R().assemble(rawLg, lg, cfg, oldBox, io.warn, oldPo);
         if (res.problems.length) log('refused', { lg: lg.short, problems: res.problems.join('; ') }, 'err');
         else {
           Object.assign(files, R().leagueFiles(lg.slug, res.out));
-          lists[lg.slug] = { players: res.out.players, goalies: res.out.goalies };
+          var po = res.out.playoffs;
+          // the playoff player_id values are aliases of the same people (our ids)
+          lists[lg.slug] = { players: res.out.players.concat(po ? po.players : []), goalies: res.out.goalies.concat(po ? po.goalies : []) };
           done.push(lg.slug);
           log('leagueOk', { lg: lg.short, teams: res.out.teams.length, games: res.out.games.length, players: res.out.players.length, goalies: res.out.goalies.length, box: res.boxSaved }, 'ok');
+          if (po) log('poOk', { lg: lg.short, games: po.games.length, box: Object.keys(po.box.games).length }, 'ok');
+          else if (cfg.playoffs) log('poKept', { lg: lg.short }, 'warn');
         }
       } catch (e) {
         if (e.code === 'stopped') { log('stopped', {}, 'warn'); return { state: 'stopped' }; }

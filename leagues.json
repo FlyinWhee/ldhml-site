@@ -2,6 +2,7 @@
   "leagueId": 10,
   "seasonId": 4307,
   "seasonName": "Automne 2026",
+  "playoffs": { "seasonId": 4409, "seasonName": "Séries Automne 2026" },
   "default": "retro",
   "siteUrl": "https://ldhml.com/",
   "sections": [

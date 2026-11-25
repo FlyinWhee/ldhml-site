@@ -22,7 +22,7 @@ Each item is a trap that already cost time. Check this list before a change.
 15. Teams page sorts by name with `localeCompare(..., {sensitivity:'base', numeric:true})`, not by standings.
 16. Penalty row ("Au banc des pénalités") must be hidden when nobody is in the box (`liveOnIce`).
 17. A full-screen "live frame" on the game page was tried and rejected by the owner. Only the scoreboard border (`.gboard:has(.livebadge)`) stays.
-18. The whole top of a live card/scoreboard is one link (`.lv-head`, `.sbc-head`). Keep it a link; the owner asked for "click anywhere at the top".
+18. The whole top of a live card is one link (`.lv-head`). A home scoreboard card is one link as a whole (`.sbc-hit`, owner 2026-11-25: "clicking anywhere should bring you to the box score, except the team names"). Keep it so.
 19. Finished games on the live page go in a collapsed `<details class="lv-done" id="lvdone">` **below** the live section. The open state is kept in `LIVE.doneOpen`.
 
 ## Build and deploy
@@ -58,6 +58,13 @@ The first `wrangler deploy` of a new Worker (`ldhml-site`, `ldhml-tools`) upload
 
 ## Tests and the calendar (2026-11-20)
 When the season ended, three tests failed: they expected a game still to play. The tools test now runs on a fixed "today" in the middle of the season (`fixClock` in `tools/test/test-tools.mjs`, for Node and both jsdom pages); `site/test-live.mjs` replays the last game night as still to play when no game is left. A test must not depend on today's date.
+
+## The playoffs are another NBHPA season (2026-11-25)
+The playoff games were missing from the site: NBHPA keeps them in their own season (4409 "LDHML AUTOMNE 2026 SÉRIES", same category ids), and the site read only `seasonId`. Three traps:
+- **New team ids.** NBHPA makes new team records for the playoff season (TOP GUN is 204339 in the season, 207827 in the playoffs). The refresh maps them to the season teams by name, then by code (`assemblePlayoffs` in `shared/refresh.js`; `teamMap` in `playoffs.json`). Never show a playoff team id on the site.
+- **The running goal totals start again** in the playoff season. Weigh the playoff box scores on their own (`weighGoals` with the playoff games only), never mixed with the season.
+- **The stats pages have no stats block before the first playoff game** (`parsePlayers` throws). That is an empty list, not an error.
+NBHPA's own league site knows which games are playoffs (`app.php` action `league_games`, `isPlayoff`), but we do not use `app.php` (rule 10: no new data source).
 
 ## The demo environment inherits "routes" (2026-11-20)
 In tools/wrangler.jsonc, "routes" is inherited by env.demo. With the real custom domains at the top level, a demo deploy moved admin.ldhml.com and capitaine.ldhml.com to the demo Worker and turned its workers.dev address off (error 1042). env.demo now has "routes": [] and "workers_dev": true. Never remove them. After a config change, run the demo deploy with --dry-run first and read the warnings.

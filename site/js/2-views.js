@@ -40,11 +40,13 @@
       var mine = g.away === o.teamId ? [g.as, g.hs] : [g.hs, g.as];
       res = g._live ? '' : (mine[0] > mine[1] ? 'W' : mine[0] < mine[1] ? 'L' : 'T');
     }
-    var when = (o.showDate ? '<b>' + esc(fmtShort(g.date)) + '</b>' + esc(g.time) + ' ' : '<b>' + esc(g.time) + '</b>') + esc(venueName(g));
+    var when = (o.showDate ? '<b>' + esc(fmtShort(g.date)) + '</b>' + esc(g.time) + ' ' : '<b>' + esc(g.time) + '</b>') + esc(venueName(g)) + poTag(g);
     var end = (g.cancelled ? '<span class="cxl">' + t('cancelled') + '</span>' : (g._live ? liveBadge(liveOf(g.id)) : (pl ? '<span class="fin">' + t('final') + '</span>' : ''))) +
       '<a class="boxlink" href="#game-' + esc(g.id) + '">' + t('boxScore') + '</a>';
     return '<article class="gm ' + res + '"><div class="gm-when">' + when + '</div><div class="gm-teams">' + line(g.away, g.as, g.hs) + line(g.home, g.hs, g.as) + '</div><div class="gm-end">' + (res ? chip(res, '') : '') + end + '</div></article>';
   }
+  /* A playoff game carries the "Séries" label everywhere it is listed (it links to the playoff page). */
+  var poTag = function (g) { return g && g.po ? ' <a class="potag" href="#playoffs">' + t('poTag') + '</a>' : ''; };
   function groupedGames(list) {
     if (!list.length) return '<p class="empty">' + t('noGames') + '</p>';
     var out = '', cur = null;
@@ -62,30 +64,30 @@
   }
 
   /* ================= scoreboard card (home) ================= */
+  /* The whole card opens the game page (one link stretched over the card, .sbc-hit); only the team names have their
+   * own link, above it (owner, 2026-11-25). No period scores: the cards stay small, five in a row on a desktop. */
   function sbCard(g) {
     g = eff(g);
-    var pl = played(g), b = boxOf(g.id), lv = g._live ? liveOf(g.id) : null;
-    var np = (pl && b) ? periodCount(b) : 0;
-    var cls = np ? '' : ' nop';
-    var head = np ? '<div class="sbc-head' + cls + '" style="--np:' + np + '"><span></span><span></span>' +
-      Array.apply(null, Array(np)).map(function (_, i) { return '<span>' + perLabel(i) + '</span>'; }).join('') + '<span></span></div>' : '';
+    var pl = played(g), lv = g._live ? liveOf(g.id) : null;
     var row = function (id, sc, other) {
       var tm = T[id] || { abb: '?', name: '?', id: '' };
       var lose = pl && !lv && sc < other;
-      var idx = b ? boxIndex(b, id) : -1;
-      var pers = np ? Array.apply(null, Array(np)).map(function (_, i) { return '<span class="sbc-per">' + (idx >= 0 && b.pg[idx][i] != null ? b.pg[idx][i] : '') + '</span>'; }).join('') : '';
-      return '<div class="sbc-row' + (lose ? ' lose' : '') + cls + '" style="--tc:' + colorOf(tm.abb) + ';--np:' + np + '"><span class="tab"></span>' +
-        '<a class="sbc-team" href="#team-' + tm.id + '"><b>' + esc(tm.abb) + '</b><span>' + esc(tm.name) + '</span></a>' + pers +
+      return '<div class="sbc-row' + (lose ? ' lose' : '') + '" style="--tc:' + colorOf(tm.abb) + '"><span class="tab"></span>' +
+        '<span class="sbc-team"><a href="#team-' + tm.id + '"><b>' + esc(tm.abb) + '</b><span>' + esc(tm.name) + '</span></a></span>' +
         (pl ? led(sc, lose ? 'dim' : 'glow') : '<span></span>') + '</div>';
     };
-    return '<article class="sbc' + (lv ? ' is-live' : '') + '"><a class="sbc-head" href="#game-' + esc(g.id) + '" aria-label="' + esc(t('boxScore')) + '"><div class="sbc-meta"><span>' + (lv ? liveBadge(lv) : pl ? t('final') : esc(g.time)) + '</span><span>' + (g.court ? esc(t('surface', { n: g.court })) : '') + '</span></div></a>' +
-      head + row(g.away, g.as, g.hs) + row(g.home, g.hs, g.as) +
-      '<div class="sbc-foot"><span>' + esc(g.time) + ' · ' + esc(venueName(g)) + '</span><a href="#game-' + esc(g.id) + '">' + (lv ? t('liveBox') : t('boxScore')) + '</a></div></article>';
+    return '<article class="sbc' + (lv ? ' is-live' : '') + '"><a class="sbc-hit" href="#game-' + esc(g.id) + '" aria-label="' + esc((lv ? t('liveBox') : t('boxScore')) + ': ' + abbOfTeam(g.away) + ' - ' + abbOfTeam(g.home)) + '"></a>' +
+      '<div class="sbc-meta"><span>' + (lv ? liveBadge(lv) : pl ? t('final') : esc(g.time)) + '</span><span>' + (g.po ? '<b class="potag">' + t('poTag') + '</b> ' : '') + (g.court ? esc(t('surface', { n: g.court })) : '') + '</span></div>' +
+      row(g.away, g.as, g.hs) + row(g.home, g.hs, g.as) +
+      '<div class="sbc-foot"><span>' + esc(g.time) + ' · ' + esc(venueName(g)) + '</span><span class="sbc-go">' + (lv ? t('liveBox') : t('boxScore')) + '</span></div></article>';
   }
 
   /* ================= leaders ================= */
   var q2 = function (p) { return p.gp >= 2; };
-  function leaderDefs() {
+  /* sk, gk: the lists (default: the season). min: games needed for the per-game and goalie leaders (default 2). */
+  function leaderDefs(sk, gk, min) {
+    var skaters = sk || skatersNow(), goalies = gk || goaliesNow();
+    var q2 = function (p) { return p.gp >= (min || 2); };
     return [
       { id: 'pts', title: t('points'), list: skaters, val: function (p) { return p.p; }, fmt: function (v) { return v; }, dir: 'desc', min0: true },
       { id: 'g', title: t('goals'), list: skaters, val: function (p) { return p.g; }, fmt: function (v) { return v; }, dir: 'desc', min0: true },
@@ -98,6 +100,7 @@
       { id: 'so', title: t('shutouts'), list: goalies, val: function (p) { return p.so; }, fmt: function (v) { return v; }, dir: 'desc', goalie: true, min0: true }
     ];
   }
+  var skatersNow = function () { return skaters; }, goaliesNow = function () { return goalies; };
   function leaderCard(def, n) {
     var list = def.list.filter(function (p) { return !def.min0 || def.val(p) > 0; });
     var ranks = rankMap(list, def.val, def.dir);
@@ -117,8 +120,11 @@
 
   /* ================= views ================= */
   function viewHome() {
-    var lastDate = playedGames.length ? playedGames[playedGames.length - 1].date : null;
-    var nextDate = upcomingGames.length ? upcomingGames[0].date : null;
+    /* The game nights of the season and of the playoffs (the playoffs are part of the season story). */
+    var games = allGames;
+    var pl = games.filter(played), up = games.filter(function (g) { return !played(g) && !g.cancelled; });
+    var lastDate = pl.length ? pl[pl.length - 1].date : null;
+    var nextDate = up.length ? up[0].date : null;
     var today = todayStr(), hasToday = games.some(function (g) { return g.date === today; });
     var heroDate = hasToday ? today : (lastDate || nextDate);
     var heroGames = heroDate ? games.filter(function (g) { return g.date === heroDate; }) : [];
@@ -130,12 +136,59 @@
     var nextHtml = nextGames.length ? '<section class="sec"><div class="sec-h"><h2>' + t('nextGames') + '</h2><a href="#schedule">' + t('fullSchedule') + '</a></div><h3 class="day">' + esc(fmtDay(nextDate)) + '</h3><div class="gms">' + nextGames.map(function (g) { return gameBlock(g); }).join('') + '</div></section>' : '';
     var defs = leaderDefs();
     var pick = function (id) { return defs.filter(function (d) { return d.id === id; })[0]; };
-    var html = '<div class="home-grid"><div>' +
+    var html = '<div class="home-grid"><div>' + poHomeHtml(heroDate) +
       '<section class="sec"><div class="sec-h"><h2>' + t('standings') + '</h2><a href="#standings">' + t('fullStandings') + '</a></div>' +
       dataTable('home-standings', standingsCols(true), teams, { k: 'pos', dir: 'asc' }, { static: true }) + '</section>' + nextHtml +
       '</div><div><section class="sec"><div class="sec-h"><h2>' + t('leaders') + '</h2><a href="#leaders">' + t('allLeaders') + '</a></div><div class="lg mini">' +
       leaderCard(pick('pts'), 5) + leaderCard(pick('g'), 5) + leaderCard(pick('svp'), 5) + '</div></section></div></div>';
     return { band: band, html: html };
+  }
+
+  /* ---- the playoffs: a simple page, the same tables as the season ---- */
+  var poSeasonRank = function (id) { return T[id] ? T[id].pos : 99; };
+  var poRows = function () {
+    return Object.keys(PO.rec).map(function (k) { return PO.rec[k]; }).filter(function (r) { return T[r.id]; })
+      .sort(function (a, b) { return b.pts - a.pts || b.w - a.w || b.diff - a.diff || poSeasonRank(a.id) - poSeasonRank(b.id); });
+  };
+  function poRecordCols(compact) {
+    var cols = [
+      { k: 'name', label: t('team'), title: t('team'), get: function (x) { return T[x.id].name; }, html: function (x) { return teamCell(x.id); }, dir: 'asc', stick: true },
+      numCol('gp', 'gp', function (x) { return x.gp; }), numCol('w', 'w', function (x) { return x.w; }), numCol('l', 'l', function (x) { return x.l; }), numCol('t', 't', function (x) { return x.t; }),
+      numCol('pts', 'pts', function (x) { return x.pts; }, { key: true })
+    ];
+    if (!compact) cols.push(numCol('gf', 'gf', function (x) { return x.gf; }), numCol('ga', 'ga', function (x) { return x.ga; }, { dir: 'asc' }));
+    cols.push(numCol('diff', 'diff', function (x) { return x.diff; }, { html: function (x) { return signed(x.diff); } }));
+    cols.push({ k: 'srank', label: t('seasonRank'), title: t('seasonRank'), num: true, dir: 'asc', get: function (x) { return poSeasonRank(x.id); }, html: function (x) { return '<a class="tl" href="#standings">' + ord(poSeasonRank(x.id)) + '</a>'; } });
+    return cols;
+  }
+  /* Home: while the league has playoffs, they come first. */
+  /* heroDate: the night of the scoreboard cards above (its games are not listed twice). */
+  function poHomeHtml(heroDate) {
+    if (!PO.on) return '';
+    var next = PO.upcoming.length ? PO.upcoming[0].date : null;
+    var nextList = next ? PO.upcoming.filter(function (g) { return g.date === next; }) : [];
+    var nextHtml = !nextList.length ? '' : next === heroDate
+      ? '<p class="note">' + t('poNextLine', { d: esc(fmtDay(next)), n: plural(nextList.length, 'game', 'games') }) + '</p>'
+      : '<h3 class="day">' + esc(fmtDay(next)) + '</h3><div class="gms">' + nextList.map(function (g) { return gameBlock(g); }).join('') + '</div>';
+    return '<section class="sec po-sec"><div class="sec-h"><h2>' + t('playoffs') + '</h2><a href="#playoffs">' + t('allPlayoffs') + '</a></div>' +
+      (PO.played.length ? dataTable('home-po', poRecordCols(true), poRows(), { k: 'pts', dir: 'desc' }, { static: true }) : '') + nextHtml + '</section>';
+  }
+  function viewPlayoffs() {
+    if (!D.po) return viewNotFound();
+    var head = '<h1 class="ph">' + t('playoffs') + '</h1><p class="lede">' + (PO.name ? '<b>' + esc(PO.name) + '.</b> ' : '') + t('poLede') + '</p>';
+    if (!PO.on) return head + '<p class="empty">' + t('noData') + '</p>';
+    var rec = '<section class="sec"><div class="sec-h"><h2>' + t('poRecords') + '</h2></div>' + dataTable('po-records', poRecordCols(false), poRows(), { k: 'pts', dir: 'desc' }) + '</section>';
+    var up = PO.upcoming, res = PO.played.slice().reverse();
+    var gamesHtml = (up.length ? '<section class="sec"><div class="sec-h"><h2>' + t('poNext') + '</h2></div>' + groupedGames(up) + '</section>' : '') +
+      (res.length ? '<section class="sec"><div class="sec-h"><h2>' + t('poResults') + '</h2></div>' + groupedGames(res) + '</section>' : '');
+    if (!PO.skaters.length && !PO.goalies.length) return head + rec + gamesHtml + '<p class="note">' + t('poNoStats') + '</p>';
+    var defs = leaderDefs(PO.skaters, PO.goalies, 1);
+    var pick = function (id) { return defs.filter(function (d) { return d.id === id; })[0]; };
+    var leaders = '<section class="sec"><div class="sec-h"><h2>' + t('poLeaders') + '</h2></div><div class="lg mini">' + ['pts', 'g', 'svp'].map(function (k) { return leaderCard(pick(k), 5); }).join('') + '</div></section>';
+    var stats = '<section class="sec"><div class="sec-h"><h2>' + t('poSkaters') + '</h2></div><p class="note" style="margin:0 0 10px">' + t('poStatsNote') + '</p>' +
+      (PO.skaters.length ? dataTable('po-skaters', skaterCols(), PO.skaters, { k: 'p', dir: 'desc' }) : '<p class="empty">' + t('noData') + '</p>') + '</section>' +
+      (PO.goalies.length ? '<section class="sec"><div class="sec-h"><h2>' + t('poGoalies') + '</h2></div>' + dataTable('po-goalies', goalieCols({ compact: true }), PO.goalies, { k: 'gaa', dir: 'asc' }) + '</section>' : '');
+    return head + '<div class="two"><div>' + rec + leaders + '</div><div>' + gamesHtml + '</div></div>' + stats;
   }
 
   function viewStandings() {
@@ -144,7 +197,7 @@
   }
 
   function viewSchedule() {
-    var f = ui.sched;
+    var f = ui.sched, games = allGames;
     if (!f.mode) f.mode = games.some(function (g) { return !played(g) && !g.cancelled; }) ? 'upcoming' : 'results';
     var list = games.filter(function (g) {
       if (f.team && g.away !== f.team && g.home !== f.team) return false;
@@ -163,7 +216,7 @@
     var seg = '<div class="seg" role="group">' + modes.map(function (m) { return '<button type="button" data-set="sched.mode=' + m[0] + '" aria-pressed="' + (f.mode === m[0]) + '">' + m[1] + '</button>'; }).join('') + '</div>';
     var sel = '<select id="sched-team" class="ctl" data-bind="sched.team" aria-label="' + t('team') + '"><option value="">' + t('allTeams') + '</option>' +
       teams.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return '<option value="' + x.id + '"' + (f.team === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
-    return '<h1 class="ph">' + t('schedule') + '</h1><p class="lede">' + t('scheduleLede') + '</p><div class="controls">' + seg + sel + '<span class="count">' + t('nGames', { n: list.length }) + '</span></div>' + groupedGames(list);
+    return '<h1 class="ph">' + t('schedule') + '</h1><p class="lede">' + t(PO.on ? 'scheduleLedePo' : 'scheduleLede') + '</p><div class="controls">' + seg + sel + '<span class="count">' + t('nGames', { n: list.length }) + '</span></div>' + groupedGames(list);
   }
 
   function teamSelect(path, value, id) {
@@ -239,7 +292,8 @@
       rosterS.forEach(function (p) { if (p.teams.indexOf(tm.abb) >= 0 && mainTeam(p) !== tm.abb && (splitS[p.id] || {})[tm.abb]) subS.push(skaterFor(p, tm.abb)); });
       rosterG.forEach(function (p) { if (p.teams.indexOf(tm.abb) >= 0 && mainTeam(p) !== tm.abb && (splitG[p.id] || {})[tm.abb]) subG.push(goalieFor(p, tm.abb)); });
     }
-    var mine = games.filter(function (g) { return g.away === tm.id || g.home === tm.id; });
+    var mine = allGames.filter(function (g) { return g.away === tm.id || g.home === tm.id; });
+    var po = PO.on ? PO.rec[tm.id] : null;
     var items = [
       [t('rank'), ord(tm.pos), t('rank'), true],
       [t('record'), tm.w + '-' + tm.l + '-' + tm.t, t('record'), true],
@@ -249,6 +303,7 @@
       [L('diff')[0], signed(tm.diff), L('diff')[1]],
       [t('gfpg'), tm.gp ? f2(tm.gf / tm.gp) : '0.00', t('gfpg')]
     ];
+    if (po) items.push([t('poRecordShort'), po.w + '-' + po.l + '-' + po.t, t('poRecords'), true]);
     var head = '<div class="hero" style="--tc:' + colorOf(tm.abb) + '">' + crest(tm.abb, 'lg') + '<div><h1>' + esc(tm.name) + '</h1>' +
       '<p class="meta"><span>' + t('last5') + ' ' + formHtml(tm.id) + '</span></p></div>' + readout(items) + '</div>';
     var rosterHtml = '<section class="sec"><div class="sec-h"><h2>' + t('skaters') + '</h2></div>' +
@@ -259,16 +314,26 @@
         (subG.length ? '<div class="box-sub">' + dataTable('team-subs-g', goalieCols({ team: tm.abb, compact: true }), subG, { k: 'gaa', dir: 'asc' }) + '</div>' : '') + '</section>' : '');
     var sched = '<section class="sec"><div class="sec-h"><h2>' + t('scheduleResults') + '</h2></div><div class="gms">' +
       mine.map(function (g) { return gameBlock(g, { showDate: true, teamId: tm.id }); }).join('') + '</div></section>';
-    return head + scopeBar() + '<div class="two"><div>' + rosterHtml + '</div><div>' + sched + '</div></div>';
+    /* the playoffs of this team: every player who played for it there (box scores), next to the season roster */
+    var poHtml = '';
+    if (po) {
+      var poIn = function (p) { return p.teams.indexOf(tm.abb) >= 0; };
+      var poSk = PO.skaters.filter(poIn).map(function (p) { return poFor(p, tm.abb, 's'); }), poGk = PO.goalies.filter(poIn).map(function (p) { return poFor(p, tm.abb, 'g'); });
+      poHtml = '<section class="sec po-sec"><div class="sec-h"><h2>' + t('playoffs') + ' · ' + po.w + '-' + po.l + '-' + po.t + '</h2><a href="#playoffs">' + t('allPlayoffs') + '</a></div>' +
+        (poSk.length ? dataTable('team-po-skaters', skaterCols({ team: tm.abb }), poSk, { k: 'p', dir: 'desc' }) : '<p class="note">' + t('poNoStats') + '</p>') +
+        (poGk.length ? '<div class="box-sub">' + dataTable('team-po-goalies', goalieCols({ team: tm.abb, compact: true }), poGk, { k: 'gaa', dir: 'asc' }) + '</div>' : '') + '</section>';
+    }
+    return head + scopeBar() + '<div class="two"><div>' + poHtml + rosterHtml + '</div><div>' + sched + '</div></div>';
   }
 
   /* ---- player page: hero, form strip and game log ---- */
   var teamLogCol = function () {
     return { label: t('teamCol'), title: t('teamCol'), html: function (x) { var tm = T[x.team]; return tm ? '<span class="tcell">' + crest(tm.abb, 'sm') + '<a class="tl" href="#team-' + tm.id + '">' + esc(tm.abb) + '</a></span>' : ''; } };
   };
-  function skaterLogTable(log, showTeam) {
+  function skaterLogTable(log, showTeam, footLabel) {
+    var footL = footLabel || t('seasonTotal');
     var cols = [
-      { label: t('date'), title: t('date'), html: function (x) { return '<a class="tl strong" href="#game-' + x.game.id + '">' + esc(fmtShort(x.game.date)) + '</a>'; }, foot: function () { return esc(t('seasonTotal')); } },
+      { label: t('date'), title: t('date'), html: function (x) { return '<a class="tl strong" href="#game-' + x.game.id + '">' + esc(fmtShort(x.game.date)) + '</a>'; }, foot: function () { return esc(footL); } },
       { label: t('opp'), title: t('opp'), html: function (x) { var o = T[x.opp]; return o ? '<span class="tcell">' + crest(o.abb, 'sm') + '<a class="tl" href="#team-' + o.id + '">' + esc(o.name) + '</a></span>' : ''; } },
       { label: t('result'), title: t('result'), html: function (x) { return chip(x.r, '') + ' <a class="tl" href="#game-' + x.game.id + '">' + x.gf + '-' + x.ga + '</a>'; } },
       { label: '#', title: t('player'), num: true, html: function (x) { return esc(x.no); } },
@@ -278,11 +343,12 @@
       { label: L('pim')[0], title: L('pim')[1], num: true, html: function (x) { return x.pim; }, foot: function (rows) { return sum(rows, function (x) { return x.pim; }); } }
     ];
     if (showTeam) cols.splice(1, 0, teamLogCol());
-    return simpleTable(cols, log, t('seasonTotal'));
+    return simpleTable(cols, log, footL);
   }
-  function goalieLogTable(log, showTeam) {
+  function goalieLogTable(log, showTeam, footLabel) {
+    var footL = footLabel || t('seasonTotal');
     var cols = [
-      { label: t('date'), title: t('date'), html: function (x) { return '<a class="tl strong" href="#game-' + x.game.id + '">' + esc(fmtShort(x.game.date)) + '</a>'; }, foot: function () { return esc(t('seasonTotal')); } },
+      { label: t('date'), title: t('date'), html: function (x) { return '<a class="tl strong" href="#game-' + x.game.id + '">' + esc(fmtShort(x.game.date)) + '</a>'; }, foot: function () { return esc(footL); } },
       { label: t('opp'), title: t('opp'), html: function (x) { var o = T[x.opp]; return o ? '<span class="tcell">' + crest(o.abb, 'sm') + '<a class="tl" href="#team-' + o.id + '">' + esc(o.name) + '</a></span>' : ''; } },
       { label: t('result'), title: t('result'), html: function (x) { return chip(x.r, '') + ' <a class="tl" href="#game-' + x.game.id + '">' + x.gf + '-' + x.ga + '</a>'; } },
       { label: L('sa')[0], title: L('sa')[1], num: true, html: function (x) { return x.sa; }, foot: function (rows) { return sum(rows, function (x) { return x.sa; }); } },
@@ -291,7 +357,7 @@
       { label: L('svp')[0], title: L('svp')[1], num: true, key: true, html: function (x) { return x.sa ? pct(x.sv / x.sa) : '-'; }, foot: function (rows) { var s = sum(rows, function (x) { return x.sa; }); return s ? pct(sum(rows, function (x) { return x.sv; }) / s) : '-'; } }
     ];
     if (showTeam) cols.splice(1, 0, teamLogCol());
-    return simpleTable(cols, log, t('seasonTotal'));
+    return simpleTable(cols, log, footL);
   }
   function sparkHtml(log) {
     var chrono = log.slice().reverse();
@@ -350,6 +416,31 @@
     return '<p class="note pxl">' + t('alsoIn') + ' ' + (badges ? '<span class="lgbs">' + badges + '</span> ' : '') + bits.join(' · ') + '</p>';
   }
 
+  /* Season, playoffs and both together, side by side. The season row counts every team of this league (like the
+   * playoff numbers, which come from the box scores). */
+  function seasonPoHtml(pp) {
+    var psk = pp.poS, pgl = pp.poG;
+    if (!psk && !pgl) return '';
+    var sk = pp.skater ? (pp.skater.all || pp.skater) : null, gl = pp.goalie ? (pp.goalie.all || pp.goalie) : null;
+    var zs = { gp: 0, g: 0, a: 0, p: 0, pim: 0 }, zg = { gp: 0, w: 0, l: 0, t: 0, sa: 0, sv: 0, ga: 0, so: 0 };
+    var tot = function (a, b, keys) { var o = {}; keys.forEach(function (k) { o[k] = (a[k] || 0) + (b[k] || 0); }); return o; };
+    var lbl = { label: '', title: '', html: function (x) { return x.href ? '<a class="tl strong" href="' + x.href + '">' + esc(x.l) + '</a>' : '<b>' + esc(x.l) + '</b>'; } };
+    var out = '';
+    if (psk || sk) {
+      var a = sk || zs, b = psk || zs, rows = [{ l: t('seasonCol'), s: a, href: '#players' }, { l: t('poCol'), s: b, href: '#playoffs' }, { l: t('totalCol'), s: tot(a, b, ['gp', 'g', 'a', 'p', 'pim']) }];
+      var n = function (k, f, key) { return { label: L(k)[0], title: L(k)[1], num: true, key: key, html: function (x) { return f(x.s); } }; };
+      out += simpleTable([lbl, n('gp', function (s) { return s.gp; }), n('g', function (s) { return s.g; }, true), n('a', function (s) { return s.a; }, true), n('pts', function (s) { return s.p != null ? s.p : s.g + s.a; }, true),
+        n('pgp', function (s) { return s.gp ? f2((s.p != null ? s.p : s.g + s.a) / s.gp) : '0.00'; }), n('pim', function (s) { return mins(s.pim); })], rows);
+    }
+    if (pgl || gl) {
+      var c = gl || zg, d = pgl || zg, grows = [{ l: t('seasonCol'), s: c, href: '#goalies' }, { l: t('poCol'), s: d, href: '#playoffs' }, { l: t('totalCol'), s: tot(c, d, ['gp', 'w', 'l', 't', 'sa', 'sv', 'ga', 'so']) }];
+      var m = function (k, f, key) { return { label: L(k)[0], title: L(k)[1], num: true, key: key, html: function (x) { return f(x.s); } }; };
+      out += (out ? '<div class="box-sub"></div>' : '') + simpleTable([lbl, m('gp', function (s) { return s.gp; }), m('w', function (s) { return s.w; }), m('l', function (s) { return s.l; }),
+        m('sa', function (s) { return s.sa; }), m('sv', function (s) { return s.sv; }), m('svp', function (s) { return s.sa ? pct(s.sv / s.sa) : '-'; }, true), m('gaa', function (s) { return s.gp ? f2(s.ga / s.gp) : '-'; }), m('so', function (s) { return s.so; })], grows);
+    }
+    return '<section class="sec po-sec"><div class="sec-h"><h2>' + t('seasonAndPo') + '</h2></div>' + out + '</section>';
+  }
+
   function viewPlayer(r) {
     var pp = people[r.id]; if (!pp) return viewNotFound();
     var sk = pp.skater, gl = pp.goalie;
@@ -378,9 +469,15 @@
         [L('gp')[0], gl.gp, L('gp')[1]], [L('w')[0], gl.w, L('w')[1]], [L('l')[0], gl.l, L('l')[1]], [L('svp')[0], pct(gl.pct), L('svp')[1]], [L('gaa')[0], f2(gl.gaa), L('gaa')[1]], [L('so')[0], gl.so, L('so')[1]]
       ]);
     }
+    /* seen only in the playoffs: the playoff numbers in the hero */
+    if (!sk && !gl && pp.poS) ro += '<p class="ro-title">' + t('poCol') + '</p>' + readout([[L('gp')[0], pp.poS.gp, L('gp')[1]], [L('g')[0], pp.poS.g, L('g')[1]], [L('a')[0], pp.poS.a, L('a')[1]], [L('pts')[0], pp.poS.p, L('pts')[1]]]);
+    if (!sk && !gl && pp.poG) ro += '<p class="ro-title">' + t('poCol') + '</p>' + readout([[L('gp')[0], pp.poG.gp, L('gp')[1]], [L('w')[0], pp.poG.w, L('w')[1]], [L('svp')[0], pct(pp.poG.pct), L('svp')[1]], [L('gaa')[0], f2(pp.poG.gaa), L('gaa')[1]]]);
     var head = '<div class="hero" style="--tc:' + colorOf(abb0) + '">' + jersey(abb0, no, 'jersey-xl') + '<div><h1>' + esc(pp.name) + '</h1>' + teamLinks + '<p class="meta">' + metaBits.join('') + '</p></div>' + ro + '</div>' + crossLinks(pp);
 
-    var body = '';
+    var body = seasonPoHtml(pp);
+    var poLs = PO.on ? PO.logS[pp.id] || [] : [], poLg = PO.on ? PO.logG[pp.id] || [] : [];
+    if (poLs.length) body += '<section class="sec po-sec"><div class="sec-h"><h2>' + t('poLog') + '</h2></div>' + skaterLogTable(poLs, true, t('poCol')) + '</section>';
+    if (poLg.length) body += '<section class="sec po-sec"><div class="sec-h"><h2>' + t('poLog') + (poLs.length ? ' · ' + t('goalie') : '') + '</h2></div>' + goalieLogTable(poLg, true, t('poCol')) + '</section>';
     var multi = pp.teams.length > 1;
     var inScope = function (x) { return !multi || SCOPE === 'all' || abbOfTeam(x.team) === pp.main; };
     var ls = (logS[pp.id] || []).filter(inScope), lg = (logG[pp.id] || []).filter(inScope);
@@ -393,7 +490,7 @@
     if (lg.length) {
       body += '<section class="sec"><div class="sec-h"><h2>' + t('gameLog') + (ls.length ? ' · ' + t('goalie') : '') + '</h2></div>' + goalieLogTable(lg, showTeam) + '</section>';
     }
-    if (!ls.length && !lg.length) body += '<section class="sec"><p class="empty">' + t('noLog') + '</p></section>';
+    if (!ls.length && !lg.length && !poLs.length && !poLg.length) body += '<section class="sec"><p class="empty">' + t('noLog') + '</p></section>';
     return head + (multi ? scopeBar() : '') + body;
   }
 
@@ -499,10 +596,10 @@
     var status = g.cancelled ? t('cancelled') : (lv ? liveBadge(lv) : pl ? t('final') : t('upcoming'));
     var shots = lv ? '<div class="gb-shots"><span>' + t('shotsLive') + '</span><span>' + esc(abbOfTeam(g.away)) + '<b>' + lv.sv + '</b></span><span>' + esc(abbOfTeam(g.home)) + '<b>' + lv.sh + '</b></span></div>' : hasBox && b.sh.length === 2 ? '<div class="gb-shots"><span>' + t('shots') + '</span>' +
       b.t.map(function (bt, i) { return '<span>' + esc(abbOfTeam(bt.id)) + '<b>' + b.sh[i] + '</b></span>'; }).join('') + '</div>' : '';
-    var board = '<section class="gboard"><div class="gboard-meta"><span><b>' + esc(fmtDay(g.date)) + '</b> · ' + esc(g.time) + '</span><span>' + esc(venueLine(g)) + ' · ' + status + '</span></div>' +
+    var board = '<section class="gboard"><div class="gboard-meta"><span><b>' + esc(fmtDay(g.date)) + '</b> · ' + esc(g.time) + poTag(g) + '</span><span>' + esc(venueLine(g)) + ' · ' + status + '</span></div>' +
       head + row(g.away, g.as, g.hs, t('away')) + row(g.home, g.hs, g.as, t('home')) + shots + '</section>';
 
-    var out = '<p class="note" style="margin:0 0 14px"><a class="lnk" href="#schedule">' + t('schedule') + '</a>' + feedLink(g) + '</p>' + board + (lv ? liveOnIce(g, lv) : '');
+    var out = '<p class="note" style="margin:0 0 14px"><a class="lnk" href="#schedule">' + t('schedule') + '</a>' + (g.po ? ' · <a class="lnk" href="#playoffs">' + t('playoffs') + '</a>' : '') + feedLink(g) + '</p>' + board + (lv ? liveOnIce(g, lv) : '');
     if (!hasBox) {
       out += '<p class="note">' + (lv ? t('detailsSoon') : pl ? t('noBox') : '') + '</p>';
       return out;
@@ -547,7 +644,7 @@
   function liveCard(g0) {
     var g = eff(g0), lv = g._live ? liveOf(g.id) : null, x = LIVE.games[g.id];
     var pl = played(g), over = pl && !lv;
-    var state = lv ? liveBadge(lv) : over ? '<span class="fin">' + t('final') + '</span>' : g.cancelled ? '<span class="cxl">' + t('cancelled') + '</span>' : '<span class="pre">' + t('pregame', { t: esc(g.time) }) + '</span>';
+    var state = (lv ? liveBadge(lv) : over ? '<span class="fin">' + t('final') + '</span>' : g.cancelled ? '<span class="cxl">' + t('cancelled') + '</span>' : '<span class="pre">' + t('pregame', { t: esc(g.time) }) + '</span>') + (g.po ? ' <b class="potag">' + t('poTag') + '</b>' : '');
     var row = function (id, sc, other, shots) {
       var tm = T[id] || { abb: '?', name: '?', id: '' };
       var lose = over && sc < other;
@@ -561,11 +658,11 @@
       '<div class="lv-foot"><a class="lnk lv-open" href="#game-' + esc(g.id) + '">' + (lv ? t('liveBox') : t('openGame')) + '</a>' + feedLink(g) + '</div></article>';
   }
   function viewLive() {
-    var today = todayStr();
+    var today = todayStr(), games = allGames;
     var list = games.filter(function (g) { return g.date === today; });
     var intro = '<h1 class="ph">' + t('live') + '</h1><p class="lede">' + t('liveLede') + '</p>';
     if (!list.length) {
-      var nx = upcomingGames[0];
+      var nx = games.filter(function (g) { return !played(g) && !g.cancelled; })[0];
       /* no game left (the season is over): say so, and show the last game night with its results */
       var night = nx ? nx.date : games.filter(function (g) { return played(eff(g)); }).map(function (g) { return g.date; }).sort().pop();
       return intro + '<p class="empty">' + (nx ? t('noGameToday', { d: esc(fmtDay(nx.date)) }) : t('noGameLeft', { d: night ? esc(fmtDay(night)) : '-' })) + '</p>' +
@@ -595,7 +692,9 @@
       reg.map(function (l) { return '<option value="' + esc(l.path || l.slug) + '"' + (l.slug === LG.slug ? ' selected' : '') + '>' + esc(l.name) + '</option>'; }).join('') + '</select></label>';
     $('#lgsel').addEventListener('change', function (e) { location.href = (D.base || './') + e.target.value + (e.target.value ? '/' : ''); });
   }
-  var NAV = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
+  /* While a league has playoffs, "Séries" comes right after "En direct" (a bit more presence); on phones it takes a main tab and "Meneurs" moves to "Plus". */
+  var NAV0 = [['live', 'live'], ['standings', 'standings'], ['teams', 'teams'], ['schedule', 'schedule'], ['players', 'players'], ['goalies', 'goalies'], ['leaders', 'leaders']];
+  var navList = function () { return PO.on ? [NAV0[0], ['playoffs', 'playoffs']].concat(NAV0.slice(1)) : NAV0; };
   var TAB_ICONS = {
     live: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2M8.1 15.9a5.5 5.5 0 0 1 0-7.8M15.9 8.1a5.5 5.5 0 0 1 0 7.8"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
     standings: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
@@ -604,17 +703,20 @@
     players: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/>',
     goalies: '<path d="M5 20V8a7 7 0 0 1 14 0v12M5 13h14M9 8v5M15 8v5"/>',
     leaders: '<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/>',
+    playoffs: '<path d="M3 4h5v5H3zM3 15h5v5H3zM8 6.5h3v11H8M11 12h4M15 9.5h6v5h-6z"/>',
     more: '<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>'
   };
   var TAB_MAIN = ['live', 'standings', 'teams', 'schedule', 'leaders'], TAB_MORE = ['players', 'goalies'];
+  var tabMain = function () { return PO.on ? ['live', 'playoffs', 'standings', 'teams', 'schedule'] : TAB_MAIN; };
+  var tabMore = function () { return PO.on ? ['leaders', 'players', 'goalies'] : TAB_MORE; };
   function tabIcon(k) { return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TAB_ICONS[k] + '</svg>'; }
   function renderTabbar() {
     var bar = $('#tabbar'), more = $('#more');
     if (!bar) return;
-    bar.innerHTML = TAB_MAIN.map(function (k) {
+    bar.innerHTML = tabMain().map(function (k) {
       return '<a href="#' + k + '" data-nav="' + k + '">' + tabIcon(k) + '<span>' + t(k) + '</span>' + (k === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>';
     }).join('') + '<button type="button" data-more aria-expanded="false" aria-controls="more">' + tabIcon('more') + '<span>' + t('more') + '</span></button>';
-    more.innerHTML = TAB_MORE.map(function (k) { return '<a href="#' + k + '" data-nav="' + k + '">' + tabIcon(k) + '<span>' + t(k) + '</span></a>'; }).join('');
+    more.innerHTML = tabMore().map(function (k) { return '<a href="#' + k + '" data-nav="' + k + '">' + tabIcon(k) + '<span>' + t(k) + '</span></a>'; }).join('');
     more.hidden = true;
   }
   function setMore(open) {
@@ -626,7 +728,7 @@
 
   function renderChrome() {
     $('#top').innerHTML = '<div class="wrap top-in"><a class="brand" href="#home">' + (LG.logo ? '<img class="mk-logo" src="' + LG.logo + '" alt="" width="52" height="44">' : BALL) + '<span><b>LDHML <i>' + esc(LG.short) + '</i></b><small>' + esc(season()) + '</small></span></a>' +
-      '<nav class="nav" aria-label="Main">' + NAV.map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
+      '<nav class="nav" aria-label="Main">' + navList().map(function (n) { return '<a href="#' + n[0] + '" data-nav="' + n[0] + '">' + t(n[1]) + (n[0] === 'live' && liveList().length ? '<i class="navdot" aria-hidden="true"></i>' : '') + '</a>'; }).join('') + '</nav>' +
       '<div class="tools"><div class="gs" role="search">' + ICON_SEARCH + '<input id="gs" type="search" placeholder="' + t('searchPh') + '" aria-label="' + t('search') + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gs-res"><div class="gs-res" id="gs-res" role="listbox" hidden></div></div>' +
       '</div></div>';
     renderTabbar();
@@ -647,13 +749,13 @@
   }
   window.addEventListener('resize', fitNav);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNav);
-  var VIEWS = { home: viewHome, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, teams: viewTeams, team: viewTeam, player: viewPlayer, game: viewGame };
+  var VIEWS = { home: viewHome, playoffs: viewPlayoffs, standings: viewStandings, schedule: viewSchedule, players: viewPlayers, goalies: viewGoalies, leaders: viewLeaders, live: viewLive, teams: viewTeams, team: viewTeam, player: viewPlayer, game: viewGame };
   function parseRoute() {
     var h = String(location.hash || '').replace(/^#/, '');
     var m = h.match(/^(team|player|game)-([A-Za-z0-9]+)$/);
     /* An old player link with an NBHPA player_id still opens the person (U maps it to our id). */
     if (m) return { name: m[1], id: m[1] === 'player' ? U(m[2]) : m[2] };
-    if (['standings', 'schedule', 'players', 'goalies', 'leaders', 'live', 'teams'].indexOf(h) >= 0) return { name: h };
+    if (['standings', 'schedule', 'players', 'goalies', 'leaders', 'live', 'teams', 'playoffs'].indexOf(h) >= 0) return { name: h };
     return { name: 'home' };
   }
   function render(keepScroll) {
@@ -663,16 +765,17 @@
     if (out && typeof out === 'object') { band = out.band; out = out.html; }
     $('#band').innerHTML = band;
     $('#main').innerHTML = out;
-    var navKey = r.name === 'team' ? 'teams' : r.name === 'player' ? 'players' : r.name === 'game' ? 'schedule' : r.name;
+    var navKey = r.name === 'team' ? 'teams' : r.name === 'player' ? 'players' : r.name === 'game' ? (gameById[r.id] && gameById[r.id].po ? 'playoffs' : 'schedule') : r.name;
     Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), function (a) {
       if (a.getAttribute('data-nav') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     var mb = document.querySelector('[data-more]');
-    if (mb) { if (TAB_MORE.indexOf(navKey) >= 0) mb.setAttribute('aria-current', 'page'); else mb.removeAttribute('aria-current'); }
+    if (mb) { if (tabMore().indexOf(navKey) >= 0) mb.setAttribute('aria-current', 'page'); else mb.removeAttribute('aria-current'); }
     setMore(false);
     var title = LG.name;
     if (r.name === 'team' && T[r.id]) title = T[r.id].name + ' | ' + LG.name;
     if (r.name === 'player' && people[r.id]) title = people[r.id].name + ' | ' + LG.name;
+    if (r.name === 'playoffs') title = t('playoffs') + ' | ' + LG.name;
     if (r.name === 'game' && gameById[r.id]) { var gg = gameById[r.id]; title = abbOfTeam(gg.away) + (played(gg) ? ' ' + gg.as + '-' + gg.hs + ' ' : ' @ ') + abbOfTeam(gg.home) + ' | ' + LG.name; }
     document.title = title;
     if (!keepScroll) window.scrollTo(0, 0);

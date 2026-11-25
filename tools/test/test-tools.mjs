@@ -103,6 +103,15 @@ assert.equal((await call('/api/admin/rules', { method: 'POST', cookie, body: { s
 assert.equal((await call('/api/public/season')).data.season.name, 'Hiver 2027', 'the public season follows');
 r = await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), status: 'active' } });
 assert.deepEqual(r.data.archived, [futureId], 'back');
+// the playoffs (owner, 2026-11-25): their own NBHPA season, linked to the season; optional, kept when not sent
+r = await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), nbhpa_playoff_season_id: '4409', status: 'active' } });
+assert.equal(r.status, 200, 'a playoff season no.');
+assert.equal((await call('/api/public/season')).data.season.nbhpa_playoff_season_id, 4409, 'public: the playoff season of the live season');
+assert.equal((await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), nbhpa_playoff_season_id: String(season.seasonId), status: 'active' } })).status, 400, 'the playoffs are not the season itself');
+assert.equal((await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), nbhpa_playoff_season_id: 'x', status: 'active' } })).status, 400, 'a playoff no. is a number');
+await call('/api/admin/seasons/' + seasonId, { method: 'POST', cookie, body: { name: season.seasonName, nbhpa_season_id: String(season.seasonId), status: 'active' } });
+assert.equal((await call('/api/admin/seasons', { cookie })).data.seasons.find((x) => x.id === seasonId).nbhpa_playoff_season_id, 4409, 'kept when the form does not send it');
+assert.ok(await DB.prepare("SELECT 1 FROM audit WHERE action = 'season.update' AND detail LIKE '%nbhpa_playoff_season_id%4409%'").first(), 'in the log');
 assert.equal((await call('/api/admin/seasons/' + futureId, { method: 'POST', cookie, body: { name: 'Hiver 2027', status: 'upcoming' } })).status, 200, 'an archived season can change status again');
 assert.equal((await call('/api/admin/seasons/' + futureId, { method: 'POST', cookie, body: { name: season.seasonName, status: 'upcoming' } })).data.error, 'season_exists', 'no two seasons with the same name');
 r = await call('/api/admin/seasons', { method: 'POST', cookie, body: { name: 'Été 2027' } });
@@ -972,6 +981,9 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
     return { ok: false, status: 404 };
   };
   env.GITHUB_TOKEN = 'test-token';
+  // one live season here: the one of leagues.json, with its playoff season (set above, no. 4409, as in leagues.json)
+  const otherLive = (await DB.prepare("SELECT id FROM seasons WHERE status = 'active' AND id <> ?").bind(seasonId).all()).results.map((x) => x.id);
+  for (const id of otherLive) await DB.prepare("UPDATE seasons SET status = 'upcoming' WHERE id = ?").bind(id).run();
   w.LDHML_REFRESH_DELAY = 0; w.LDHML_REFRESH_POLL = 0;
   Object.defineProperty(d, 'hidden', { configurable: true, get: () => false });
   const lgs = season.leagues;
@@ -986,7 +998,7 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
   for (let i = 0; i < 100 && !d.querySelector('[data-rf-go]'); i++) await wait(30);
   const logText = () => d.getElementById('ta-rflog').textContent;
   assert.ok(/Le site public est à jour/.test(logText()), 'the run ends with the site up to date:\n' + logText());
-  for (const x of ['Départ : commit aaaaaaa', 'Retro : lecture de NBHPA', 'classement', 'statistiques des joueurs', 'calendrier', 'Retro : 2 équipes, 1 matchs, 1 joueurs, 1 gardiens, 0 sommaires', 'box score 9990001 skipped', 'Registre des personnes', 'Envoi de 7 fichiers', 'Publié : commit bbbbbbb'])
+  for (const x of ['Départ : commit aaaaaaa', 'Séries : saison NBHPA no 4409', 'Retro : lecture de NBHPA', 'classement', 'statistiques des joueurs', 'calendrier', 'séries : calendrier', 'Retro : 2 équipes, 1 matchs, 1 joueurs, 1 gardiens, 0 sommaires', 'Retro, séries : 1 matchs', 'box score 9990001 skipped', 'Registre des personnes', 'Envoi de 8 fichiers', 'Publié : commit bbbbbbb'])
     assert.ok(logText().includes(x), 'the log says: ' + x + '\n' + logText());
   // polite and public: the same public pages as the script, one at a time, this league only
   assert.ok(nb.length >= 4 && nb.every((c) => /^\/(table_data\.php|sites\/site_(stats_players|stats_goalies|schedule_include|game_recap)\.php)/.test(c.u)), 'only the public league pages: ' + nb.map((c) => c.u).join(' '));
@@ -994,10 +1006,13 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
   assert.equal(maxInflight, 1, 'one NBHPA request at a time');
   const retro = JSON.parse(await readFile(path.join(root, 'leagues.json'), 'utf8')).leagues.find((l) => l.slug === 'retro');
   assert.ok(nb.every((c) => !/category_id/.test(c.u + c.body) || (c.u + c.body).includes(String(retro.categoryId)) || /game_recap/.test(c.u)), 'only the league asked');
+  assert.ok(nb.some((c) => /season_id=4409/.test(decodeURIComponent(c.u) + c.body)), 'the playoff season is read too');
   // the commit: the 6 files of Retro and the registry with the new people (next ids, never a changed one)
   assert.equal(gh.trees.length, 1, 'one commit');
   const paths = gh.trees[0].tree.map((x) => x.path).sort();
-  assert.deepEqual(paths, ['data/retro/box.json', 'data/retro/games.json', 'data/retro/goalies.json', 'data/retro/meta.json', 'data/retro/players.json', 'data/retro/teams.json', 'registry/people.json']);
+  assert.deepEqual(paths, ['data/retro/box.json', 'data/retro/games.json', 'data/retro/goalies.json', 'data/retro/meta.json', 'data/retro/players.json', 'data/retro/playoffs.json', 'data/retro/teams.json', 'registry/people.json'], 'leagues.json already has this playoff season: it stays out of the commit');
+  const po1 = JSON.parse(gh.trees[0].tree.find((x) => x.path === 'data/retro/playoffs.json').content);
+  assert.ok(po1.meta.seasonId === 4409 && po1.games.length === 1 && po1.teamMap['204339'] === '204339', 'the playoff file: its season, its games, the teams mapped to the season teams');
   const reg0 = JSON.parse(await readFile(path.join(root, 'registry/people.json'), 'utf8'));
   const reg1 = JSON.parse(gh.trees[0].tree.find((x) => x.path === 'registry/people.json').content);
   assert.equal(reg1.people.length, reg0.people.length + 2, 'two new people');
@@ -1016,6 +1031,10 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
   assert.ok(r.status === 400 && r.data.error === 'incomplete', 'a league goes with all its files');
   r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'site/js/1-core.js': 'x' } } });
   assert.ok(r.status === 400 && r.data.error === 'path', 'only data/ and the registry');
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'data/retro/playoffs.json': '{"meta":{}}' } } });
+  assert.ok(r.status === 400 && r.data.problem === 'playoffs', 'a bad playoff file: refused');
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'leagues.json': '{}' } } });
+  assert.ok(r.status === 400 && r.data.error === 'path', 'the browser never sends leagues.json (the Worker writes the playoff line itself)');
   const regGone = JSON.parse(files['registry/people.json']); regGone.people.shift();
   r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'registry/people.json': JSON.stringify(regGone) } } });
   assert.ok(r.status === 400 && /^registry/.test(r.data.problem), 'a person removed from the registry: refused');
@@ -1023,6 +1042,20 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
   r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files: { ...files, 'registry/people.json': JSON.stringify(regMoved) } } });
   assert.ok(r.status === 400 && /^registry\.changed/.test(r.data.problem), 'an id that changes person: refused');
   assert.equal(gh.trees.length, 1, 'nothing refused reached GitHub');
+  // another playoff season in the tools: the publish writes it into leagues.json (one line), in the same commit
+  await DB.prepare('UPDATE seasons SET nbhpa_playoff_season_id = 4410 WHERE id = ?').bind(seasonId).run();
+  r = await call('/api/admin/refresh/base', { cookie: jar.c });
+  assert.deepEqual(r.data.playoffs, { seasonId: 4410, seasonName: 'Séries ' + season.seasonName }, 'the refresh reads the playoff season of the tools');
+  r = await call('/api/admin/refresh/publish', { method: 'POST', cookie: jar.c, body: { base: SHA0, files } });
+  assert.equal(r.status, 200, 'published with the new playoff season');
+  const lj = gh.trees[1].tree.find((x) => x.path === 'leagues.json');
+  const before = await readFile(path.join(root, 'leagues.json'), 'utf8');
+  assert.ok(lj && JSON.parse(lj.content).playoffs.seasonId === 4410, 'leagues.json gets the new playoff season');
+  assert.deepEqual(lj.content.split(/\r?\n/).filter((l) => !/"playoffs"/.test(l)), before.split(/\r?\n/).filter((l) => !/"playoffs"/.test(l)), 'only the playoff line changes');
+  assert.ok(await DB.prepare("SELECT 1 FROM audit WHERE action = 'data.publish' AND detail LIKE '%4410%'").first(), 'the log says so');
+  await DB.prepare('UPDATE seasons SET nbhpa_playoff_season_id = 4409 WHERE id = ?').bind(seasonId).run();
+  await DB.prepare("UPDATE audit SET at = at - 600 WHERE action = 'data.publish'").run();
+  gh.trees.length = 1; gh.refs.length = 1;
   // a bad answer from NBHPA: the league is refused, nothing is published
   good = false; nb.length = 0;
   d.querySelector('[data-rf-go]').click();
@@ -1037,6 +1070,7 @@ assert.equal(w.scrollY, 0, 'a link to a page seen before is a new visit: the top
   r = await call('/api/admin/refresh/base', { cookie: jar.c });
   assert.ok(r.status === 200 && r.data.configured === false && r.data.last && r.data.last.commit === SHA1, 'no token: not set up (the last publish still shows)');
   globalThis.fetch = realFetch;
+  for (const id of otherLive) await DB.prepare("UPDATE seasons SET status = 'active' WHERE id = ?").bind(id).run();
   w.location.hash = '#/config/captains'; await wait(200);   // back where the next tests start
 }
 d.querySelector('[data-act="new-cap"]').click(); await wait(20);
